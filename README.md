@@ -9,3 +9,7 @@ CHAT_ID: ID del chat, grupo y canal para la recepción del mensaje.
 ARdolarS: variable con valor del dolar solidario.
 ARdolarB: variable con valor del dolar blue o paralelo.
 ARdolarB: variable con valor del dolar oficial indicado por el BCRA.
+
+### JQ
+
+La información de la API pública a consultar se parsea mediante la herramienta JQ para JSON.
