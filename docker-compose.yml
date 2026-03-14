@@ -1,0 +1,16 @@
+services:
+  api:
+    build: ./web/api
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+    restart: always
+
+  client:
+    build: ./web/client
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: always

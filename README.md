@@ -1,60 +1,60 @@
 # valores-mercado
 
-Script Bash para envío de valores, a un canal de Telegram, del Peso Argentina con respecto al Dolar, Venezuela, y BitCoin mediante APIs públicas robustas.
+Conjunto de herramientas para el monitoreo de divisas (Argentina y Venezuela) y criptomonedas (Bitcoin) en tiempo real, incluyendo scripts de automatización para Telegram y un Dashboard Web moderno dockerizado.
 
-## Características
-- **Argentina:** Dólar Oficial, Blue y Tarjeta (vía [DolarApi](https://dolarapi.com)).
+## 🚀 Características
+- **Argentina:** Dólar Oficial, Blue, Tarjeta, MEP, CCL y Cripto (vía [DolarApi](https://dolarapi.com)).
 - **Venezuela:** Dólar Paralelo (Promedio) (vía [VE DolarApi](https://ve.dolarapi.com)).
 - **BitCoin:** Precio en USD en tiempo real (vía [Binance API](https://binance.com)).
-- **Cálculo de Tasa:** Conversión automática entre Dólar Blue AR y Paralelo VE (Tasa Remesa).
-- **Notificaciones:** Mensajes con formato HTML y emojis en Telegram.
-- **Robustez:** Reintentos automáticos, timeouts y manejo de errores.
-- **Logs:** Registro detallado en `MercadoNotificationsLog.txt`.
+- **Web Dashboard:** Interfaz moderna con React 19, TypeScript y Tailwind CSS.
+- **Gráficos de Tendencias:** Visualización histórica de tasas con Recharts.
+- **Conversor Inteligente:** Conversión bidireccional (USD, ARS, VES) integrada.
+- **Notificaciones Telegram:** Script Bash con formato HTML y emojis.
+- **Docker Ready:** Despliegue rápido de la plataforma web mediante Docker Compose.
 
-## Requisitos
-- Bash
-- `curl`
-- `jq` (Procesador de JSON)
-- Telegram Bot (creado vía [@BotFather](https://t.me/botfather))
+---
 
-## Configuración
-Edita el archivo `config.sh` con tus credenciales:
-```bash
-BOT_TOKEN="TU_BOT_TOKEN"    # Token de Telegram
-CHAT_ID="TU_CHAT_ID"        # ID del chat/grupo
-MAX_RETRIES=3               # Reintentos de API
-RETRY_DELAY=5               # Segundos entre reintentos
-USE_EMOJIS=true             # Activar/Desactivar emojis
-```
+## 💻 Dashboard Web (Docker)
 
-## Modos de Ejecución
+El dashboard web ofrece una visualización completa de los mercados y una calculadora de divisas.
 
-### 1. Ejecución Manual
-```bash
-chmod +x dolar_telegram_notification.sh
-./dolar_telegram_notification.sh
-```
+### Requisitos
+- [Docker](https://www.docker.com/) y [Docker Compose](https://docs.docker.com/compose/)
 
-### 2. Modo "En Vivo" (Loop Continuo)
-Ideal para servidores que no usan Cron. Ejecuta el script cada 5 minutos:
-```bash
-chmod +x live.sh
-./live.sh
-# O en segundo plano (daemon):
-nohup ./live.sh > /dev/null 2>&1 &
-```
-
-### 3. Automatización con Cron (Recomendado)
-Para enviar actualizaciones cada hora:
-1. Abre tu crontab: `crontab -e`
-2. Añade la línea (ajusta la ruta completa):
+### Despliegue Rápido
+1. En la raíz del proyecto, ejecuta:
    ```bash
-   0 * * * * /ruta/al/proyecto/dolar_telegram_notification.sh
+   docker-compose up --build -d
    ```
+2. Accede desde tu navegador a: `http://localhost`
 
-## APIs Utilizadas
-- **Argentina/Venezuela:** [DolarApi.com](https://dolarapi.com) (Pública y Estable).
-- **Crypto:** [Binance Public API](https://api.binance.com).
+### Estructura Técnica
+- **Frontend (`/web/client`):** React 19 + Vite + Tailwind CSS + Recharts + Lucide Icons.
+- **Backend (`/web/api`):** Node.js + Express + TSX (Proxy para evitar CORS y persistencia de historial).
 
-## Logs
-Los eventos se guardan en `MercadoNotificationsLog.txt` con marcas de tiempo para auditoría.
+---
+
+## 🤖 Scripts de Telegram (Bash)
+
+Ideal para servidores livianos o Raspberry Pi.
+
+### Configuración
+Edita `config.sh` con tus credenciales:
+```bash
+BOT_TOKEN="TU_BOT_TOKEN"    # Token de @BotFather
+CHAT_ID="TU_CHAT_ID"        # ID del chat/grupo
+```
+
+### Modos de Ejecución
+- **Manual:** `./dolar_telegram_notification.sh`
+- **Modo "En Vivo":** `./live.sh` (Ejecución continua cada 5 min).
+- **Cron:** Agrega `0 * * * * /ruta/al/script.sh` a tu crontab para actualizaciones cada hora.
+
+---
+
+## 📊 APIs Utilizadas
+- **Mercado Cambiario:** [DolarApi.com](https://dolarapi.com) (Argentina y Venezuela).
+- **Cripto:** [Binance Public API](https://api.binance.com).
+
+## 📝 Logs
+Todos los eventos de los scripts de Bash se registran en `MercadoNotificationsLog.txt` para auditoría y seguimiento de errores.
