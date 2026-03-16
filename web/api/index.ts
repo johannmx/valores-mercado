@@ -15,6 +15,9 @@ interface MarketData {
     ar_oficial_venta: number;
     ar_crypto_compra: number;
     ar_crypto_venta: number;
+    ar_tarjeta_compra: number;
+    ar_tarjeta_venta: number;
+    ve_oficial: number;
     ve_paralelo: number;
     tasa_remesa: string;
     bitcoin: string;
@@ -57,7 +60,6 @@ const generateMockHistory = () => {
 };
 
 const initializeHistory = () => {
-    // Force refresh history if keys are old or file doesn't exist
     let shouldReset = false;
     if (!fs.existsSync(HISTORY_FILE)) {
         shouldReset = true;
@@ -117,23 +119,24 @@ app.get('/api/rates', async (req, res) => {
             axios.get('https://dolarapi.com/v1/dolares/cripto').catch(e => { return {data: {}}; }),
             axios.get('https://dolarapi.com/v1/dolares').catch(e => { return {data: []}; }),
             axios.get('https://ve.dolarapi.com/v1/dolares/paralelo').then(r => { apiStatus.dolar_api_ve = true; return r; }).catch(e => { return {data: {}}; }),
+            axios.get('https://ve.dolarapi.com/v1/dolares/oficial').catch(e => { return {data: {}}; }),
             axios.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT').then(r => { apiStatus.binance_api = true; return r; }).catch(e => { return {data: {price: "0"}}; })
         ];
 
-        const [arOficial, arCrypto, allArDolares, veParalelo, btcPrice] = await Promise.all(requests);
+        const [arOficial, arCrypto, allArDolares, veParalelo, veOficial, btcPrice] = await Promise.all(requests);
 
         const history: HistoryItem[] = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
         const lastEntry = history[history.length - 1];
         
         const currentAr = arOficial.data.venta || 0;
-        const currentVe = veParalelo.data.promedio || 0;
+        const currentVeParalelo = veParalelo.data.promedio || 0;
         
         let ar_oficial_percent = 0;
         let ve_paralelo_percent = 0;
         
         if (lastEntry) {
             ar_oficial_percent = lastEntry.ar_oficial_venta ? ((currentAr - lastEntry.ar_oficial_venta) / lastEntry.ar_oficial_venta) * 100 : 0;
-            ve_paralelo_percent = lastEntry.ve_paralelo_venta ? ((currentVe - lastEntry.ve_paralelo_venta) / lastEntry.ve_paralelo_venta) * 100 : 0;
+            ve_paralelo_percent = lastEntry.ve_paralelo_venta ? ((currentVeParalelo - lastEntry.ve_paralelo_venta) / lastEntry.ve_paralelo_venta) * 100 : 0;
         }
 
         const data: MarketData = {
@@ -141,8 +144,11 @@ app.get('/api/rates', async (req, res) => {
             ar_oficial_venta: arOficial.data.venta || 0,
             ar_crypto_compra: arCrypto.data.compra || 0,
             ar_crypto_venta: arCrypto.data.venta || 0,
-            ve_paralelo: currentVe,
-            tasa_remesa: currentAr > 0 ? (currentVe / currentAr).toFixed(2) : "0",
+            ar_tarjeta_compra: 0, 
+            ar_tarjeta_venta: 0,
+            ve_oficial: veOficial.data.promedio || 0,
+            ve_paralelo: currentVeParalelo,
+            tasa_remesa: currentAr > 0 ? (currentVeParalelo / currentAr).toFixed(2) : "0",
             bitcoin: btcPrice.data.price ? parseFloat(btcPrice.data.price).toFixed(2) : "0",
             updated_at: new Date().toISOString(),
             all_ar_dolares: allArDolares.data,

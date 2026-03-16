@@ -10,7 +10,8 @@ import {
   Info,
   ArrowUpRight,
   ArrowDownRight,
-  Globe
+  Globe,
+  ShieldCheck
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -28,6 +29,7 @@ interface MarketData {
   ar_oficial_venta: number;
   ar_crypto_compra: number;
   ar_crypto_venta: number;
+  ve_oficial: number;
   ve_paralelo: number;
   tasa_remesa: string;
   bitcoin: string;
@@ -445,14 +447,23 @@ function App() {
               <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Venezuela</h2>
             </div>
 
-            <StatCard 
-              title="Dólar Paralelo" 
-              value={`${data?.ve_paralelo} VES`} 
-              icon={DollarSign} 
-              color="bg-yellow-500"
-              subtitle="Promedio EnParaleloVzla"
-              change={data?.changes?.ve_paralelo_percent}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <StatCard 
+                title="Dólar Oficial" 
+                value={`${data?.ve_oficial} VES`} 
+                icon={ShieldCheck} 
+                color="bg-blue-500"
+                subtitle="Tasa Oficial BCV"
+              />
+              <StatCard 
+                title="Dólar Paralelo" 
+                value={`${data?.ve_paralelo} VES`} 
+                icon={DollarSign} 
+                color="bg-yellow-500"
+                subtitle="Promedio Dólar Paralelo"
+                change={data?.changes?.ve_paralelo_percent}
+              />
+            </div>
 
             <div className="flex-1">
               <RegionChart 
