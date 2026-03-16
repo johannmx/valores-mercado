@@ -450,7 +450,7 @@ function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <StatCard 
                 title="Dólar Oficial" 
-                value={`${data?.ve_oficial} VES`} 
+                value={`${Number(data?.ve_oficial).toFixed(2)} VES`} 
                 icon={ShieldCheck} 
                 color="bg-blue-500"
                 subtitle="Tasa Oficial BCV"
