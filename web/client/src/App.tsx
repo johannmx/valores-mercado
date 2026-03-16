@@ -294,8 +294,19 @@ function App() {
         axios.get('http://localhost:3001/api/rates'),
         axios.get('http://localhost:3001/api/history')
       ]);
-      setData(ratesRes.data);
-      setHistory(historyRes.data);
+      const ratesData = ratesRes.data;
+      const historyData = historyRes.data;
+
+      // Append current data to history for the charts
+      const currentAsHistory = {
+        date: ratesData.updated_at,
+        ar_oficial_compra: ratesData.ar_oficial_compra,
+        ar_oficial_venta: ratesData.ar_oficial_venta,
+        ve_paralelo_venta: ratesData.ve_paralelo
+      };
+
+      setData(ratesData);
+      setHistory([...historyData, currentAsHistory]);
       setError(null);
     } catch (err) {
       setError('Error de conexión con el servidor.');
