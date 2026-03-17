@@ -131,8 +131,17 @@ const Converter = ({ data }: { data: MarketData | null }) => {
           <div className="flex gap-2">
             <input 
               type="number" 
-              value={amount} 
-              onChange={(e) => setAmount(Number(e.target.value))}
+              value={amount.toString()} 
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '') {
+                  setAmount(0);
+                } else {
+                  // Remove leading zeros but keep single zero if that's all there is
+                  const noLeadingZeros = val.replace(/^0+(?=\d)/, '');
+                  setAmount(Number(noLeadingZeros));
+                }
+              }}
               className="flex-1 px-4 py-2 border-0 bg-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all font-black text-slate-700"
             />
             <select 
