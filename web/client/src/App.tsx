@@ -299,7 +299,7 @@ function App() {
   const fetchData = async () => {
     setIsRefreshing(true);
     try {
-      const baseURL = import.meta.env.VITE_API_URL || '';
+      const baseURL = (window as any)._env_?.VITE_API_URL || import.meta.env.VITE_API_URL || '';
       const [ratesRes, historyRes] = await Promise.all([
         axios.get(`${baseURL}/api/rates`),
         axios.get(`${baseURL}/api/history`)

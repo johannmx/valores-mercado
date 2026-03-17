@@ -11,6 +11,8 @@ services:
     image: ghcr.io/johannmx/valores-mercado-client:latest
     ports:
       - "80:80"
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-https://market.johatech.ar}
     depends_on:
       - api
     restart: always
