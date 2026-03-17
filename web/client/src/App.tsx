@@ -53,6 +53,13 @@ interface HistoryItem {
   ve_paralelo_venta: number;
 }
 
+const formatNumber = (num: any) => {
+  if (num === null || num === undefined || num === '') return '';
+  const parsed = Number(num);
+  if (isNaN(parsed)) return num;
+  return parsed.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
 const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change }: any) => {
   const isPositive = change > 0;
   const displayValue = value || '---';
@@ -241,7 +248,7 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
             itemStyle={{fontWeight: '900', textTransform: 'uppercase', fontSize: '10px'}}
             labelStyle={{fontWeight: '900', marginBottom: '8px', color: '#64748b'}}
             labelFormatter={(label) => new Date(label).toLocaleString()}
-            formatter={(value: any) => [Number(value).toLocaleString(undefined, {minimumFractionDigits: 2}), "VALOR"]}
+            formatter={(value: any) => [Number(value).toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2}), "VALOR"]}
           />
           {!singleLine && <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase'}} />}
           
@@ -433,14 +440,14 @@ function App() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
            <StatCard 
               title="Bitcoin Global" 
-              value={`$${data?.bitcoin}`} 
+              value={`$${formatNumber(data?.bitcoin)}`} 
               icon={Bitcoin} 
               color="bg-orange-500"
               subtitle="BTC/USDT Binance"
             />
             <StatCard 
               title="Tasa Remesa (AR-VE)" 
-              value={`${data?.tasa_remesa} VES`} 
+              value={`${formatNumber(data?.tasa_remesa)} VES`} 
               icon={ArrowRightLeft} 
               color="bg-emerald-500"
               subtitle="1 Peso AR Oficial = X VES"
@@ -464,20 +471,20 @@ function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <StatCard 
                 title="Dólar Oficial" 
-                value={`$${data?.ar_oficial_venta}`} 
+                value={`$${formatNumber(data?.ar_oficial_venta)}`} 
                 icon={TrendingUp} 
                 color="bg-blue-600"
-                buy={data?.ar_oficial_compra}
-                sell={data?.ar_oficial_venta}
+                buy={formatNumber(data?.ar_oficial_compra)}
+                sell={formatNumber(data?.ar_oficial_venta)}
                 change={data?.changes?.ar_oficial_percent}
               />
               <StatCard 
                 title="Dólar Crypto" 
-                value={`$${data?.ar_crypto_venta}`} 
+                value={`$${formatNumber(data?.ar_crypto_venta)}`} 
                 icon={Bitcoin} 
                 color="bg-purple-600"
-                buy={data?.ar_crypto_compra}
-                sell={data?.ar_crypto_venta}
+                buy={formatNumber(data?.ar_crypto_compra)}
+                sell={formatNumber(data?.ar_crypto_venta)}
               />
             </div>
 
@@ -500,7 +507,7 @@ function App() {
                 {data?.all_ar_dolares?.filter(d => d.casa !== 'oficial' && d.casa !== 'cripto').map((d) => (
                   <div key={d.casa} className="flex justify-between items-center p-5 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all group">
                     <span className="font-black text-slate-500 uppercase text-xs tracking-tight">{d.nombre}</span>
-                    <span className="font-black text-blue-700 text-lg group-hover:scale-110 transition-transform">$ {d.venta}</span>
+                    <span className="font-black text-blue-700 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(d.venta)}</span>
                   </div>
                 ))}
               </div>
@@ -517,14 +524,14 @@ function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <StatCard 
                 title="Dólar Oficial" 
-                value={`${Number(data?.ve_oficial).toFixed(2)} VES`} 
+                value={`${formatNumber(data?.ve_oficial)} VES`} 
                 icon={ShieldCheck} 
                 color="bg-blue-500"
                 subtitle="Tasa Oficial BCV"
               />
               <StatCard 
                 title="Dólar Paralelo" 
-                value={`${data?.ve_paralelo} VES`} 
+                value={`${formatNumber(data?.ve_paralelo)} VES`} 
                 icon={DollarSign} 
                 color="bg-yellow-500"
                 subtitle="Promedio Dólar Paralelo"
