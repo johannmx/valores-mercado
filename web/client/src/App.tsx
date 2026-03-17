@@ -38,6 +38,9 @@ interface MarketData {
   changes?: {
     ar_oficial_percent: number;
     ve_paralelo_percent: number;
+    ar_crypto_percent: number;
+    ve_oficial_percent: number;
+    otros_dolares_percents: Record<string, number>;
   };
   api_status: {
     dolar_api_ar: boolean;
@@ -74,7 +77,7 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{title}</span>
           {change !== undefined && change !== 0 && (
             <span className={`flex items-center gap-0.5 text-[10px] font-bold mt-1 px-2 py-0.5 rounded-full ${
-              isPositive ? 'text-red-600 bg-red-50' : 'text-emerald-600 bg-emerald-50'
+              isPositive ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50'
             }`}>
               {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
               {Math.abs(change).toFixed(2)}%
@@ -485,6 +488,7 @@ function App() {
                 color="bg-purple-600"
                 buy={formatNumber(data?.ar_crypto_compra)}
                 sell={formatNumber(data?.ar_crypto_venta)}
+                change={data?.changes?.ar_crypto_percent}
               />
             </div>
 
@@ -504,12 +508,27 @@ function App() {
                 <Info className="w-4 h-4 text-slate-300" /> Otros Dólares AR
               </h3>
               <div className="grid grid-cols-1 gap-4">
-                {data?.all_ar_dolares?.filter(d => d.casa !== 'oficial' && d.casa !== 'cripto').map((d) => (
-                  <div key={d.casa} className="flex justify-between items-center p-5 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all group">
-                    <span className="font-black text-slate-500 uppercase text-xs tracking-tight">{d.nombre}</span>
-                    <span className="font-black text-blue-700 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(d.venta)}</span>
-                  </div>
-                ))}
+                {data?.all_ar_dolares?.filter(d => d.casa !== 'oficial' && d.casa !== 'cripto').map((d) => {
+                  const percent = data?.changes?.otros_dolares_percents?.[d.casa] || 0;
+                  const isPositive = percent > 0;
+                  
+                  return (
+                    <div key={d.casa} className="flex justify-between items-center p-5 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all group">
+                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">{d.nombre}</span>
+                      <div className="flex items-center gap-3">
+                        {percent !== 0 && (
+                          <span className={`flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            isPositive ? 'text-emerald-600 bg-emerald-100' : 'text-red-600 bg-red-100'
+                          }`}>
+                            {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                            {Math.abs(percent).toFixed(2)}%
+                          </span>
+                        )}
+                        <span className="font-black text-blue-700 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(d.venta)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -528,6 +547,7 @@ function App() {
                 icon={ShieldCheck} 
                 color="bg-blue-500"
                 subtitle="Tasa Oficial BCV"
+                change={data?.changes?.ve_oficial_percent}
               />
               <StatCard 
                 title="Dólar Paralelo" 

@@ -26,6 +26,9 @@ interface MarketData {
     changes?: {
         ar_oficial_percent: number;
         ve_paralelo_percent: number;
+        ar_crypto_percent: number;
+        ve_oficial_percent: number;
+        otros_dolares_percents: Record<string, number>;
     };
     api_status: {
         dolar_api_ar: boolean;
@@ -39,6 +42,9 @@ interface HistoryItem {
     ar_oficial_compra: number;
     ar_oficial_venta: number;
     ve_paralelo_venta: number;
+    ar_crypto_venta?: number;
+    ve_oficial?: number;
+    otros_dolares?: Record<string, number>;
 }
 
 const generateMockHistory = () => {
@@ -53,7 +59,10 @@ const generateMockHistory = () => {
             date: date.toISOString(),
             ar_oficial_compra: baseAr - 20,
             ar_oficial_venta: baseAr,
-            ve_paralelo_venta: baseVe
+            ve_paralelo_venta: baseVe,
+            ar_crypto_venta: baseAr + 50,
+            ve_oficial: baseVe - 10,
+            otros_dolares: { 'blue': baseAr + 200, 'bolsa': baseAr + 150 }
         });
     }
     return history;
@@ -81,17 +90,33 @@ const initializeHistory = () => {
 
 const saveCurrentToHistory = async () => {
     try {
-        const [arOficial, veParalelo] = await Promise.all([
+        const [arOficial, veParalelo, arCrypto, veOficial, allArDolares] = await Promise.all([
             axios.get('https://dolarapi.com/v1/dolares/oficial'),
-            axios.get('https://ve.dolarapi.com/v1/dolares/paralelo')
+            axios.get('https://ve.dolarapi.com/v1/dolares/paralelo'),
+            axios.get('https://dolarapi.com/v1/dolares/cripto').catch(e => ({ data: {} })),
+            axios.get('https://ve.dolarapi.com/v1/dolares/oficial').catch(e => ({ data: {} })),
+            axios.get('https://dolarapi.com/v1/dolares').catch(e => ({ data: [] }))
         ]);
 
         const history: HistoryItem[] = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
+        
+        const otros_dolares: Record<string, number> = {};
+        if (allArDolares.data && Array.isArray(allArDolares.data)) {
+            allArDolares.data.forEach((d: any) => {
+                if (d.casa !== 'oficial' && d.casa !== 'cripto') {
+                    otros_dolares[d.casa] = d.venta || 0;
+                }
+            });
+        }
+
         const newItem: HistoryItem = {
             date: new Date().toISOString(),
             ar_oficial_compra: arOficial.data.compra || 0,
             ar_oficial_venta: arOficial.data.venta || 0,
-            ve_paralelo_venta: veParalelo.data.promedio || 0
+            ve_paralelo_venta: veParalelo.data.promedio || 0,
+            ar_crypto_venta: arCrypto.data.venta || 0,
+            ve_oficial: veOficial.data.promedio || 0,
+            otros_dolares
         };
         
         history.push(newItem);
@@ -130,13 +155,33 @@ app.get('/api/rates', async (req, res) => {
         
         const currentAr = arOficial.data.venta || 0;
         const currentVeParalelo = veParalelo.data.promedio || 0;
+        const currentArCrypto = arCrypto.data.venta || 0;
+        const currentVeOficial = veOficial.data.promedio || 0;
+        const currentOtrosDolares = allArDolares.data || [];
         
         let ar_oficial_percent = 0;
         let ve_paralelo_percent = 0;
+        let ar_crypto_percent = 0;
+        let ve_oficial_percent = 0;
+        let otros_dolares_percents: Record<string, number> = {};
         
         if (lastEntry) {
             ar_oficial_percent = lastEntry.ar_oficial_venta ? ((currentAr - lastEntry.ar_oficial_venta) / lastEntry.ar_oficial_venta) * 100 : 0;
             ve_paralelo_percent = lastEntry.ve_paralelo_venta ? ((currentVeParalelo - lastEntry.ve_paralelo_venta) / lastEntry.ve_paralelo_venta) * 100 : 0;
+            ar_crypto_percent = lastEntry.ar_crypto_venta ? ((currentArCrypto - lastEntry.ar_crypto_venta) / lastEntry.ar_crypto_venta) * 100 : 0;
+            ve_oficial_percent = lastEntry.ve_oficial ? ((currentVeOficial - lastEntry.ve_oficial) / lastEntry.ve_oficial) * 100 : 0;
+            
+            if (lastEntry.otros_dolares) {
+                currentOtrosDolares.forEach((d: any) => {
+                    if (d.casa !== 'oficial' && d.casa !== 'cripto' && lastEntry.otros_dolares && lastEntry.otros_dolares[d.casa]) {
+                        otros_dolares_percents[d.casa] = ((d.venta - lastEntry.otros_dolares[d.casa]) / lastEntry.otros_dolares[d.casa]) * 100;
+                    } else {
+                        otros_dolares_percents[d.casa] = 0;
+                    }
+                });
+            } else {
+                currentOtrosDolares.forEach((d: any) => { otros_dolares_percents[d.casa] = 0; });
+            }
         }
 
         const data: MarketData = {
@@ -154,7 +199,10 @@ app.get('/api/rates', async (req, res) => {
             all_ar_dolares: allArDolares.data,
             changes: {
                 ar_oficial_percent,
-                ve_paralelo_percent
+                ve_paralelo_percent,
+                ar_crypto_percent,
+                ve_oficial_percent,
+                otros_dolares_percents
             },
             api_status: apiStatus
         };
