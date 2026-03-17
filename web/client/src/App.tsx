@@ -11,7 +11,10 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Globe,
-  ShieldCheck
+  ShieldCheck,
+  Moon,
+  Sun,
+  Monitor
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -70,7 +73,7 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
   const displayValue = value || '---';
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 relative overflow-hidden group h-full">
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-md transition-all duration-300 relative overflow-hidden group h-full">
       <div className="flex items-center justify-between mb-4">
         <div className={`p-3 rounded-xl ${color} shadow-sm group-hover:scale-110 transition-transform`}>
           <Icon className="w-6 h-6 text-white" />
@@ -79,8 +82,8 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{title}</span>
           {change !== undefined && (
             <span className={`flex items-center gap-0.5 text-[10px] font-bold mt-1 px-2 py-0.5 rounded-full ${
-              isNeutral ? 'text-slate-500 bg-slate-100' :
-              isPositive ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50'
+              isNeutral ? 'text-slate-500 bg-slate-100 dark:bg-slate-700' :
+              isPositive ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400' : 'text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400'
             }`}>
               {isNeutral ? <TrendingUp className="w-3 h-3 text-slate-400" /> : isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
               {Math.abs(change).toFixed(2)}%
@@ -89,17 +92,17 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
         </div>
       </div>
       <div className="space-y-1">
-        <h3 className="text-3xl font-black text-slate-800 tracking-tight">{displayValue}</h3>
-        {subtitle && <p className="text-xs text-slate-400 font-bold uppercase tracking-tighter">{subtitle}</p>}
+        <h3 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">{displayValue}</h3>
+        {subtitle && <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter">{subtitle}</p>}
         {(buy !== undefined || sell !== undefined) && (
-          <div className="flex gap-4 mt-4 pt-4 border-t border-slate-50 text-[10px] font-bold uppercase">
+          <div className="flex gap-4 mt-4 pt-4 border-t border-slate-50 dark:border-slate-700/50 text-[10px] font-bold uppercase">
             <div className="flex flex-col">
-              <span className="text-slate-300 mb-0.5">Compra</span>
-              <span className="text-slate-600">$ {buy || '-'}</span>
+              <span className="text-slate-300 dark:text-slate-500 mb-0.5">Compra</span>
+              <span className="text-slate-600 dark:text-slate-300">$ {buy || '-'}</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-slate-300 mb-0.5">Venta</span>
-              <span className="text-slate-600">$ {sell || '-'}</span>
+              <span className="text-slate-300 dark:text-slate-500 mb-0.5">Venta</span>
+              <span className="text-slate-600 dark:text-slate-300">$ {sell || '-'}</span>
             </div>
           </div>
         )}
@@ -132,15 +135,15 @@ const Converter = ({ data }: { data: MarketData | null }) => {
   };
 
   return (
-    <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 h-full flex flex-col">
+    <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 h-full flex flex-col">
       <div className="flex items-center gap-2 mb-6">
-        <ArrowRightLeft className="w-6 h-6 text-blue-600" />
-        <h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter">Conversor Rápido</h2>
+        <ArrowRightLeft className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+        <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Conversor Rápido</h2>
       </div>
       
       <div className="space-y-4 flex-1">
-        <div className="bg-slate-50 p-4 rounded-2xl">
-          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Monto a convertir</label>
+        <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-transparent dark:border-slate-700">
+          <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Monto a convertir</label>
           <div className="flex gap-2">
             <input 
               type="number" 
@@ -150,17 +153,16 @@ const Converter = ({ data }: { data: MarketData | null }) => {
                 if (val === '') {
                   setAmount(0);
                 } else {
-                  // Remove leading zeros but keep single zero if that's all there is
                   const noLeadingZeros = val.replace(/^0+(?=\d)/, '');
                   setAmount(Number(noLeadingZeros));
                 }
               }}
-              className="flex-1 px-4 py-2 border-0 bg-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all font-black text-slate-700"
+              className="flex-1 px-4 py-2 border-0 bg-white dark:bg-slate-800 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all font-black text-slate-700 dark:text-white"
             />
             <select 
               value={from} 
               onChange={(e) => setFrom(e.target.value as any)}
-              className="px-4 py-2 border-0 bg-slate-900 text-white rounded-xl font-black outline-none cursor-pointer"
+              className="px-4 py-2 border-0 bg-slate-900 dark:bg-slate-700 text-white rounded-xl font-black outline-none cursor-pointer"
             >
               <option value="USD">USD</option>
               <option value="ARS">ARS</option>
@@ -202,13 +204,13 @@ const Converter = ({ data }: { data: MarketData | null }) => {
 };
 
 const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon, singleLine }: any) => (
-  <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col h-full min-h-[400px]">
+  <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full min-h-[400px]">
     <div className="flex items-center justify-between mb-8">
-      <h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter flex items-center gap-2">
+      <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter flex items-center gap-2">
         <Icon className={`w-6 h-6 ${color.text}`} />
         {title}
       </h2>
-      <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Tendencia 24h</div>
+      <div className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-widest">Tendencia 24h</div>
     </div>
     
     <div className="flex-1 w-full">
@@ -296,7 +298,7 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
         </AreaChart>
       </ResponsiveContainer>
     </div>
-    <div className="mt-6 pt-4 border-t border-slate-50 text-[9px] text-slate-300 font-black uppercase tracking-widest text-center">
+    <div className="mt-6 pt-4 border-t border-slate-50 dark:border-slate-700/50 text-[9px] text-slate-300 dark:text-slate-500 font-black uppercase tracking-widest text-center">
       {singleLine ? 'Evolución del valor de mercado' : 'Evolución tasas de compra y venta'}
     </div>
   </div>
@@ -310,6 +312,9 @@ function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(
+    () => (localStorage.getItem('theme') as 'light' | 'dark' | 'system') || 'system'
+  );
 
   const fetchData = async () => {
     setIsRefreshing(true);
@@ -345,8 +350,21 @@ function App() {
 
   useEffect(() => {
     fetchData();
-    // No longer using a simple setInterval here
   }, []);
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove('light', 'dark');
+    
+    if (theme === 'system') {
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      root.classList.add(systemTheme);
+    } else {
+      root.classList.add(theme);
+    }
+    
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   // Timer effect
   useEffect(() => {
@@ -386,33 +404,58 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8 font-sans text-slate-900 pb-48">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300 py-10 px-4 sm:px-6 lg:px-8 font-sans text-slate-900 pb-48">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
           <div>
             <div className="flex items-center gap-3">
-              <div className="bg-slate-900 p-2.5 rounded-2xl shadow-xl rotate-3">
-                <TrendingUp className="w-7 h-7 text-blue-400" />
+              <div className="bg-slate-900 dark:bg-white p-2.5 rounded-2xl shadow-xl rotate-3">
+                <TrendingUp className="w-7 h-7 text-blue-400 dark:text-blue-600" />
               </div>
-              <h1 className="text-4xl font-black tracking-tighter text-slate-900 uppercase">
-                Market<span className="text-blue-600">Dash</span>
+              <h1 className="text-4xl font-black tracking-tighter text-slate-900 dark:text-white uppercase">
+                Market<span className="text-blue-600 dark:text-blue-400">Dash</span>
               </h1>
             </div>
-            <p className="mt-2 text-slate-400 font-bold uppercase text-[10px] tracking-widest">Historial real y análisis de mercado</p>
+            <p className="mt-2 text-slate-400 dark:text-slate-500 font-bold uppercase text-[10px] tracking-widest">Historial real y análisis de mercado</p>
           </div>
           
           <div className="flex items-center gap-4">
+            {/* Theme Toggle */}
+            <div className="flex bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-100 dark:border-slate-700 p-1">
+              <button 
+                onClick={() => setTheme('light')}
+                className={`p-2 rounded-full transition-all ${theme === 'light' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                title="Claro"
+              >
+                <Sun className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setTheme('system')}
+                className={`p-2 rounded-full transition-all ${theme === 'system' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                title="Sistema"
+              >
+                <Monitor className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setTheme('dark')}
+                className={`p-2 rounded-full transition-all ${theme === 'dark' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                title="Oscuro"
+              >
+                <Moon className="w-4 h-4" />
+              </button>
+            </div>
+
             {data && (
               <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-4 px-6 py-3 bg-white rounded-full shadow-sm border border-slate-100">
+                <div className="flex items-center gap-4 px-6 py-3 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-100 dark:border-slate-700">
                   <div className="flex flex-col items-end">
-                    <span className="text-[9px] uppercase font-black text-slate-300 leading-none mb-1 tracking-tighter">Última Sincronización</span>
-                    <span className="text-sm font-black text-slate-600">{new Date(data.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-[9px] uppercase font-black text-slate-300 dark:text-slate-500 leading-none mb-1 tracking-tighter">Última Sincronización</span>
+                    <span className="text-sm font-black text-slate-600 dark:text-white">{new Date(data.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   <button 
                     onClick={fetchData}
-                    className={`p-2 rounded-full hover:bg-slate-50 transition-all ${isRefreshing ? 'animate-spin' : 'hover:rotate-180'}`}
+                    className={`p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all ${isRefreshing ? 'animate-spin' : 'hover:rotate-180'}`}
                   >
                     <RefreshCw className="w-5 h-5 text-blue-500" />
                   </button>
@@ -420,10 +463,10 @@ function App() {
                 
                 <div className="px-2">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Próxima Sincronización</span>
-                    <span className="text-[10px] font-black text-blue-600">{formatTimeLeft()}</span>
+                    <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Próxima Sincronización</span>
+                    <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">{formatTimeLeft()}</span>
                   </div>
-                  <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-blue-500 transition-all duration-1000 ease-linear rounded-full"
                       style={{ width: `${progress}%` }}
@@ -436,7 +479,7 @@ function App() {
         </header>
 
         {error && (
-          <div className="mb-8 p-5 bg-red-50 border-2 border-red-100 rounded-3xl flex items-center gap-3 text-red-700 animate-pulse">
+          <div className="mb-8 p-5 bg-red-50 dark:bg-red-900/30 border-2 border-red-100 dark:border-red-800/50 rounded-3xl flex items-center gap-3 text-red-700 dark:text-red-400 animate-pulse">
             <TrendingDown className="w-6 h-6" />
             <span className="font-black uppercase text-xs tracking-widest">{error}</span>
           </div>
@@ -459,7 +502,7 @@ function App() {
               color="bg-emerald-500"
               subtitle="1 Peso AR Oficial = X VES"
             />
-            <div className="bg-slate-900 rounded-3xl p-6 text-white flex flex-col justify-center border-b-4 border-blue-600 shadow-xl">
+            <div className="bg-slate-900 dark:bg-slate-800 rounded-3xl p-6 text-white flex flex-col justify-center border-b-4 border-blue-600 shadow-xl">
                <span className="text-[10px] uppercase font-black text-slate-500 mb-1 tracking-widest">Status de Mercado</span>
                <p className="text-lg font-black leading-tight uppercase tracking-tighter">Mercados operando OK</p>
             </div>
@@ -472,7 +515,7 @@ function App() {
           <div className="space-y-10 flex flex-col h-full">
             <div className="flex items-center gap-3">
               <div className="w-12 h-7 bg-blue-500 rounded-lg shadow-md" />
-              <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Argentina</h2>
+              <h2 className="text-3xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Argentina</h2>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -507,9 +550,9 @@ function App() {
               />
             </div>
 
-            <div className="flex-1 bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col">
-              <h3 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
-                <Info className="w-4 h-4 text-slate-300" /> Otros Dólares AR
+            <div className="flex-1 bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col">
+              <h3 className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+                <Info className="w-4 h-4 text-slate-300 dark:text-slate-500" /> Otros Dólares AR
               </h3>
               <div className="grid grid-cols-1 gap-4">
                 {data?.all_ar_dolares?.filter(d => d.casa !== 'oficial' && d.casa !== 'cripto').map((d) => {
@@ -518,19 +561,19 @@ function App() {
                   const isNeutral = percent === 0;
                   
                   return (
-                    <div key={d.casa} className="flex justify-between items-center p-5 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all group">
+                    <div key={d.casa} className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
                       <span className="font-black text-slate-500 uppercase text-xs tracking-tight">{d.nombre}</span>
                       <div className="flex items-center gap-3">
                         {percent !== undefined && (
                           <span className={`flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            isNeutral ? 'text-slate-500 bg-slate-100' :
-                            isPositive ? 'text-emerald-600 bg-emerald-100' : 'text-red-600 bg-red-100'
+                            isNeutral ? 'text-slate-500 bg-slate-100 dark:bg-slate-700 dark:text-slate-400' :
+                            isPositive ? 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' : 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400'
                           }`}>
                             {isNeutral ? <TrendingUp className="w-3 h-3 text-slate-400" /> : isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                             {Math.abs(percent).toFixed(2)}%
                           </span>
                         )}
-                        <span className="font-black text-blue-700 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(d.venta)}</span>
+                        <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(d.venta)}</span>
                       </div>
                     </div>
                   );
@@ -543,7 +586,7 @@ function App() {
           <div className="space-y-10 flex flex-col h-full">
             <div className="flex items-center gap-3">
               <div className="w-12 h-7 bg-yellow-400 rounded-lg shadow-md" />
-              <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Venezuela</h2>
+              <h2 className="text-3xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Venezuela</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -584,18 +627,18 @@ function App() {
         </div>
 
         {/* Global Footer with API Status */}
-        <footer className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 px-8 py-6 z-50">
+        <footer className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 px-8 py-6 z-50 transition-colors duration-300">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-8">
-              <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
+              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700">
                 <div className={`w-2 h-2 rounded-full ${data?.api_status.dolar_api_ar ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">DolarApi AR</span>
               </div>
-              <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
+              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700">
                 <div className={`w-2 h-2 rounded-full ${data?.api_status.dolar_api_ve ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">DolarApi VE</span>
               </div>
-              <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
+              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700">
                 <div className={`w-2 h-2 rounded-full ${data?.api_status.binance_api ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Binance API</span>
               </div>

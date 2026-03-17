@@ -5,6 +5,8 @@ services:
       - "3001:3001"
     environment:
       - PORT=3001
+    volumes:
+      - ./api_data:/app/data
     restart: always
 
   client:
