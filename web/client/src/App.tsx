@@ -405,7 +405,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300 py-10 px-4 sm:px-6 lg:px-8 font-sans text-slate-900 pb-48">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300 py-10 px-4 sm:px-6 lg:px-8 font-sans text-slate-900 pb-48 overflow-x-hidden w-full">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
