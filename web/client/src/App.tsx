@@ -41,6 +41,7 @@ interface MarketData {
     ar_crypto_percent: number;
     ve_oficial_percent: number;
     otros_dolares_percents: Record<string, number>;
+    bitcoin_percent: number;
   };
   api_status: {
     dolar_api_ar: boolean;
@@ -65,6 +66,7 @@ const formatNumber = (num: any) => {
 
 const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change }: any) => {
   const isPositive = change > 0;
+  const isNeutral = change === 0;
   const displayValue = value || '---';
 
   return (
@@ -75,11 +77,12 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
         </div>
         <div className="flex flex-col items-end">
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{title}</span>
-          {change !== undefined && change !== 0 && (
+          {change !== undefined && (
             <span className={`flex items-center gap-0.5 text-[10px] font-bold mt-1 px-2 py-0.5 rounded-full ${
+              isNeutral ? 'text-slate-500 bg-slate-100' :
               isPositive ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50'
             }`}>
-              {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+              {isNeutral ? <TrendingUp className="w-3 h-3 text-slate-400" /> : isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
               {Math.abs(change).toFixed(2)}%
             </span>
           )}
@@ -447,6 +450,7 @@ function App() {
               icon={Bitcoin} 
               color="bg-orange-500"
               subtitle="BTC/USDT Binance"
+              change={data?.changes?.bitcoin_percent}
             />
             <StatCard 
               title="Tasa Remesa (AR-VE)" 
@@ -511,16 +515,18 @@ function App() {
                 {data?.all_ar_dolares?.filter(d => d.casa !== 'oficial' && d.casa !== 'cripto').map((d) => {
                   const percent = data?.changes?.otros_dolares_percents?.[d.casa] || 0;
                   const isPositive = percent > 0;
+                  const isNeutral = percent === 0;
                   
                   return (
                     <div key={d.casa} className="flex justify-between items-center p-5 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all group">
                       <span className="font-black text-slate-500 uppercase text-xs tracking-tight">{d.nombre}</span>
                       <div className="flex items-center gap-3">
-                        {percent !== 0 && (
+                        {percent !== undefined && (
                           <span className={`flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            isNeutral ? 'text-slate-500 bg-slate-100' :
                             isPositive ? 'text-emerald-600 bg-emerald-100' : 'text-red-600 bg-red-100'
                           }`}>
-                            {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                            {isNeutral ? <TrendingUp className="w-3 h-3 text-slate-400" /> : isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                             {Math.abs(percent).toFixed(2)}%
                           </span>
                         )}
