@@ -174,27 +174,27 @@ const Converter = ({ data }: { data: MarketData | null }) => {
 
         <div className="grid grid-cols-1 gap-3 mt-6">
           {from !== 'USD' && (
-            <div className="p-4 bg-blue-50 rounded-2xl flex justify-between items-center border border-blue-100">
-              <span className="text-blue-700 font-black text-xs uppercase">USD</span>
-              <span className="text-xl font-black text-blue-800">$ {convert('USD')}</span>
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex justify-between items-center border border-blue-100 dark:border-blue-800/50">
+              <span className="text-blue-700 dark:text-blue-400 font-black text-xs uppercase">USD</span>
+              <span className="text-xl font-black text-blue-800 dark:text-blue-300">$ {convert('USD')}</span>
             </div>
           )}
           {from !== 'ARS' && (
-            <div className="p-4 bg-indigo-50 rounded-2xl flex justify-between items-center border border-indigo-100">
-              <span className="text-indigo-700 font-black text-xs uppercase">ARS (Oficial)</span>
-              <span className="text-xl font-black text-indigo-800">$ {convert('ARS')}</span>
+            <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl flex justify-between items-center border border-indigo-100 dark:border-indigo-800/50">
+              <span className="text-indigo-700 dark:text-indigo-400 font-black text-xs uppercase">ARS (Oficial)</span>
+              <span className="text-xl font-black text-indigo-800 dark:text-indigo-300">$ {convert('ARS')}</span>
             </div>
           )}
           {from !== 'CRYPTO' && (
-            <div className="p-4 bg-purple-50 rounded-2xl flex justify-between items-center border border-purple-100">
-              <span className="text-purple-700 font-black text-xs uppercase">ARS (Crypto)</span>
-              <span className="text-xl font-black text-purple-800">$ {convert('CRYPTO')}</span>
+            <div className="p-4 bg-purple-50 dark:bg-purple-900/30 rounded-2xl flex justify-between items-center border border-purple-100 dark:border-purple-800/50">
+              <span className="text-purple-700 dark:text-purple-400 font-black text-xs uppercase">ARS (Crypto)</span>
+              <span className="text-xl font-black text-purple-800 dark:text-purple-300">$ {convert('CRYPTO')}</span>
             </div>
           )}
           {from !== 'VES' && (
-            <div className="p-4 bg-yellow-50 rounded-2xl flex justify-between items-center border border-yellow-100">
-              <span className="text-yellow-700 font-black text-xs uppercase">VES (Paralelo)</span>
-              <span className="text-xl font-black text-yellow-800">{convert('VES')}</span>
+            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-2xl flex justify-between items-center border border-yellow-100 dark:border-yellow-800/50">
+              <span className="text-yellow-700 dark:text-yellow-400 font-black text-xs uppercase">VES (Paralelo)</span>
+              <span className="text-xl font-black text-yellow-800 dark:text-yellow-300">{convert('VES')}</span>
             </div>
           )}
         </div>
