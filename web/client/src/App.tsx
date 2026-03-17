@@ -290,9 +290,10 @@ function App() {
   const fetchData = async () => {
     setIsRefreshing(true);
     try {
+      const baseURL = import.meta.env.VITE_API_URL || '';
       const [ratesRes, historyRes] = await Promise.all([
-        axios.get('http://localhost:3001/api/rates'),
-        axios.get('http://localhost:3001/api/history')
+        axios.get(`${baseURL}/api/rates`),
+        axios.get(`${baseURL}/api/history`)
       ]);
       const ratesData = ratesRes.data;
       const historyData = historyRes.data;
