@@ -158,12 +158,12 @@ const Converter = ({ data }: { data: MarketData | null }) => {
                   setAmount(Number(noLeadingZeros));
                 }
               }}
-              className="flex-1 px-4 py-2 border-0 bg-white dark:bg-slate-800 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all font-black text-slate-700 dark:text-white"
+              className="flex-1 min-w-0 px-4 py-2 border-0 bg-white dark:bg-slate-800 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all font-black text-slate-700 dark:text-white"
             />
             <select 
               value={from} 
               onChange={(e) => setFrom(e.target.value as any)}
-              className="px-4 py-2 border-0 bg-slate-900 dark:bg-slate-700 text-white rounded-xl font-black outline-none cursor-pointer"
+              className="px-4 py-2 border-0 bg-slate-900 dark:bg-slate-700 text-white rounded-xl font-black outline-none cursor-pointer flex-shrink-0"
             >
               <option value="USD">USD</option>
               <option value="ARS">ARS</option>
