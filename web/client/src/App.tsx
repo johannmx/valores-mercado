@@ -112,7 +112,7 @@ const Converter = ({ data }: { data: MarketData | null }) => {
     const usdAmount = amount / rates[from];
     const result = usdAmount * rates[to];
     
-    if (to === 'ARS' || to === 'CRYPTO') {
+    if (to === 'ARS' || to === 'CRYPTO' || to === 'VES') {
       return result.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
     return result.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
