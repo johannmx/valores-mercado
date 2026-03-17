@@ -12,9 +12,10 @@ import {
   ArrowDownRight,
   Globe,
   ShieldCheck,
-  Moon,
+  Monitor,
+  CheckCircle2,
   Sun,
-  Monitor
+  Moon
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -418,6 +419,15 @@ function App() {
               </h1>
             </div>
             <p className="mt-2 text-slate-400 dark:text-slate-500 font-bold uppercase text-[10px] tracking-widest">Historial real y análisis de mercado</p>
+            
+            {/* Modern Status Badge */}
+            <div className="mt-4 flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800/50 px-3 py-1.5 rounded-full w-fit">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite] shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+              <span className="text-[10px] uppercase font-black text-emerald-700 dark:text-emerald-400 tracking-widest flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" />
+                Mercados Operando OK
+              </span>
+            </div>
           </div>
           
           <div className="flex items-center gap-4">
@@ -486,7 +496,7 @@ function App() {
         )}
 
         {/* Global Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto gap-8 mb-16">
            <StatCard 
               title="Bitcoin Global" 
               value={`$${formatNumber(data?.bitcoin)} USD`} 
@@ -502,10 +512,6 @@ function App() {
               color="bg-emerald-500"
               subtitle="1 Peso AR Oficial = X VES"
             />
-            <div className="bg-slate-900 dark:bg-slate-800 rounded-3xl p-6 text-white flex flex-col justify-center border-b-4 border-blue-600 shadow-xl">
-               <span className="text-[10px] uppercase font-black text-slate-500 mb-1 tracking-widest">Status de Mercado</span>
-               <p className="text-lg font-black leading-tight uppercase tracking-tighter">Mercados operando OK</p>
-            </div>
         </div>
 
         {/* Split Sections */}
