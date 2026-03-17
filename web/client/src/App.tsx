@@ -446,7 +446,7 @@ function App() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
            <StatCard 
               title="Bitcoin Global" 
-              value={`$${formatNumber(data?.bitcoin)}`} 
+              value={`$${formatNumber(data?.bitcoin)} USD`} 
               icon={Bitcoin} 
               color="bg-orange-500"
               subtitle="BTC/USDT Binance"
@@ -496,7 +496,7 @@ function App() {
               />
             </div>
 
-            <div className="flex-1">
+            <div className="flex-none h-[400px]">
               <RegionChart 
                 title="Tendencia AR (Oficial)" 
                 data={history} 
@@ -507,7 +507,7 @@ function App() {
               />
             </div>
 
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+            <div className="flex-1 bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col">
               <h3 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
                 <Info className="w-4 h-4 text-slate-300" /> Otros Dólares AR
               </h3>
@@ -565,7 +565,7 @@ function App() {
               />
             </div>
 
-            <div className="flex-1">
+            <div className="flex-none h-[400px]">
               <RegionChart 
                 title="Tendencia VE (Paralelo)" 
                 data={history} 
@@ -576,7 +576,7 @@ function App() {
               />
             </div>
 
-            <div className="flex-none">
+            <div className="flex-1">
               <Converter data={data} />
             </div>
           </div>
