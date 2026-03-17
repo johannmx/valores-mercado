@@ -1,0 +1,16 @@
+services:
+  api:
+    image: ghcr.io/johannmx/valores-mercado-api:latest
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+    restart: always
+
+  client:
+    image: ghcr.io/johannmx/valores-mercado-client:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: always
