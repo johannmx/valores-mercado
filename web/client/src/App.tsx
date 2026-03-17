@@ -295,6 +295,8 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
 
   const fetchData = async () => {
     setIsRefreshing(true);
@@ -323,14 +325,37 @@ function App() {
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+      setTimeLeft(300);
+      setProgress(0);
     }
   };
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 60000);
-    return () => clearInterval(interval);
+    // No longer using a simple setInterval here
   }, []);
+
+  // Timer effect
+  useEffect(() => {
+    if (loading) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          fetchData();
+          return 300;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [loading]);
+
+  // Update progress bar
+  useEffect(() => {
+    setProgress(((300 - timeLeft) / 300) * 100);
+  }, [timeLeft]);
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -340,6 +365,12 @@ function App() {
       </div>
     </div>
   );
+
+  const formatTimeLeft = () => {
+    const mins = Math.floor(timeLeft / 60);
+    const secs = timeLeft % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8 font-sans text-slate-900 pb-48">
@@ -360,17 +391,32 @@ function App() {
           
           <div className="flex items-center gap-4">
             {data && (
-              <div className="flex items-center gap-4 px-6 py-3 bg-white rounded-full shadow-sm border border-slate-100">
-                <div className="flex flex-col items-end">
-                  <span className="text-[9px] uppercase font-black text-slate-300 leading-none mb-1 tracking-tighter">Sincronizado</span>
-                  <span className="text-sm font-black text-slate-600">{new Date(data.updated_at).toLocaleTimeString()}</span>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-4 px-6 py-3 bg-white rounded-full shadow-sm border border-slate-100">
+                  <div className="flex flex-col items-end">
+                    <span className="text-[9px] uppercase font-black text-slate-300 leading-none mb-1 tracking-tighter">Última Sincronización</span>
+                    <span className="text-sm font-black text-slate-600">{new Date(data.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  <button 
+                    onClick={fetchData}
+                    className={`p-2 rounded-full hover:bg-slate-50 transition-all ${isRefreshing ? 'animate-spin' : 'hover:rotate-180'}`}
+                  >
+                    <RefreshCw className="w-5 h-5 text-blue-500" />
+                  </button>
                 </div>
-                <button 
-                  onClick={fetchData}
-                  className={`p-2 rounded-full hover:bg-slate-50 transition-all ${isRefreshing ? 'animate-spin' : 'hover:rotate-180'}`}
-                >
-                  <RefreshCw className="w-5 h-5 text-blue-500" />
-                </button>
+                
+                <div className="px-2">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Próxima Sincronización</span>
+                    <span className="text-[10px] font-black text-blue-600">{formatTimeLeft()}</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-blue-500 transition-all duration-1000 ease-linear rounded-full"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </div>
