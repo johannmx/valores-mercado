@@ -163,7 +163,7 @@ const Converter = ({ data }: { data: MarketData | null }) => {
             <select 
               value={from} 
               onChange={(e) => setFrom(e.target.value as any)}
-              className="px-4 py-2 border-0 bg-slate-900 dark:bg-slate-700 text-white rounded-xl font-black outline-none cursor-pointer flex-shrink-0"
+              className="px-4 py-2 border-0 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-xl font-black outline-none cursor-pointer flex-shrink-0 transition-colors"
             >
               <option value="USD">USD</option>
               <option value="ARS">ARS</option>
