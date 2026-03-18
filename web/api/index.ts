@@ -170,52 +170,57 @@ app.get('/api/rates', async (req, res) => {
         const currentOtrosDolares = allArDolares?.data || [];
         const currentBtc = btcPrice?.data?.price ? parseFloat(btcPrice.data.price) : 0;
 
-        // Find the last entry where values were DIFFERENT from current values
-        // This ensures we show meaningful percentage changes when the value actually changes
-        const findPreviousEntry = (): HistoryItem | null => {
+        // Helper: find the last history value that differs from the current value for a given field
+        const findPrevValue = (field: keyof HistoryItem, currentValue: number): number | null => {
             for (let i = history.length - 1; i >= 0; i--) {
                 const entry = history[i];
                 if (!entry) continue;
-                // Consider it a "previous" entry if any key value differs
-                if (entry.ar_oficial_venta !== currentAr || 
-                    entry.ve_paralelo_venta !== currentVeParalelo ||
-                    entry.ar_crypto_venta !== currentArCrypto) {
-                    return entry;
+                const val = entry[field];
+                if (typeof val === 'number' && val !== currentValue) {
+                    return val;
                 }
             }
             return null;
         };
-        
-        const lastEntry = findPreviousEntry() || (history.length > 0 ? history[0] ?? null : null);
-        
-        let ar_oficial_percent = 0;
-        let ve_paralelo_percent = 0;
-        let ar_crypto_percent = 0;
-        let ve_oficial_percent = 0;
-        let bitcoin_percent = 0;
-        let otros_dolares_percents: Record<string, number> = {};
-        
-        if (lastEntry) {
-            ar_oficial_percent = lastEntry.ar_oficial_venta ? ((currentAr - lastEntry.ar_oficial_venta) / lastEntry.ar_oficial_venta) * 100 : 0;
-            ve_paralelo_percent = lastEntry.ve_paralelo_venta ? ((currentVeParalelo - lastEntry.ve_paralelo_venta) / lastEntry.ve_paralelo_venta) * 100 : 0;
-            ar_crypto_percent = lastEntry.ar_crypto_venta ? ((currentArCrypto - lastEntry.ar_crypto_venta) / lastEntry.ar_crypto_venta) * 100 : 0;
-            ve_oficial_percent = lastEntry.ve_oficial ? ((currentVeOficial - lastEntry.ve_oficial) / lastEntry.ve_oficial) * 100 : 0;
-            bitcoin_percent = lastEntry.bitcoin ? ((currentBtc - lastEntry.bitcoin) / lastEntry.bitcoin) * 100 : 0;
-            
-            if (lastEntry.otros_dolares) {
-                const od = lastEntry.otros_dolares;
-                currentOtrosDolares.forEach((d: any) => {
-                    const prevValue = od[d.casa];
-                    if (d.casa !== 'oficial' && d.casa !== 'cripto' && prevValue) {
-                        otros_dolares_percents[d.casa] = ((d.venta - prevValue) / prevValue) * 100;
-                    } else {
-                        otros_dolares_percents[d.casa] = 0;
-                    }
-                });
-            } else {
-                currentOtrosDolares.forEach((d: any) => { otros_dolares_percents[d.casa] = 0; });
+
+        const calcPercent = (field: keyof HistoryItem, currentValue: number): number => {
+            const prev = findPrevValue(field, currentValue);
+            if (prev !== null && prev !== 0) {
+                return ((currentValue - prev) / prev) * 100;
             }
-        }
+            return 0;
+        };
+        
+        const ar_oficial_percent = calcPercent('ar_oficial_venta', currentAr);
+        const ve_paralelo_percent = calcPercent('ve_paralelo_venta', currentVeParalelo);
+        const ar_crypto_percent = calcPercent('ar_crypto_venta', currentArCrypto);
+        const ve_oficial_percent = calcPercent('ve_oficial', currentVeOficial);
+        const bitcoin_percent = calcPercent('bitcoin', currentBtc);
+        
+        let otros_dolares_percents: Record<string, number> = {};
+        // For otros_dolares, find the last history entry that has otros_dolares data with a different value
+        currentOtrosDolares.forEach((d: any) => {
+            if (d.casa === 'oficial' || d.casa === 'cripto') {
+                otros_dolares_percents[d.casa] = 0;
+                return;
+            }
+            const currentVal = d.venta || 0;
+            let prevVal: number | null = null;
+            for (let i = history.length - 1; i >= 0; i--) {
+                const entry = history[i];
+                if (!entry || !entry.otros_dolares) continue;
+                const hVal = entry.otros_dolares[d.casa];
+                if (typeof hVal === 'number' && hVal !== currentVal) {
+                    prevVal = hVal;
+                    break;
+                }
+            }
+            if (prevVal !== null && prevVal !== 0) {
+                otros_dolares_percents[d.casa] = ((currentVal - prevVal) / prevVal) * 100;
+            } else {
+                otros_dolares_percents[d.casa] = 0;
+            }
+        });
 
         const data: MarketData = {
             ar_oficial_compra: arOficial?.data?.compra || 0,
