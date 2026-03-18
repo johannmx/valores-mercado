@@ -162,7 +162,6 @@ app.get('/api/rates', async (req, res) => {
         const [arOficial, arCrypto, allArDolares, veParalelo, veOficial, btcPrice] = await Promise.all(requests);
 
         const history: HistoryItem[] = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
-        const lastEntry = history[history.length - 1];
         
         const currentAr = arOficial?.data?.venta || 0;
         const currentVeParalelo = veParalelo?.data?.promedio || 0;
@@ -170,6 +169,24 @@ app.get('/api/rates', async (req, res) => {
         const currentVeOficial = veOficial?.data?.promedio || 0;
         const currentOtrosDolares = allArDolares?.data || [];
         const currentBtc = btcPrice?.data?.price ? parseFloat(btcPrice.data.price) : 0;
+
+        // Find the last entry where values were DIFFERENT from current values
+        // This ensures we show meaningful percentage changes when the value actually changes
+        const findPreviousEntry = (): HistoryItem | null => {
+            for (let i = history.length - 1; i >= 0; i--) {
+                const entry = history[i];
+                if (!entry) continue;
+                // Consider it a "previous" entry if any key value differs
+                if (entry.ar_oficial_venta !== currentAr || 
+                    entry.ve_paralelo_venta !== currentVeParalelo ||
+                    entry.ar_crypto_venta !== currentArCrypto) {
+                    return entry;
+                }
+            }
+            return null;
+        };
+        
+        const lastEntry = findPreviousEntry() || (history.length > 0 ? history[0] ?? null : null);
         
         let ar_oficial_percent = 0;
         let ve_paralelo_percent = 0;

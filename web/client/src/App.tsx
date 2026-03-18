@@ -16,7 +16,8 @@ import {
   CheckCircle2,
   Sun,
   Moon,
-  ChevronDown
+  ChevronDown,
+  AlertTriangle
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -69,13 +70,18 @@ const formatNumber = (num: any) => {
   return parsed.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change }: any) => {
+const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change, badge }: any) => {
   const isPositive = change > 0;
   const isNeutral = change === 0;
   const displayValue = value || '---';
 
   return (
-    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-md transition-all duration-300 relative overflow-hidden group h-full">
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-md transition-all duration-300 relative overflow-hidden group h-full min-h-[220px]">
+      {badge && (
+        <span className="absolute top-3 right-3 text-[9px] font-black uppercase tracking-widest bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full">
+          {badge}
+        </span>
+      )}
       <div className="flex items-center justify-between mb-4">
         <div className={`p-3 rounded-xl ${color} shadow-sm group-hover:scale-110 transition-transform`}>
           <Icon className="w-6 h-6 text-white" />
@@ -321,6 +327,16 @@ function App() {
     () => (localStorage.getItem('theme') as 'light' | 'dark' | 'system') || 'system'
   );
 
+  const isMarketOpen = () => {
+    const now = new Date();
+    // Argentina is UTC-3
+    const utcHour = now.getUTCHours();
+    const argHour = (utcHour - 3 + 24) % 24;
+    const day = now.getUTCDay(); // 0=Sun, 6=Sat
+    // Banking hours: Mon-Fri, 10:00-15:00 ART
+    return day >= 1 && day <= 5 && argHour >= 10 && argHour < 15;
+  };
+
   const fetchData = async () => {
     setIsRefreshing(true);
     try {
@@ -425,13 +441,18 @@ function App() {
             <p className="mt-2 text-slate-400 dark:text-slate-500 font-bold uppercase text-[10px] tracking-widest">Historial real y análisis de mercado</p>
             
             {/* Modern Status Badge */}
-            <div className="mt-4 flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800/50 px-3 py-1.5 rounded-full w-fit">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite] shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-              <span className="text-[10px] uppercase font-black text-emerald-700 dark:text-emerald-400 tracking-widest flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" />
-                Mercados Operando OK
-              </span>
-            </div>
+            {(() => {
+              const open = isMarketOpen();
+              return (
+                <div className={`mt-4 flex items-center gap-2 ${open ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800/50' : 'bg-amber-50 dark:bg-amber-900/30 border-amber-100 dark:border-amber-800/50'} border px-3 py-1.5 rounded-full w-fit`}>
+                  <div className={`w-2 h-2 rounded-full ${open ? 'bg-emerald-500' : 'bg-amber-500'} animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite] ${open ? 'shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'shadow-[0_0_8px_rgba(245,158,11,0.5)]'}`}></div>
+                  <span className={`text-[10px] uppercase font-black ${open ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'} tracking-widest flex items-center gap-1`}>
+                    {open ? <CheckCircle2 className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
+                    {open ? 'Mercados Operando OK' : 'Mercados Cerrados'}
+                  </span>
+                </div>
+              );
+            })()}
           </div>
           
           <div className="flex items-center gap-4">
@@ -499,25 +520,6 @@ function App() {
           </div>
         )}
 
-        {/* Global Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto gap-8 mb-16">
-           <StatCard 
-              title="Bitcoin Global" 
-              value={`$${formatNumber(data?.bitcoin)} USD`} 
-              icon={Bitcoin} 
-              color="bg-orange-500"
-              subtitle="BTC/USDT Binance"
-              change={data?.changes?.bitcoin_percent}
-            />
-            <StatCard 
-              title="Tasa Remesa (AR-VE)" 
-              value={`${formatNumber(data?.tasa_remesa)} VES`} 
-              icon={ArrowRightLeft} 
-              color="bg-emerald-500"
-              subtitle="1 Peso AR Oficial = X VES"
-            />
-        </div>
-
         {/* Split Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-12">
           
@@ -546,6 +548,7 @@ function App() {
                 buy={formatNumber(data?.ar_crypto_compra)}
                 sell={formatNumber(data?.ar_crypto_venta)}
                 change={data?.changes?.ar_crypto_percent}
+                badge="24/7"
               />
             </div>
 
