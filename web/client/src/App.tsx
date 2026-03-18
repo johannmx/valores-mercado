@@ -438,7 +438,7 @@ function App() {
                 Market<span className="text-blue-600 dark:text-blue-400">Dash</span>
               </h1>
             </div>
-            <p className="mt-2 text-slate-400 dark:text-slate-500 font-bold uppercase text-[10px] tracking-widest">Historial real y análisis de mercado</p>
+            <p className="mt-2 text-slate-400 dark:text-slate-500 font-bold uppercase text-[10px] tracking-widest">Dólar al día: De Buenos Aires a Caracas</p>
             
             {/* Modern Status Badge */}
             {(() => {
