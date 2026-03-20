@@ -340,7 +340,18 @@ function App() {
   const fetchData = async () => {
     setIsRefreshing(true);
     try {
-      const baseURL = (window as any)._env_?.VITE_API_URL || import.meta.env.VITE_API_URL || '';
+      let baseURL = (window as any)._env_?.VITE_API_URL || import.meta.env.VITE_API_URL || '';
+      
+      // Sanitización: si la variable no se expandió correctamente o es el placeholder
+      if (baseURL.includes('${VITE_API_URL}')) {
+        baseURL = '';
+      }
+      
+      // Limpiar slash final si existe
+      if (baseURL.endsWith('/')) {
+        baseURL = baseURL.slice(0, -1);
+      }
+
       const [ratesRes, historyRes] = await Promise.all([
         axios.get(`${baseURL}/api/rates`),
         axios.get(`${baseURL}/api/history`)
