@@ -23,8 +23,8 @@ services:
         - VITE_API_URL=${VITE_API_URL}
     ports:
       - "80:80"
-    depends_on:
-      - api
+    environment:
+      - VITE_API_URL=${VITE_API_URL}
     deploy:
       resources:
         limits:
