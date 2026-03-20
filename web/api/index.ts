@@ -11,7 +11,9 @@ const DATA_DIR = 'data';
 const HISTORY_FILE = `${DATA_DIR}/history.json`;
 
 // Security Middleware
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: false, // Disable CSP for now as it may block the frontend
+}));
 app.use(cors({
     origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : true,
     methods: ['GET'],
