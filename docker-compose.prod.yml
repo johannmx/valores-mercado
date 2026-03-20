@@ -5,16 +5,29 @@ services:
       - "3001:3001"
     environment:
       - PORT=3001
+      - NODE_ENV=production
     volumes:
       - ./api_data:/app/data
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     restart: always
+    security_opt:
+      - no-new-privileges:true
 
   client:
     image: ghcr.io/johannmx/valores-mercado-client:latest
     ports:
       - "80:80"
     environment:
-      - VITE_API_URL=${VITE_API_URL:-https://market.johatech.ar}
+      - VITE_API_URL=${VITE_API_URL}
     depends_on:
       - api
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     restart: always
+    security_opt:
+      - no-new-privileges:true
