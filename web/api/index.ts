@@ -2,13 +2,31 @@ import express from 'express';
 import axios from 'axios';
 import cors from 'cors';
 import fs from 'fs';
+import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const DATA_DIR = 'data';
 const HISTORY_FILE = `${DATA_DIR}/history.json`;
 
-app.use(cors());
+// Security Middleware
+app.use(helmet());
+app.use(cors({
+    origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : true,
+    methods: ['GET'],
+    allowedHeaders: ['Content-Type']
+}));
+
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 100, // Limit each IP to 100 requests per windowMs
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later.' }
+});
+
+app.use('/api/', limiter);
 app.use(express.json());
 
 // Ensure data directory exists
