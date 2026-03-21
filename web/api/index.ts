@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 
 const app = express();
+app.disable('x-powered-by');
 const PORT = process.env.PORT || 3001;
 const DATA_DIR = 'data';
 const HISTORY_FILE = `${DATA_DIR}/history.json`;
@@ -13,6 +14,9 @@ const HISTORY_FILE = `${DATA_DIR}/history.json`;
 // Security Middleware
 app.use(helmet({
     contentSecurityPolicy: false, // Disable CSP for now as it may block the frontend
+    referrerPolicy: { policy: 'no-referrer-when-downgrade' },
+    hsts: { maxAge: 31536000, includeSubDomains: true },
+    xContentTypeOptions: true,
 }));
 app.use(cors({
     origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : true,
