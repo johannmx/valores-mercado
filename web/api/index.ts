@@ -13,11 +13,27 @@ const HISTORY_FILE = `${DATA_DIR}/history.json`;
 
 // Security Middleware
 app.use(helmet({
-    contentSecurityPolicy: false, // Disable CSP for now as it may block the frontend
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://umami.johatech.ar"],
+            connectSrc: ["'self'", "https://umami.johatech.ar"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:"],
+            fontSrc: ["'self'", "data:"],
+            frameAncestors: ["'none'"],
+            objectSrc: ["'none'"],
+        },
+    },
     referrerPolicy: { policy: 'no-referrer-when-downgrade' },
     hsts: { maxAge: 31536000, includeSubDomains: true },
     xContentTypeOptions: true,
 }));
+
+app.use((req, res, next) => {
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), browsing-topics=()');
+    next();
+});
 app.use(cors({
     origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : true,
     methods: ['GET'],
