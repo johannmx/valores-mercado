@@ -586,7 +586,7 @@ function App() {
                   
                   return (
                     <div key={d.casa} className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
-                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">{d.nombre}</span>
+                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">{d.nombre === 'Contado con liquidación' ? 'CCL' : d.nombre}</span>
                       <div className="flex items-center gap-3">
                         {percent !== undefined && (
                           <span className={`flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
