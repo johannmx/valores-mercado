@@ -121,7 +121,7 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
 
 const Converter = ({ data }: { data: MarketData | null }) => {
   const [amount, setAmount] = useState<number>(1);
-  const [from, setFrom] = useState<'USD' | 'ARS' | 'CRYPTO' | 'VES'>('USD');
+  const [from, setFrom] = useState<'USD' | 'ARS' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL'>('USD');
 
   if (!data) return null;
 
@@ -129,14 +129,15 @@ const Converter = ({ data }: { data: MarketData | null }) => {
     USD: 1,
     ARS: data.ar_oficial_venta,
     CRYPTO: data.ar_crypto_venta,
-    VES: data.ve_paralelo
+    VES: data.ve_paralelo,
+    VES_OFFICIAL: data.ve_oficial
   };
 
-  const convert = (to: 'USD' | 'ARS' | 'CRYPTO' | 'VES') => {
+  const convert = (to: 'USD' | 'ARS' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL') => {
     const usdAmount = amount / rates[from];
     const result = usdAmount * rates[to];
     
-    if (to === 'ARS' || to === 'CRYPTO' || to === 'VES') {
+    if (to === 'ARS' || to === 'CRYPTO' || to === 'VES' || to === 'VES_OFFICIAL') {
       return result.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
     return result.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -176,7 +177,8 @@ const Converter = ({ data }: { data: MarketData | null }) => {
                 <option value="USD">USD</option>
                 <option value="ARS">ARS</option>
                 <option value="CRYPTO">CRYPTO</option>
-                <option value="VES">VES</option>
+                <option value="VES">VES (PARALELO)</option>
+                <option value="VES_OFFICIAL">VES (OFICIAL)</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-slate-400 pointer-events-none" />
             </div>
@@ -206,6 +208,12 @@ const Converter = ({ data }: { data: MarketData | null }) => {
             <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-2xl flex justify-between items-center border border-yellow-100 dark:border-yellow-800/50">
               <span className="text-yellow-700 dark:text-yellow-400 font-black text-xs uppercase">VES (Paralelo)</span>
               <span className="text-xl font-black text-yellow-800 dark:text-yellow-300">{convert('VES')}</span>
+            </div>
+          )}
+          {from !== 'VES_OFFICIAL' && (
+            <div className="p-4 bg-amber-50 dark:bg-amber-900/30 rounded-2xl flex justify-between items-center border border-amber-100 dark:border-amber-800/50">
+              <span className="text-amber-700 dark:text-amber-400 font-black text-xs uppercase">VES (Oficial)</span>
+              <span className="text-xl font-black text-amber-800 dark:text-amber-300">{convert('VES_OFFICIAL')}</span>
             </div>
           )}
         </div>
