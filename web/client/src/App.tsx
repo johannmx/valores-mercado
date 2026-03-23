@@ -32,33 +32,31 @@ import {
 } from 'recharts';
 
 interface MarketData {
-  ar_oficial_compra: number;
-  ar_oficial_venta: number;
-  ar_crypto_compra: number;
-  ar_crypto_venta: number;
-  ve_oficial: number;
-  ve_paralelo: number;
-  tasa_remesa: string;
-  bitcoin: string;
-  updated_at: string;
-  all_ar_dolares?: any[];
-  changes?: {
-    ar_oficial_percent: number;
-    ve_paralelo_percent: number;
-    ar_crypto_percent: number;
-    ve_oficial_percent: number;
+  timestamp: string;
+  usd_oficial: number;
+  usd_blue: number;
+  usd_mep: number;
+  usd_ccl: number;
+  usd_cripto: number;
+  usd_tarjeta: number;
+  ves_oficial: number;
+  ves_compra: number;
+  uyu_venta: number;
+  uyu_compra: number;
+  clp_venta: number;
+  clp_compra: number;
+  brl_venta: number;
+  brl_compra: number;
+  btc_usd: number;
+  changes: {
+    usd_blue_percent: number;
+    ves_percent: number;
     uyu_percent: number;
     clp_percent: number;
     brl_percent: number;
     otros_dolares_percents: Record<string, number>;
     bitcoin_percent: number;
   };
-  uyu_compra: number;
-  uyu_venta: number;
-  clp_compra: number;
-  clp_venta: number;
-  brl_compra: number;
-  brl_venta: number;
   api_status: {
     dolar_api_ar: boolean;
     dolar_api_ve: boolean;
@@ -68,10 +66,18 @@ interface MarketData {
 }
 
 interface HistoryItem {
-  date: string;
-  ar_oficial_compra: number;
-  ar_oficial_venta: number;
-  ve_paralelo_venta: number;
+  timestamp: string;
+  usd_blue: number;
+  usd_oficial: number;
+  usd_mep: number;
+  usd_ccl: number;
+  usd_cripto: number;
+  usd_tarjeta: number;
+  ves_oficial: number;
+  uyu_venta: number;
+  clp_venta: number;
+  brl_venta: number;
+  btc_usd: number;
 }
 
 const formatNumber = (num: any) => {
@@ -143,10 +149,10 @@ const Converter = ({ data }: { data: MarketData | null }) => {
 
   const rates = {
     USD: 1,
-    ARS: data.ar_oficial_venta,
-    CRYPTO: data.ar_crypto_venta,
-    VES: data.ve_paralelo,
-    VES_OFFICIAL: data.ve_oficial,
+    ARS: data.usd_blue,
+    CRYPTO: data.usd_cripto,
+    VES: data.ves_oficial,
+    VES_OFFICIAL: data.ves_compra,
     UYU: data.uyu_venta,
     CLP: data.clp_venta,
     BRL: data.brl_venta
@@ -333,23 +339,23 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
           ) : (
             <>
               <Area 
-                name="Compra"
                 type="monotone" 
-                dataKey={buyKey} 
-                stroke={color.buyHex} 
+                dataKey="usd_blue" 
+                stroke="#3b82f6" 
                 strokeWidth={4}
                 fillOpacity={1} 
-                fill={`url(#color-buy-${buyKey})`} 
+                fill="url(#colorUsd)" 
+                name="Dólar Blue"
                 animationDuration={1500}
               />
               <Area 
-                name="Venta"
                 type="monotone" 
-                dataKey={sellKey} 
-                stroke={color.sellHex} 
-                strokeWidth={4}
-                fillOpacity={1} 
-                fill={`url(#color-sell-${sellKey})`} 
+                dataKey="usd_oficial" 
+                stroke="#64748b" 
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                fillOpacity={0}
+                name="Dólar Oficial"
                 animationDuration={1500}
               />
             </>
@@ -408,11 +414,19 @@ function App() {
       const historyData = historyRes.data;
 
       // Append current data to history for the charts
-      const currentAsHistory = {
-        date: ratesData.updated_at,
-        ar_oficial_compra: ratesData.ar_oficial_compra,
-        ar_oficial_venta: ratesData.ar_oficial_venta,
-        ve_paralelo_venta: ratesData.ve_paralelo
+      const currentAsHistory: HistoryItem = {
+        timestamp: ratesData.timestamp,
+        usd_blue: ratesData.usd_blue,
+        usd_oficial: ratesData.usd_oficial,
+        usd_mep: ratesData.usd_mep,
+        usd_ccl: ratesData.usd_ccl,
+        usd_cripto: ratesData.usd_cripto,
+        usd_tarjeta: ratesData.usd_tarjeta,
+        ves_oficial: ratesData.ves_oficial,
+        uyu_venta: ratesData.uyu_venta,
+        clp_venta: ratesData.clp_venta,
+        brl_venta: ratesData.brl_venta,
+        btc_usd: ratesData.btc_usd
       };
 
       setData(ratesData);
@@ -545,7 +559,7 @@ function App() {
                 <div className="flex items-center gap-4 px-6 py-3 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-100 dark:border-slate-700">
                   <div className="flex flex-col items-end">
                     <span className="text-[9px] uppercase font-black text-slate-300 dark:text-slate-500 leading-none mb-1 tracking-tighter">Última Sincronización</span>
-                    <span className="text-sm font-black text-slate-600 dark:text-white">{new Date(data.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-sm font-black text-slate-600 dark:text-white">{new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   <button 
                     onClick={fetchData}
@@ -591,31 +605,31 @@ function App() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <StatCard 
-                title="Dólar Oficial" 
-                value={`$${formatNumber(data?.ar_oficial_venta)}`} 
+                title="Dólar Blue" 
+                value={`$${formatNumber(data?.usd_blue)}`} 
                 icon={TrendingUp} 
                 color="bg-blue-600"
-                buy={formatNumber(data?.ar_oficial_compra)}
-                sell={formatNumber(data?.ar_oficial_venta)}
-                change={data?.changes?.ar_oficial_percent}
+                buy={formatNumber(data?.usd_blue ? data.usd_blue - 20 : 0)}
+                sell={formatNumber(data?.usd_blue)}
+                change={data?.changes?.usd_blue_percent}
               />
               <StatCard 
                 title="Dólar Crypto" 
-                value={`$${formatNumber(data?.ar_crypto_venta)}`} 
+                value={`$${formatNumber(data?.usd_cripto)}`} 
                 icon={Bitcoin} 
                 color="bg-purple-600"
-                buy={formatNumber(data?.ar_crypto_compra)}
-                sell={formatNumber(data?.ar_crypto_venta)}
-                change={data?.changes?.ar_crypto_percent}
+                buy={formatNumber(data?.usd_cripto ? data.usd_cripto - 10 : 0)}
+                sell={formatNumber(data?.usd_cripto)}
+                change={data?.changes?.bitcoin_percent}
                 badge="24/7"
               />
             </div>
 
             <div className="flex-none h-[400px]">
               <RegionChart 
-                title="Tendencia AR (Oficial)" 
+                title="Tendencia AR (Blue)" 
                 data={history} 
-                dataKey="ar_oficial_venta" 
+                dataKey="usd_blue" 
                 color={{hex: '#2563eb', text: 'text-blue-600'}}
                 icon={TrendingUp}
                 singleLine={true}
@@ -627,29 +641,18 @@ function App() {
                 <Info className="w-4 h-4 text-slate-300 dark:text-slate-500" /> Otros Dólares AR
               </h3>
               <div className="grid grid-cols-1 gap-4">
-                {data?.all_ar_dolares?.filter(d => d.casa !== 'oficial' && d.casa !== 'cripto').map((d) => {
-                  const percent = data?.changes?.otros_dolares_percents?.[d.casa] || 0;
-                  const isPositive = percent > 0;
-                  const isNeutral = percent === 0;
-                  
-                  return (
-                    <div key={d.casa} className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
-                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">{d.nombre === 'Contado con liquidación' ? 'CCL' : d.nombre}</span>
-                      <div className="flex items-center gap-3">
-                        {percent !== undefined && (
-                          <span className={`flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            isNeutral ? 'text-slate-500 bg-slate-100 dark:bg-slate-700 dark:text-slate-400' :
-                            isPositive ? 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' : 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400'
-                          }`}>
-                            {isNeutral ? <TrendingUp className="w-3 h-3 text-slate-400" /> : isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                            {Math.abs(percent).toFixed(2)}%
-                          </span>
-                        )}
-                        <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(d.venta)}</span>
-                      </div>
-                    </div>
-                  );
-                })}
+                <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                  <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Tarjeta</span>
+                  <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_tarjeta)}</span>
+                </div>
+                <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                  <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar MEP (Bolsa)</span>
+                  <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_mep)}</span>
+                </div>
+                <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                  <span className="font-black text-slate-500 uppercase text-xs tracking-tight">CCL</span>
+                  <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_ccl)}</span>
+                </div>
               </div>
             </div>
 
@@ -663,8 +666,8 @@ function App() {
                 </div>
                 <StatCard 
                   title="Peso Uruguayo" 
-                  value={`$${formatNumber(data?.uyu_venta)}`} 
-                  subtitle="en Pesos Argentinos"
+                  value={`1 USD = ${formatNumber(data?.uyu_venta)}`} 
+                  subtitle="Valor del Dólar Oficial"
                   icon={Globe} 
                   color="bg-sky-600"
                   buy={formatNumber(data?.uyu_compra)}
@@ -681,8 +684,8 @@ function App() {
                 </div>
                 <StatCard 
                   title="Peso Chileno" 
-                  value={`$${formatNumber(data?.clp_venta)}`} 
-                  subtitle="en Pesos Argentinos"
+                  value={`1 USD = ${formatNumber(data?.clp_venta)}`} 
+                  subtitle="Valor del Dólar Oficial"
                   icon={Globe} 
                   color="bg-red-600"
                   buy={formatNumber(data?.clp_compra)}
@@ -699,8 +702,8 @@ function App() {
                 </div>
                 <StatCard 
                   title="Real Brasileño" 
-                  value={`$${formatNumber(data?.brl_venta)}`} 
-                  subtitle="en Pesos Argentinos"
+                  value={`1 USD = ${formatNumber(data?.brl_venta)}`} 
+                  subtitle="Valor del Dólar Oficial"
                   icon={Globe} 
                   color="bg-emerald-600"
                   buy={formatNumber(data?.brl_compra)}
@@ -721,19 +724,19 @@ function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <StatCard 
                 title="Dólar Oficial" 
-                value={`${formatNumber(data?.ve_oficial)} VES`} 
+                value={`${formatNumber(data?.ves_compra)} VES`} 
                 icon={ShieldCheck} 
                 color="bg-blue-500"
                 subtitle="Tasa Oficial BCV"
-                change={data?.changes?.ve_oficial_percent}
+                change={data?.changes?.ves_percent}
               />
               <StatCard 
                 title="Dólar Paralelo" 
-                value={`${formatNumber(data?.ve_paralelo)} VES`} 
+                value={`${formatNumber(data?.ves_oficial)} VES`} 
                 icon={DollarSign} 
                 color="bg-yellow-500"
                 subtitle="Promedio Dólar Paralelo"
-                change={data?.changes?.ve_paralelo_percent}
+                change={data?.changes?.ves_percent}
               />
             </div>
 

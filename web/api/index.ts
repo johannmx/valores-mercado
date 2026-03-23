@@ -56,30 +56,34 @@ if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
+// URLs de APIs externas
+const DOLAR_API_ARS_URL = 'https://dolarapi.com/v1/dolares';
+const DOLAR_API_VES_URL = 'https://ve.dolarapi.com/v1/dolares/paralelo';
+const DOLAR_API_UYU_URL = 'https://uy.dolarapi.com/v1/cotizaciones/usd';
+const DOLAR_API_CLP_URL = 'https://cl.dolarapi.com/v1/cotizaciones/usd';
+const DOLAR_API_BRL_URL = 'https://br.dolarapi.com/v1/cotacoes/usd';
+const BINANCE_API_URL = 'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT';
+
 interface MarketData {
-    ar_oficial_compra: number;
-    ar_oficial_venta: number;
-    ar_crypto_compra: number;
-    ar_crypto_venta: number;
-    ar_tarjeta_compra: number;
-    ar_tarjeta_venta: number;
-    ve_oficial: number;
-    ve_paralelo: number;
-    tasa_remesa: string;
-    bitcoin: string;
-    uyu_compra: number;
+    timestamp: string;
+    usd_oficial: number;
+    usd_blue: number;
+    usd_mep: number;
+    usd_ccl: number;
+    usd_cripto: number;
+    usd_tarjeta: number;
+    ves_oficial: number;
+    ves_compra: number;
     uyu_venta: number;
-    clp_compra: number;
+    uyu_compra: number;
     clp_venta: number;
-    brl_compra: number;
+    clp_compra: number;
     brl_venta: number;
-    updated_at: string;
-    all_ar_dolares?: any[];
-    changes?: {
-        ar_oficial_percent: number;
-        ve_paralelo_percent: number;
-        ar_crypto_percent: number;
-        ve_oficial_percent: number;
+    brl_compra: number;
+    btc_usd: number;
+    changes: {
+        usd_blue_percent: number;
+        ves_percent: number;
         uyu_percent: number;
         clp_percent: number;
         brl_percent: number;
@@ -95,17 +99,18 @@ interface MarketData {
 }
 
 interface HistoryItem {
-    date: string;
-    ar_oficial_compra: number;
-    ar_oficial_venta: number;
-    ve_paralelo_venta: number;
-    ar_crypto_venta?: number;
-    ve_oficial?: number;
-    uyu_venta?: number;
-    clp_venta?: number;
-    brl_venta?: number;
-    otros_dolares?: Record<string, number>;
-    bitcoin?: number;
+    timestamp: string;
+    usd_blue: number;
+    usd_oficial: number;
+    usd_mep: number;
+    usd_ccl: number;
+    usd_cripto: number;
+    usd_tarjeta: number;
+    ves_oficial: number;
+    uyu_venta: number;
+    clp_venta: number;
+    brl_venta: number;
+    btc_usd: number;
 }
 
 const generateMockHistory = () => {
@@ -117,14 +122,18 @@ const generateMockHistory = () => {
         const baseAr = 1300 + Math.random() * 50;
         const baseVe = 580 + Math.random() * 20;
         history.push({
-            date: date.toISOString(),
-            ar_oficial_compra: baseAr - 20,
-            ar_oficial_venta: baseAr,
-            ve_paralelo_venta: baseVe,
-            ar_crypto_venta: baseAr + 50,
-            ve_oficial: baseVe - 10,
-            otros_dolares: { 'blue': baseAr + 200, 'bolsa': baseAr + 150 },
-            bitcoin: 90000 + Math.random() * 500
+            timestamp: date.toISOString(),
+            usd_oficial: baseAr - 20,
+            usd_blue: baseAr,
+            usd_mep: baseAr + 10,
+            usd_ccl: baseAr + 20,
+            usd_cripto: baseAr + 50,
+            usd_tarjeta: baseAr + 30,
+            ves_oficial: baseVe,
+            uyu_venta: 38 + Math.random() * 0.5,
+            clp_venta: 950 + Math.random() * 10,
+            brl_venta: 5 + Math.random() * 0.1,
+            btc_usd: 90000 + Math.random() * 500
         });
     }
     return history;
@@ -137,7 +146,7 @@ const initializeHistory = () => {
     } else {
         try {
             const data = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
-            if (data.length > 0 && !data[0].ar_oficial_venta) {
+            if (data.length > 0 && !data[0].usd_oficial) { // Check for new field
                 shouldReset = true;
             }
         } catch (e) {
@@ -152,49 +161,44 @@ const initializeHistory = () => {
 
 const saveCurrentToHistory = async () => {
     try {
-        const [arOficial, veParalelo, arCrypto, veOficial, allArDolares, uyuRes, clpRes, brlRes, btcPrice] = await Promise.all([
-            axios.get('https://dolarapi.com/v1/dolares/oficial'),
-            axios.get('https://ve.dolarapi.com/v1/dolares/paralelo'),
-            axios.get('https://dolarapi.com/v1/dolares/cripto').catch(e => ({ data: {} })),
-            axios.get('https://ve.dolarapi.com/v1/dolares/oficial').catch(e => ({ data: {} })),
-            axios.get('https://dolarapi.com/v1/dolares').catch(e => ({ data: [] })),
-            axios.get('https://dolarapi.com/v1/cotizaciones/uyu').catch(e => ({ data: {} })),
-            axios.get('https://dolarapi.com/v1/cotizaciones/clp').catch(e => ({ data: {} })),
-            axios.get('https://dolarapi.com/v1/cotizaciones/brl').catch(e => ({ data: {} })),
-            axios.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT').catch(e => ({ data: { price: 0 } }))
+        const [arsRes, vesRes, uyuRes, clpRes, brlRes, btcRes] = await Promise.all([
+            axios.get(DOLAR_API_ARS_URL).catch(e => ({ data: [] })),
+            axios.get(DOLAR_API_VES_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_UYU_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_CLP_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_BRL_URL).catch(e => ({ data: {} })),
+            axios.get(BINANCE_API_URL).catch(e => ({ data: { price: "0" } }))
         ]);
 
         const history: HistoryItem[] = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
         
-        const otros_dolares: Record<string, number> = {};
-        if (allArDolares.data && Array.isArray(allArDolares.data)) {
-            allArDolares.data.forEach((d: any) => {
-                if (d.casa !== 'oficial' && d.casa !== 'cripto') {
-                    otros_dolares[d.casa] = d.venta || 0;
-                }
-            });
-        }
+        const arsData = arsRes.data as any[];
+        const vesData = vesRes.data as any;
+        const uyuData = uyuRes.data as any;
+        const clpData = clpRes.data as any;
+        const brlData = brlRes.data as any;
+        const btcData = btcRes.data as any;
 
         const newItem: HistoryItem = {
-            date: new Date().toISOString(),
-            ar_oficial_compra: arOficial.data.compra || 0,
-            ar_oficial_venta: arOficial.data.venta || 0,
-            ve_paralelo_venta: veParalelo.data.promedio || 0,
-            ar_crypto_venta: arCrypto.data.venta || 0,
-            ve_oficial: veOficial.data.promedio || 0,
-            uyu_venta: uyuRes.data.venta || 0,
-            clp_venta: clpRes.data.venta || 0,
-            brl_venta: brlRes.data.venta || 0,
-            otros_dolares,
-            bitcoin: btcPrice.data.price ? parseFloat(btcPrice.data.price) : 0
+            timestamp: new Date().toISOString(),
+            usd_oficial: arsData.find((d: any) => d.casa === 'oficial')?.venta || 0,
+            usd_blue: arsData.find((d: any) => d.casa === 'blue')?.venta || 0,
+            usd_mep: arsData.find((d: any) => d.casa === 'mep')?.venta || 0,
+            usd_ccl: arsData.find((d: any) => d.casa === 'ccl')?.venta || 0,
+            usd_cripto: arsData.find((d: any) => d.casa === 'cripto')?.venta || 0,
+            usd_tarjeta: arsData.find((d: any) => d.casa === 'tarjeta')?.venta || 0,
+            ves_oficial: vesData.promedio || vesData.venta || 0,
+            uyu_venta: uyuData.venta || 0,
+            clp_venta: clpData.venta || 0,
+            brl_venta: brlData.venda || 0,
+            btc_usd: btcData.price ? parseFloat(btcData.price) : 0
         };
         
         history.push(newItem);
-        if (history.length > 300) history.shift();
-        
+        if (history.length > 500) history.shift();
         fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
     } catch (error) {
-        console.error('Failed to save real history point:', error);
+        console.error('Error saving to history:', error);
     }
 };
 
@@ -202,7 +206,7 @@ initializeHistory();
 setInterval(saveCurrentToHistory, 300000); // 5 minutes
 
 app.get('/api/rates', async (req, res) => {
-    let apiStatus = {
+    const apiStatus = {
         dolar_api_ar: false,
         dolar_api_ve: false,
         dolar_api_latam: false,
@@ -211,123 +215,71 @@ app.get('/api/rates', async (req, res) => {
 
     try {
         const requests = [
-            axios.get('https://dolarapi.com/v1/dolares/oficial').then(r => { apiStatus.dolar_api_ar = true; return r; }).catch(e => { return {data: {}}; }),
-            axios.get('https://dolarapi.com/v1/dolares/cripto').catch(e => { return {data: {}}; }),
-            axios.get('https://dolarapi.com/v1/dolares').catch(e => { return {data: []}; }),
-            axios.get('https://ve.dolarapi.com/v1/dolares/paralelo').then(r => { apiStatus.dolar_api_ve = true; return r; }).catch(e => { return {data: {}}; }),
-            axios.get('https://ve.dolarapi.com/v1/dolares/oficial').catch(e => { return {data: {}}; }),
-            axios.get('https://dolarapi.com/v1/cotizaciones/uyu').then(r => { apiStatus.dolar_api_latam = true; return r; }).catch(e => { return {data: {}}; }),
-            axios.get('https://dolarapi.com/v1/cotizaciones/clp').catch(e => { return {data: {}}; }),
-            axios.get('https://dolarapi.com/v1/cotizaciones/brl').catch(e => { return {data: {}}; }),
-            axios.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT').then(r => { apiStatus.binance_api = true; return r; }).catch(e => { return {data: {price: "0"}}; })
+            axios.get(DOLAR_API_ARS_URL).then(r => { apiStatus.dolar_api_ar = true; return r; }).catch(e => { return {data: []}; }),
+            axios.get(DOLAR_API_VES_URL).then(r => { apiStatus.dolar_api_ve = true; return r; }).catch(e => { return {data: {}}; }),
+            axios.get(DOLAR_API_UYU_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_CLP_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_BRL_URL).catch(e => ({ data: {} })),
+            axios.get(BINANCE_API_URL).then(r => { apiStatus.binance_api = true; return r; }).catch(e => { return {data: {price: "0"}}; })
         ];
 
-        const [arOficial, arCrypto, allArDolares, veParalelo, veOficial, uyuRes, clpRes, brlRes, btcPrice] = await Promise.all(requests);
+        const [arsRes, vesRes, uyuRes, clpRes, brlRes, btcRes] = await Promise.all(requests) as any[];
 
         const history: HistoryItem[] = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
         
-        const currentAr = arOficial?.data?.venta || 0;
-        const currentVeParalelo = veParalelo?.data?.promedio || 0;
-        const currentArCrypto = arCrypto?.data?.venta || 0;
-        const currentVeOficial = veOficial?.data?.promedio || 0;
-        const currentUyuVenta = uyuRes?.data?.venta || 0;
-        const currentClpVenta = clpRes?.data?.venta || 0;
-        const currentBrlVenta = brlRes?.data?.venta || 0;
-        const currentOtrosDolares = allArDolares?.data || [];
-        const currentBtc = btcPrice?.data?.price ? parseFloat(btcPrice.data.price) : 0;
+        const arsData = arsRes.data;
+        const vesData = vesRes.data;
+        const uyuData = uyuRes.data;
+        const clpData = clpRes.data;
+        const brlData = brlRes.data;
+        const btcData = btcRes.data;
 
-        // Helper: find the last history value that differs from the current value for a given field
-        const findPrevValue = (field: keyof HistoryItem, currentValue: number): number | null => {
-            for (let i = history.length - 1; i >= 0; i--) {
-                const entry = history[i];
-                if (!entry) continue;
-                const val = entry[field];
-                if (typeof val === 'number' && val !== currentValue) {
-                    return val;
-                }
-            }
-            return null;
+        apiStatus.dolar_api_latam = uyuRes.status === 200 && clpRes.status === 200 && brlRes.status === 200;
+
+        const last24h = history.length > 0 ? history[history.length - 1] : null;
+
+        const calculateChange = (current: number, last: number) => {
+            if (!last || last === 0) return 0;
+            return ((current - last) / last) * 100;
         };
 
-        const calcPercent = (field: keyof HistoryItem, currentValue: number): number => {
-            const prev = findPrevValue(field, currentValue);
-            if (prev !== null && prev !== 0) {
-                return ((currentValue - prev) / prev) * 100;
-            }
-            return 0;
-        };
-        
-        const ar_oficial_percent = calcPercent('ar_oficial_venta', currentAr);
-        const ve_paralelo_percent = calcPercent('ve_paralelo_venta', currentVeParalelo);
-        const ar_crypto_percent = calcPercent('ar_crypto_venta', currentArCrypto);
-        const ve_oficial_percent = calcPercent('ve_oficial', currentVeOficial);
-        const uyu_percent = calcPercent('uyu_venta', currentUyuVenta);
-        const clp_percent = calcPercent('clp_venta', currentClpVenta);
-        const brl_percent = calcPercent('brl_venta', currentBrlVenta);
-        const bitcoin_percent = calcPercent('bitcoin', currentBtc);
-        
-        let otros_dolares_percents: Record<string, number> = {};
-        // For otros_dolares, find the last history entry that has otros_dolares data with a different value
-        currentOtrosDolares.forEach((d: any) => {
-            if (d.casa === 'oficial' || d.casa === 'cripto') {
-                otros_dolares_percents[d.casa] = 0;
-                return;
-            }
-            const currentVal = d.venta || 0;
-            let prevVal: number | null = null;
-            for (let i = history.length - 1; i >= 0; i--) {
-                const entry = history[i];
-                if (!entry || !entry.otros_dolares) continue;
-                const hVal = entry.otros_dolares[d.casa];
-                if (typeof hVal === 'number' && hVal !== currentVal) {
-                    prevVal = hVal;
-                    break;
-                }
-            }
-            if (prevVal !== null && prevVal !== 0) {
-                otros_dolares_percents[d.casa] = ((currentVal - prevVal) / prevVal) * 100;
-            } else {
-                otros_dolares_percents[d.casa] = 0;
-            }
-        });
+        const uyuChange = calculateChange(uyuData.venta, last24h?.uyu_venta || uyuData.compra);
+        const clpChange = clpData.ultimoCierre ? calculateChange(clpData.venta, clpData.ultimoCierre) : calculateChange(clpData.venta, last24h?.clp_venta || clpData.compra);
+        const brlChange = brlData.fechoAnterior ? calculateChange(brlData.venda, brlData.fechoAnterior) : calculateChange(brlData.venda, last24h?.brl_venta || brlData.compra);
 
-        const data: MarketData = {
-            ar_oficial_compra: arOficial?.data?.compra || 0,
-            ar_oficial_venta: arOficial?.data?.venta || 0,
-            ar_crypto_compra: arCrypto?.data?.compra || 0,
-            ar_crypto_venta: arCrypto?.data?.venta || 0,
-            ar_tarjeta_compra: 0, 
-            ar_tarjeta_venta: 0,
-            ve_oficial: veOficial?.data?.promedio || 0,
-            ve_paralelo: currentVeParalelo,
-            tasa_remesa: currentAr > 0 ? (currentVeParalelo / currentAr).toFixed(2) : "0",
-            bitcoin: btcPrice?.data?.price ? parseFloat(btcPrice.data.price).toFixed(2) : "0",
-            uyu_compra: uyuRes?.data?.compra || 0,
-            uyu_venta: uyuRes?.data?.venta || 0,
-            clp_compra: clpRes?.data?.compra || 0,
-            clp_venta: clpRes?.data?.venta || 0,
-            brl_compra: brlRes?.data?.compra || 0,
-            brl_venta: brlRes?.data?.venta || 0,
-            updated_at: new Date().toISOString(),
-            all_ar_dolares: allArDolares?.data,
+        const marketData: MarketData = {
+            timestamp: new Date().toISOString(),
+            usd_oficial: arsData.find((d: any) => d.casa === 'oficial')?.venta || 0,
+            usd_blue: arsData.find((d: any) => d.casa === 'blue')?.venta || 0,
+            usd_mep: arsData.find((d: any) => d.casa === 'mep')?.venta || 0,
+            usd_ccl: arsData.find((d: any) => d.casa === 'ccl')?.venta || 0,
+            usd_cripto: arsData.find((d: any) => d.casa === 'cripto')?.venta || 0,
+            usd_tarjeta: arsData.find((d: any) => d.casa === 'tarjeta')?.venta || 0,
+            ves_oficial: vesData.promedio || vesData.venta || 0,
+            ves_compra: vesData.compra || 0,
+            uyu_venta: uyuData.venta || 0,
+            uyu_compra: uyuData.compra || 0,
+            clp_venta: clpData.venta || 0,
+            clp_compra: clpData.compra || 0,
+            brl_venta: brlData.venda || 0,
+            brl_compra: brlData.compra || 0,
+            btc_usd: parseFloat(btcData.price) || 0,
             changes: {
-                ar_oficial_percent,
-                ve_paralelo_percent,
-                ar_crypto_percent,
-                ve_oficial_percent,
-                uyu_percent,
-                clp_percent,
-                brl_percent,
-                otros_dolares_percents,
-                bitcoin_percent
+                usd_blue_percent: calculateChange(arsData.find((d: any) => d.casa === 'blue')?.venta, last24h?.usd_blue || 0),
+                ves_percent: calculateChange(vesData.venta || vesData.promedio, last24h?.ves_oficial || 0),
+                uyu_percent: uyuChange,
+                clp_percent: clpChange,
+                brl_percent: brlChange,
+                otros_dolares_percents: {},
+                bitcoin_percent: calculateChange(parseFloat(btcData.price), last24h?.btc_usd || 0)
             },
             api_status: apiStatus
         };
 
-        res.json(data);
+        res.json(marketData);
     } catch (error) {
-        console.error('Error in rates endpoint:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('API Error:', error);
+        res.status(500).json({ error: 'Failed to fetch market data' });
     }
 });
 
