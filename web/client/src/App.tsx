@@ -617,13 +617,13 @@ function App() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <StatCard 
-                title="Dólar Blue" 
-                value={`$${formatNumber(data?.usd_blue)}`} 
-                icon={TrendingUp} 
-                color="bg-blue-600"
-                buy={formatNumber(data?.usd_blue ? data.usd_blue - 20 : 0)}
-                sell={formatNumber(data?.usd_blue)}
-                change={data?.changes?.usd_blue_percent}
+                title="Dólar Oficial" 
+                value={`$${formatNumber(data?.usd_oficial)}`} 
+                icon={ShieldCheck} 
+                color="bg-slate-600"
+                buy={formatNumber(data?.usd_oficial ? data.usd_oficial - 20 : 0)}
+                sell={formatNumber(data?.usd_oficial)}
+                change={0}
               />
               <StatCard 
                 title="Dólar Cripto" 
@@ -639,10 +639,10 @@ function App() {
 
             <div className="flex-none h-[400px]">
               <RegionChart 
-                title="Tendencia AR (Blue)" 
+                title="Tendencia AR (Oficial)" 
                 data={history} 
-                dataKey="usd_blue" 
-                color={{hex: '#2563eb', text: 'text-blue-600'}}
+                dataKey="usd_oficial" 
+                color={{hex: '#64748b', text: 'text-slate-600'}}
                 icon={TrendingUp}
                 singleLine={true}
               />
@@ -653,6 +653,10 @@ function App() {
                 <Info className="w-4 h-4 text-slate-300 dark:text-slate-500" /> Otros Dólares AR
               </h3>
               <div className="grid grid-cols-1 gap-4">
+                <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                  <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Blue</span>
+                  <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_blue)}</span>
+                </div>
                 <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
                   <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Euro Oficial</span>
                   <span className="font-black text-indigo-700 dark:text-indigo-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.eur_venta)}</span>
