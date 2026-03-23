@@ -182,9 +182,10 @@ const initializeHistory = () => {
 
 const saveCurrentToHistory = async () => {
     try {
-        const [arsRes, vesRes, uyuRes, clpRes, brlRes, eurRes, btcRes] = await Promise.all([
+        const [arsRes, vesRes, vesOficialRes, uyuRes, clpRes, brlRes, eurRes, btcRes] = await Promise.all([
             axios.get(DOLAR_API_ARS_URL).catch(e => ({ data: [] })),
             axios.get(DOLAR_API_VES_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_VES_OFFICIAL_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_UYU_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_CLP_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_BRL_URL).catch(e => ({ data: {} })),
@@ -196,6 +197,7 @@ const saveCurrentToHistory = async () => {
         
         const arsData = arsRes.data as any[];
         const vesData = vesRes.data as any;
+        const vesOficialData = vesOficialRes.data as any;
         const uyuData = uyuRes.data as any;
         const clpData = clpRes.data as any;
         const brlData = brlRes.data as any;
@@ -206,11 +208,11 @@ const saveCurrentToHistory = async () => {
             timestamp: new Date().toISOString(),
             usd_oficial: arsData.find((d: any) => d.casa === 'oficial')?.venta || 0,
             usd_blue: arsData.find((d: any) => d.casa === 'blue')?.venta || 0,
-            usd_mep: arsData.find((d: any) => d.casa === 'mep')?.venta || 0,
-            usd_ccl: arsData.find((d: any) => d.casa === 'ccl')?.venta || 0,
+            usd_mep: arsData.find((d: any) => d.casa === 'bolsa')?.venta || 0,
+            usd_ccl: arsData.find((d: any) => d.casa === 'contadoconliqui')?.venta || 0,
             usd_cripto: arsData.find((d: any) => d.casa === 'cripto')?.venta || 0,
             usd_tarjeta: arsData.find((d: any) => d.casa === 'tarjeta')?.venta || 0,
-            ves_oficial: vesData.promedio || vesData.venta || 0,
+            ves_oficial: vesOficialData.promedio || vesOficialData.venta || 0,
             uyu_venta: uyuData.venta || 0,
             clp_venta: clpData.venta || 0,
             brl_venta: brlData.venda || 0,
@@ -246,6 +248,7 @@ app.get('/api/rates', async (req, res) => {
         const requests = [
             axios.get(DOLAR_API_ARS_URL).then(r => { apiStatus.dolar_api_ar = true; return r; }).catch(e => { return {data: []}; }),
             axios.get(DOLAR_API_VES_URL).then(r => { apiStatus.dolar_api_ve = true; return r; }).catch(e => { return {data: {}}; }),
+            axios.get(DOLAR_API_VES_OFFICIAL_URL).catch(e => { return {data: {}}; }),
             axios.get(DOLAR_API_UYU_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_CLP_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_BRL_URL).catch(e => ({ data: {} })),
@@ -254,12 +257,13 @@ app.get('/api/rates', async (req, res) => {
             axios.get(DOLAR_API_STATUS_URL).then(r => { apiStatus.api_health = r.data.estado || 'ok'; return r; }).catch(e => { return {data: {estado: 'error'}}; })
         ];
 
-        const [arsRes, vesRes, uyuRes, clpRes, brlRes, eurRes, btcRes, statusRes] = await Promise.all(requests) as any[];
+        const [arsRes, vesRes, vesOficialRes, uyuRes, clpRes, brlRes, eurRes, btcRes, statusRes] = await Promise.all(requests) as any[];
 
         const history: HistoryItem[] = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
         
         const arsData = arsRes.data;
         const vesData = vesRes.data;
+        const vesOficialData = vesOficialRes.data;
         const uyuData = uyuRes.data;
         const clpData = clpRes.data;
         const brlData = brlRes.data;
@@ -284,12 +288,12 @@ app.get('/api/rates', async (req, res) => {
             timestamp: new Date().toISOString(),
             usd_oficial: arsData.find((d: any) => d.casa === 'oficial')?.venta || 0,
             usd_blue: arsData.find((d: any) => d.casa === 'blue')?.venta || 0,
-            usd_mep: arsData.find((d: any) => d.casa === 'mep')?.venta || 0,
-            usd_ccl: arsData.find((d: any) => d.casa === 'ccl')?.venta || 0,
+            usd_mep: arsData.find((d: any) => d.casa === 'bolsa')?.venta || 0,
+            usd_ccl: arsData.find((d: any) => d.casa === 'contadoconliqui')?.venta || 0,
             usd_cripto: arsData.find((d: any) => d.casa === 'cripto')?.venta || 0,
             usd_tarjeta: arsData.find((d: any) => d.casa === 'tarjeta')?.venta || 0,
-            ves_oficial: vesData.promedio || vesData.venta || 0,
-            ves_compra: vesData.compra || 0,
+            ves_oficial: vesOficialData.promedio || vesOficialData.venta || 0,
+            ves_compra: vesOficialData.compra || 0,
             uyu_venta: uyuData.venta || 0,
             uyu_compra: uyuData.compra || 0,
             clp_venta: clpData.venta || 0,
@@ -322,10 +326,10 @@ app.get('/api/rates', async (req, res) => {
 app.get('/api/historical/:casa', async (req, res) => {
     try {
         const { casa } = req.params;
-        const response = await axios.get(`https://dolarapi.com/v1/cotizaciones/dolares/${casa}`);
+        const response = await axios.get(`https://api.argentinadatos.com/v1/cotizaciones/dolares/${casa}`);
         res.json(response.data);
     } catch (error) {
-        console.error('Historical Fetch Error:', error);
+        console.error('Historical Fetch Error:', (error as any).message);
         res.status(500).json({ error: 'Failed to fetch historical data' });
     }
 });

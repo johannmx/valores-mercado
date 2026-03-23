@@ -788,7 +788,7 @@ function App() {
                 </div>
                 <StatCard 
                   title="Peso Uruguayo" 
-                  value={`1 USD = ${formatNumber(data?.uyu_venta)}`} 
+                  value={`${formatNumber(data?.uyu_venta)}`} 
                   subtitle="Valor del Dólar Oficial"
                   icon={Globe} 
                   color="bg-sky-600"
@@ -806,7 +806,7 @@ function App() {
                 </div>
                 <StatCard 
                   title="Peso Chileno" 
-                  value={`1 USD = ${formatNumber(data?.clp_venta)}`} 
+                  value={`${formatNumber(data?.clp_venta)}`} 
                   subtitle="Valor del Dólar Oficial"
                   icon={Globe} 
                   color="bg-red-600"
@@ -824,7 +824,7 @@ function App() {
                 </div>
                 <StatCard 
                    title="Real Brasileño" 
-                  value={`1 USD = ${formatNumber(data?.brl_venta)}`} 
+                  value={`${formatNumber(data?.brl_venta)}`} 
                   subtitle="Valor del Dólar Oficial"
                   icon={Globe} 
                   color="bg-emerald-600"
@@ -869,9 +869,9 @@ function App() {
 
             <div className="flex-none h-[400px]">
               <RegionChart 
-                title="Tendencia VE (Paralelo)" 
+                title="Tendencia VE (Oficial)" 
                 data={history} 
-                dataKey="ve_paralelo_venta" 
+                dataKey="ves_oficial" 
                 color={{hex: '#eab308', text: 'text-yellow-500'}}
                 icon={TrendingUp}
                 singleLine={true}
@@ -920,12 +920,9 @@ function App() {
                 
                 <div className="flex flex-col items-end gap-3">
                   <div className="flex flex-wrap justify-end gap-2">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-xl transition-all border border-transparent dark:border-slate-600/50">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl transition-all border border-indigo-100 dark:border-indigo-800/50 shadow-sm">
                       <div className={`w-2 h-2 rounded-full ${data?.api_status?.dolar_api_ar ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
-                      <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">DolarApi</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl transition-all border border-indigo-100 dark:border-indigo-800/50">
-                      <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Status: {data?.api_status?.api_health || 'ok'}</span>
+                      <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em]">Dolar Api Status: {data?.api_status?.api_health || 'ok'}</span>
                     </div>
                   </div>
                   
