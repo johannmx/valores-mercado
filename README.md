@@ -1,4 +1,4 @@
-# 📈 MarketDash: Financial Pulse de Latinoamérica
+# 📈 MarketDash: Latinoamérica
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
@@ -59,18 +59,9 @@ El repositorio incluye un motor de notificaciones en Bash ideal para servidores 
 
 ---
 
-## 📝 Últimos Cambios
-
-### [Marzo 2026] - Expansión Regional y Refinamiento UI
-- **Nuevas Divisas:** Integración completa de Uruguay, Chile y Brasil.
-- **UI Refinada:** Optimización de legibilidad en tarjetas de mercado y nuevo pie de página con stack técnico.
-- **Conversor Expandido:** Soporte para las nuevas monedas regionales.
-- **Modernización:** Actualización del README y optimización de componentes React.
-
----
-
-## 👤 Autor
-Realizado por **Johann (@johannmx)** - [GitHub Profile](https://github.com/johannmx)
+## 👤 Autor e IA-Assisted Development
+- **Johann (@johannmx)** - [GitHub Profile](https://github.com/johannmx)
+- **Desarrollado con asistencia de Antigravity (Google DeepMind)** - IA-Assisted Development en tiempo real.
 
 ---
 
