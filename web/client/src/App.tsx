@@ -40,6 +40,7 @@ interface MarketData {
   usd_cripto: number;
   usd_tarjeta: number;
   ves_oficial: number;
+  ves_paralelo: number;
   ves_compra: number;
   uyu_venta: number;
   uyu_compra: number;
@@ -78,6 +79,7 @@ interface HistoryItem {
   usd_cripto: number;
   usd_tarjeta: number;
   ves_oficial: number;
+  ves_paralelo: number;
   uyu_venta: number;
   clp_venta: number;
   brl_venta: number;
@@ -540,6 +542,7 @@ function App() {
         usd_cripto: ratesData.usd_cripto,
         usd_tarjeta: ratesData.usd_tarjeta,
         ves_oficial: ratesData.ves_oficial,
+        ves_paralelo: ratesData.ves_paralelo,
         uyu_venta: ratesData.uyu_venta,
         clp_venta: ratesData.clp_venta,
         brl_venta: ratesData.brl_venta,
@@ -835,8 +838,9 @@ function App() {
               </div>
 
               {/* Historical Comparison Section */}
-              <div className="pt-4 h-full">
-                <HistoricalComparison />
+              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-300">
+                {/* Historical Comparison temporarily removed */}
+                {/* <HistoricalComparison /> */}
               </div>
             </div>
           </div>
@@ -851,7 +855,7 @@ function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <StatCard 
                 title="Dólar Oficial" 
-                value={`${formatNumber(data?.ves_compra)} VES`} 
+                value={`${formatNumber(data?.ves_oficial)} VES`} 
                 icon={ShieldCheck} 
                 color="bg-blue-500"
                 subtitle="Tasa Oficial BCV"
@@ -859,7 +863,7 @@ function App() {
               />
               <StatCard 
                 title="Dólar Paralelo" 
-                value={`${formatNumber(data?.ves_oficial)} VES`} 
+                value={`${formatNumber(data?.ves_paralelo)} VES`} 
                 icon={DollarSign} 
                 color="bg-yellow-500"
                 subtitle="Promedio Dólar Paralelo"
@@ -869,9 +873,9 @@ function App() {
 
             <div className="flex-none h-[400px]">
               <RegionChart 
-                title="Tendencia VE (Oficial)" 
+                title="Tendencia VE (Paralelo)" 
                 data={history} 
-                dataKey="ves_oficial" 
+                dataKey="ves_paralelo" 
                 color={{hex: '#eab308', text: 'text-yellow-500'}}
                 icon={TrendingUp}
                 singleLine={true}

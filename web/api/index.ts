@@ -76,6 +76,7 @@ interface MarketData {
     usd_cripto: number;
     usd_tarjeta: number;
     ves_oficial: number;
+    ves_paralelo: number;
     ves_compra: number;
     uyu_venta: number;
     uyu_compra: number;
@@ -113,6 +114,7 @@ interface HistoryItem {
     usd_cripto: number;
     usd_tarjeta: number;
     ves_oficial: number;
+    ves_paralelo: number;
     uyu_venta: number;
     clp_venta: number;
     brl_venta: number;
@@ -137,6 +139,7 @@ const generateMockHistory = () => {
             usd_cripto: baseAr + 50,
             usd_tarjeta: baseAr + 30,
             ves_oficial: baseVe,
+            ves_paralelo: baseVe + 5,
             uyu_venta: 38 + Math.random() * 0.5,
             clp_venta: 950 + Math.random() * 10,
             brl_venta: 5 + Math.random() * 0.1,
@@ -213,6 +216,7 @@ const saveCurrentToHistory = async () => {
             usd_cripto: arsData.find((d: any) => d.casa === 'cripto')?.venta || 0,
             usd_tarjeta: arsData.find((d: any) => d.casa === 'tarjeta')?.venta || 0,
             ves_oficial: vesOficialData.promedio || vesOficialData.venta || 0,
+            ves_paralelo: vesData.promedio || vesData.venta || 0,
             uyu_venta: uyuData.venta || 0,
             clp_venta: clpData.venta || 0,
             brl_venta: brlData.venda || 0,
@@ -293,7 +297,8 @@ app.get('/api/rates', async (req, res) => {
             usd_cripto: arsData.find((d: any) => d.casa === 'cripto')?.venta || 0,
             usd_tarjeta: arsData.find((d: any) => d.casa === 'tarjeta')?.venta || 0,
             ves_oficial: vesOficialData.promedio || vesOficialData.venta || 0,
-            ves_compra: vesOficialData.compra || 0,
+            ves_paralelo: vesData.promedio || vesData.venta || 0,
+            ves_compra: vesOficialData.promedio || vesOficialData.venta || 0,
             uyu_venta: uyuData.venta || 0,
             uyu_compra: uyuData.compra || 0,
             clp_venta: clpData.venta || 0,
