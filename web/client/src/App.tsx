@@ -47,6 +47,8 @@ interface MarketData {
   clp_compra: number;
   brl_venta: number;
   brl_compra: number;
+  eur_venta: number;
+  eur_compra: number;
   btc_usd: number;
   changes: {
     usd_blue_percent: number;
@@ -54,6 +56,7 @@ interface MarketData {
     uyu_percent: number;
     clp_percent: number;
     brl_percent: number;
+    eur_percent: number;
     otros_dolares_percents: Record<string, number>;
     bitcoin_percent: number;
   };
@@ -62,6 +65,7 @@ interface MarketData {
     dolar_api_ve: boolean;
     dolar_api_latam: boolean;
     binance_api: boolean;
+    api_health?: string;
   };
 }
 
@@ -77,6 +81,7 @@ interface HistoryItem {
   uyu_venta: number;
   clp_venta: number;
   brl_venta: number;
+  eur_venta: number;
   btc_usd: number;
 }
 
@@ -141,9 +146,120 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
   );
 };
 
+const HistoricalComparison = () => {
+  const [casa, setCasa] = useState('blue');
+  const [histData, setHistData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const CASAS = [
+    { id: 'oficial', name: 'Oficial' },
+    { id: 'blue', name: 'Blue' },
+    { id: 'bolsa', name: 'Bolsa / MEP' },
+    { id: 'contadoconliqui', name: 'CCL' },
+    { id: 'cripto', name: 'Cripto' },
+    { id: 'mayorista', name: 'Mayorista' },
+    { id: 'solidario', name: 'Solidario' },
+    { id: 'turista', name: 'Turista' }
+  ];
+
+  useEffect(() => {
+    const fetchHist = async () => {
+      setLoading(true);
+      try {
+        let baseURL = (window as any)._env_?.VITE_API_URL || import.meta.env.VITE_API_URL || '';
+        const res = await axios.get(`${baseURL}/api/historical/${casa}`);
+        setHistData(res.data);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHist();
+  }, [casa]);
+
+  return (
+    <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 h-full flex flex-col">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl">
+            <TrendingUp className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Comparativa Histórica</h2>
+        </div>
+        
+        <div className="relative">
+          <select 
+            value={casa} 
+            onChange={(e) => setCasa(e.target.value)}
+            className="appearance-none pl-4 pr-10 py-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-white rounded-xl font-bold outline-none cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shadow-sm text-sm min-w-[160px]"
+          >
+            {CASAS.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+        </div>
+      </div>
+
+      <div className="flex-1 h-[300px] w-full relative">
+        {loading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 dark:bg-slate-800/50 backdrop-blur-[1px] rounded-2xl">
+            <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
+          </div>
+        )}
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={histData}>
+            <defs>
+              <linearGradient id="colorHist" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+            <XAxis 
+              dataKey="fecha" 
+              hide={true}
+            />
+            <YAxis 
+              hide={true} 
+              domain={['auto', 'auto']}
+            />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: '#1e293b', 
+                border: 'none', 
+                borderRadius: '16px',
+                boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'
+              }}
+              labelStyle={{ display: 'none' }}
+              itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+              formatter={(value: any) => [`$ ${value}`, 'Cotización']}
+            />
+            <Area 
+              type="monotone" 
+              dataKey="venta" 
+              stroke="#6366f1" 
+              strokeWidth={4}
+              fillOpacity={1} 
+              fill="url(#colorHist)" 
+              animationDuration={1000}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+      
+      <div className="mt-4 flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">
+        <span>Historial de Cotizaciones</span>
+        <span className="text-indigo-500 font-bold">DolarApi.com</span>
+      </div>
+    </div>
+  );
+};
+
 const Converter = ({ data }: { data: MarketData | null }) => {
   const [amount, setAmount] = useState<number>(1);
-  const [from, setFrom] = useState<'USD' | 'ARS' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL'>('USD');
+  const [from, setFrom] = useState<'USD' | 'ARS' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL' | 'EUR'>('USD');
 
   if (!data) return null;
 
@@ -155,7 +271,8 @@ const Converter = ({ data }: { data: MarketData | null }) => {
     VES_OFFICIAL: data.ves_compra,
     UYU: data.uyu_venta,
     CLP: data.clp_venta,
-    BRL: data.brl_venta
+    BRL: data.brl_venta,
+    EUR: data.eur_venta
   };
 
   const convert = (to: 'USD' | 'ARS' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL') => {
@@ -426,6 +543,7 @@ function App() {
         uyu_venta: ratesData.uyu_venta,
         clp_venta: ratesData.clp_venta,
         brl_venta: ratesData.brl_venta,
+        eur_venta: ratesData.eur_venta,
         btc_usd: ratesData.btc_usd
       };
 
@@ -614,7 +732,7 @@ function App() {
                 change={data?.changes?.usd_blue_percent}
               />
               <StatCard 
-                title="Dólar Crypto" 
+                title="Dólar Cripto" 
                 value={`$${formatNumber(data?.usd_cripto)}`} 
                 icon={Bitcoin} 
                 color="bg-purple-600"
@@ -641,6 +759,10 @@ function App() {
                 <Info className="w-4 h-4 text-slate-300 dark:text-slate-500" /> Otros Dólares AR
               </h3>
               <div className="grid grid-cols-1 gap-4">
+                <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                  <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Euro Oficial</span>
+                  <span className="font-black text-indigo-700 dark:text-indigo-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.eur_venta)}</span>
+                </div>
                 <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
                   <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Tarjeta</span>
                   <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_tarjeta)}</span>
@@ -701,7 +823,7 @@ function App() {
                   <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Brasil</h2>
                 </div>
                 <StatCard 
-                  title="Real Brasileño" 
+                   title="Real Brasileño" 
                   value={`1 USD = ${formatNumber(data?.brl_venta)}`} 
                   subtitle="Valor del Dólar Oficial"
                   icon={Globe} 
@@ -710,6 +832,11 @@ function App() {
                   sell={formatNumber(data?.brl_venta)}
                   change={data?.changes?.brl_percent}
                 />
+              </div>
+
+              {/* Historical Comparison Section */}
+              <div className="pt-4 h-full">
+                <HistoricalComparison />
               </div>
             </div>
           </div>
@@ -791,14 +918,26 @@ function App() {
                   </div>
                 </div>
                 
-                <a 
-                  href="https://github.com/johannmx/valores-mercado" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="p-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-lg shadow-slate-200 dark:shadow-none"
-                >
-                  <Github className="w-5 h-5" />
-                </a>
+                <div className="flex flex-col items-end gap-3">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-xl transition-all border border-transparent dark:border-slate-600/50">
+                      <div className={`w-2 h-2 rounded-full ${data?.api_status?.dolar_api_ar ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
+                      <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">DolarApi</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl transition-all border border-indigo-100 dark:border-indigo-800/50">
+                      <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Status: {data?.api_status?.api_health || 'ok'}</span>
+                    </div>
+                  </div>
+                  
+                  <a 
+                    href="https://github.com/johannmx/valores-mercado" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="p-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-lg shadow-slate-200 dark:shadow-none"
+                  >
+                    <Github className="w-5 h-5" />
+                  </a>
+                </div>
               </div>
             </div>
             
