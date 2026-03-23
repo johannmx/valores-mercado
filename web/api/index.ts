@@ -342,8 +342,16 @@ app.get('/api/historical/:casa', async (req, res) => {
 
 app.get('/api/history', (req, res) => {
     try {
-        const data = fs.readFileSync(HISTORY_FILE, 'utf-8');
-        res.json(JSON.parse(data));
+        const fileContent = fs.readFileSync(HISTORY_FILE, 'utf-8');
+        const history = JSON.parse(fileContent);
+        
+        // Backfill ves_paralelo for legacy data if needed
+        const processedHistory = history.map((item: any) => ({
+            ...item,
+            ves_paralelo: item.ves_paralelo ?? item.ves_oficial
+        }));
+        
+        res.json(processedHistory);
     } catch (error) {
         res.status(500).json({ error: 'Failed to read history' });
     }
