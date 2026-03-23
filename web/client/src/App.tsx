@@ -312,7 +312,7 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
           </defs>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
           <XAxis 
-            dataKey="date" 
+            dataKey="timestamp" 
             axisLine={false} 
             tickLine={false} 
             tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'bold'}}
