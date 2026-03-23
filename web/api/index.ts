@@ -148,22 +148,35 @@ const generateMockHistory = () => {
 };
 
 const initializeHistory = () => {
-    let shouldReset = false;
-    if (!fs.existsSync(HISTORY_FILE)) {
-        shouldReset = true;
-    } else {
-        try {
-            const data = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
-            if (data.length > 0 && !data[0].usd_oficial) { // Check for new field
+    try {
+        // Asegurar que el directorio de datos existe
+        if (!fs.existsSync(DATA_DIR)) {
+            fs.mkdirSync(DATA_DIR, { recursive: true });
+        }
+
+        let shouldReset = false;
+        if (!fs.existsSync(HISTORY_FILE)) {
+            shouldReset = true;
+        } else {
+            try {
+                const data = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
+                if (data.length > 0 && !data[0].usd_oficial) { // Check for new field
+                    shouldReset = true;
+                }
+            } catch (e) {
                 shouldReset = true;
             }
-        } catch (e) {
-            shouldReset = true;
         }
-    }
 
-    if (shouldReset) {
-        fs.writeFileSync(HISTORY_FILE, JSON.stringify(generateMockHistory(), null, 2));
+        if (shouldReset) {
+            fs.writeFileSync(HISTORY_FILE, JSON.stringify(generateMockHistory(), null, 2));
+        }
+    } catch (error) {
+        console.error('CRITICAL: Failed to initialize history file due to permission errors.');
+        console.error('Check if the "data" directory is writable by the user running the process.');
+        console.error(error);
+        // We don't crash here to allow the server to at least start,
+        // though some features might fail.
     }
 };
 
@@ -207,7 +220,11 @@ const saveCurrentToHistory = async () => {
         
         history.push(newItem);
         if (history.length > 500) history.shift();
-        fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
+        try {
+            fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
+        } catch (writeError) {
+            console.error('Failed to write history file during background save:', writeError.message);
+        }
     } catch (error) {
         console.error('Error saving to history:', error);
     }
