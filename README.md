@@ -1,60 +1,78 @@
-# valores-mercado
+# 📈 MarketDash: Financial Pulse de Latinoamérica
 
-Conjunto de herramientas para el monitoreo de divisas (Argentina y Venezuela) y criptomonedas (Bitcoin) en tiempo real, incluyendo scripts de automatización para Telegram y un Dashboard Web moderno dockerizado.
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 
-## 🚀 Características
-- **Argentina:** Dólar Oficial, Blue, Tarjeta, MEP, CCL y Cripto (vía [DolarApi](https://dolarapi.com)).
-- **Venezuela:** Dólar Paralelo (Promedio) (vía [VE DolarApi](https://ve.dolarapi.com)).
-- **BitCoin:** Precio en USD en tiempo real (vía [Binance API](https://binance.com)).
-- **Web Dashboard:** Interfaz moderna con React 19, TypeScript y Tailwind CSS.
-- **Gráficos de Tendencias:** Visualización histórica de tasas con Recharts.
-- **Conversor Inteligente:** Conversión bidireccional (USD, ARS, VES) integrada.
-- **Notificaciones Telegram:** Script Bash con formato HTML y emojis.
-- **Docker Ready:** Despliegue rápido de la plataforma web mediante Docker Compose.
+Conjunto de herramientas profesionales para el monitoreo de divisas y criptomonedas en tiempo real, diseñado con una estética premium y enfocado en la precisión de datos de **Argentina, Venezuela, Uruguay, Chile y Brasil**.
 
 ---
 
-## 💻 Dashboard Web (Docker)
+## ✨ Características Principales
 
-El dashboard web ofrece una visualización completa de los mercados y una calculadora de divisas.
+### 🇦🇷 Argentina (Full Markets)
+- **Dólares:** Oficial, Blue, Tarjeta, MEP, CCL y Cripto.
+- **Gráficos:** Historial de tendencia de 24 horas integrado.
 
-### Requisitos
-- [Docker](https://www.docker.com/) y [Docker Compose](https://docs.docker.com/compose/)
+### 🇻🇪 Venezuela
+- **Dólar Paralelo:** Promedio actualizado en tiempo real.
+- **Dólar Oficial:** Tasa oficial del BCV.
 
-### Despliegue Rápido
-1. En la raíz del proyecto, ejecuta:
+### 🌎 Latinoamérica (Países Vecinos)
+- **Uruguay:** Peso Uruguayo (oficial).
+- **Chile:** Peso Chileno (oficial).
+- **Brasil:** Real Brasileño (oficial).
+
+### 🚀 Herramientas Inteligentes
+- **Conversor Multi-Divisa:** Cálculo bidireccional instantáneo entre USD, ARS, VES, UYU, CLP y BRL.
+- **Refresh Inteligente:** Temporizador de actualización automática cada 5 minutos.
+- **Modo Oscuro/Claro:** Soporte nativo para temas según preferencia del usuario o sistema.
+
+---
+
+## 🛠️ Stack Tecnológico
+
+- **Frontend:** React 19 + Vite + Tailwind CSS + Lucide Icons.
+- **Visualización:** Recharts para gráficos de área minimalistas.
+- **Backend:** Node.js + Express + Proxy API para evitar CORS y persistencia de datos.
+- **Infraestructura:** Docker & Docker Compose para despliegue simplificado.
+
+---
+
+## 🚀 Despliegue con Docker
+
+1. **Instalación:**
    ```bash
    docker-compose up --build -d
    ```
-2. Accede desde tu navegador a: `http://localhost`
-
-### Estructura Técnica
-- **Frontend (`/web/client`):** React 19 + Vite + Tailwind CSS + Recharts + Lucide Icons.
-- **Backend (`/web/api`):** Node.js + Express + TSX (Proxy para evitar CORS y persistencia de historial).
+2. **Acceso:** Navega a `http://localhost`.
 
 ---
 
-## 🤖 Scripts de Telegram (Bash)
+## 🤖 Scripts de Automatización (Telegram)
 
-Ideal para servidores livianos o Raspberry Pi.
+El repositorio incluye un motor de notificaciones en Bash ideal para servidores ligeros.
 
-### Configuración
-Edita `config.sh` con tus credenciales:
-```bash
-BOT_TOKEN="TU_BOT_TOKEN"    # Token de @BotFather
-CHAT_ID="TU_CHAT_ID"        # ID del chat/grupo
-```
-
-### Modos de Ejecución
-- **Manual:** `./dolar_telegram_notification.sh`
-- **Modo "En Vivo":** `./live.sh` (Ejecución continua cada 5 min).
-- **Cron:** Agrega `0 * * * * /ruta/al/script.sh` a tu crontab para actualizaciones cada hora.
+1. Configura `config.sh` con tu `BOT_TOKEN` y `CHAT_ID`.
+2. Ejecuta `./live.sh` para alertas automáticas cada 5 minutos.
 
 ---
 
-## 📊 APIs Utilizadas
-- **Mercado Cambiario:** [DolarApi.com](https://dolarapi.com) (Argentina y Venezuela).
-- **Cripto:** [Binance Public API](https://api.binance.com).
+## 📝 Últimos Cambios
 
-## 📝 Logs
-Todos los eventos de los scripts de Bash se registran en `MercadoNotificationsLog.txt` para auditoría y seguimiento de errores.
+### [Marzo 2026] - Expansión Regional y Refinamiento UI
+- **Nuevas Divisas:** Integración completa de Uruguay, Chile y Brasil.
+- **UI Refinada:** Optimización de legibilidad en tarjetas de mercado y nuevo pie de página con stack técnico.
+- **Conversor Expandido:** Soporte para las nuevas monedas regionales.
+- **Modernización:** Actualización del README y optimización de componentes React.
+
+---
+
+## 👤 Autor
+Realizado por **Johann (@johannmx)** - [GitHub Profile](https://github.com/johannmx)
+
+---
+
+> [!NOTE]
+> Los datos son provistos por [DolarApi.com](https://dolarapi.com) y la API pública de Binance.

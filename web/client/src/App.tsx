@@ -115,7 +115,7 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
         </div>
       </div>
       <div className="space-y-1">
-        <h3 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">{displayValue}</h3>
+        <h3 className="text-4xl font-black text-slate-800 dark:text-white tracking-tight leading-none">{displayValue}</h3>
         {subtitle && <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter">{subtitle}</p>}
         {(buy !== undefined || sell !== undefined) && (
           <div className="flex gap-4 mt-4 pt-4 border-t border-slate-50 dark:border-slate-700/50 text-[10px] font-bold uppercase">
@@ -668,7 +668,6 @@ function App() {
                   buy={formatNumber(data?.uyu_compra)}
                   sell={formatNumber(data?.uyu_venta)}
                   change={data?.changes?.uyu_percent}
-                  spread={data?.uyu_compra ? (((data.uyu_venta - data.uyu_compra) / data.uyu_compra) * 100).toFixed(2) : '0.00'}
                 />
                 <StatCard 
                   title="Peso Chileno" 
@@ -678,7 +677,6 @@ function App() {
                   buy={formatNumber(data?.clp_compra)}
                   sell={formatNumber(data?.clp_venta)}
                   change={data?.changes?.clp_percent}
-                  spread={data?.clp_compra ? (((data.clp_venta - data.clp_compra) / data.clp_compra) * 100).toFixed(2) : '0.00'}
                 />
                 <StatCard 
                   title="Real Brasileño" 
@@ -688,7 +686,6 @@ function App() {
                   buy={formatNumber(data?.brl_compra)}
                   sell={formatNumber(data?.brl_venta)}
                   change={data?.changes?.brl_percent}
-                  spread={data?.brl_compra ? (((data.brl_venta - data.brl_compra) / data.brl_compra) * 100).toFixed(2) : '0.00'}
                 />
               </div>
             </div>
@@ -738,31 +735,58 @@ function App() {
 
         </div>
 
-        {/* Global Footer with API Status */}
-        <footer className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 px-8 py-6 z-50 transition-colors duration-300">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-8">
-              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700">
-                <div className={`w-2 h-2 rounded-full ${data?.api_status.dolar_api_ar ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">DolarApi AR</span>
+        {/* Global Footer with API Status and Contact */}
+        <footer className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 px-8 py-4 z-50 transition-colors duration-300">
+          <div className="max-w-7xl mx-auto space-y-4">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700 shadow-sm">
+                  <div className={`w-2 h-2 rounded-full ${data?.api_status.dolar_api_ar ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">DolarApi AR</span>
+                </div>
+                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700 shadow-sm">
+                  <div className={`w-2 h-2 rounded-full ${data?.api_status.dolar_api_ve ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">DolarApi VE</span>
+                </div>
+                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700 shadow-sm">
+                  <div className={`w-2 h-2 rounded-full ${data?.api_status.dolar_api_latam ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">DolarApi Latam</span>
+                </div>
+                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700 shadow-sm">
+                  <div className={`w-2 h-2 rounded-full ${data?.api_status.binance_api ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Binance API</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700">
-                <div className={`w-2 h-2 rounded-full ${data?.api_status.dolar_api_ve ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">DolarApi VE</span>
-              </div>
-              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700">
-                <div className={`w-2 h-2 rounded-full ${data?.api_status.dolar_api_latam ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">DolarApi Latam</span>
-              </div>
-              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700">
-                <div className={`w-2 h-2 rounded-full ${data?.api_status.binance_api ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Binance API</span>
+              
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-50 dark:bg-slate-800/50 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+                  <span className="text-blue-500">Built with</span>
+                  <div className="flex gap-2">
+                    <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded text-[8px]">TypeScript</span>
+                    <span className="px-1.5 py-0.5 bg-cyan-100 dark:bg-cyan-900/40 text-cyan-600 dark:text-cyan-400 rounded text-[8px]">React</span>
+                    <span className="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded text-[8px]">Tailwind</span>
+                  </div>
+                </div>
+                
+                <a 
+                  href="https://github.com/johannmx/valores-mercado" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="p-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-lg shadow-slate-200 dark:shadow-none"
+                >
+                  <Globe className="w-5 h-5" />
+                </a>
               </div>
             </div>
             
-            <div className="flex items-center gap-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-              <Globe className="w-4 h-4 text-blue-500" />
-              © 2026 MarketDash • Financial Pulse
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100 dark:border-slate-800/50">
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <Globe className="w-3 h-3 text-blue-500" />
+                Realizado por <span className="text-slate-900 dark:text-white">@johannmx</span>
+              </div>
+              <div className="flex items-center gap-4 text-[9px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.3em]">
+                © 2026 MarketDash • Financial Pulse
+              </div>
             </div>
           </div>
         </footer>
