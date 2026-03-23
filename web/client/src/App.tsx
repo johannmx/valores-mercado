@@ -610,9 +610,9 @@ function App() {
           
           {/* Argentina Section */}
           <div className="space-y-10 flex flex-col h-full">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-7 bg-blue-500 rounded-lg shadow-md" />
-              <h2 className="text-3xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Argentina</h2>
+            <div className="flex items-center gap-3 px-1">
+              <div className="w-1.5 h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.3)]" />
+              <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Argentina</h2>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -675,76 +675,13 @@ function App() {
                 </div>
               </div>
             </div>
-
-            {/* neighboring countries */}
-            <div className="space-y-6">
-              {/* Uruguay Section */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 px-1">
-                  <div className="w-1.5 h-6 bg-sky-500 rounded-full shadow-[0_0_10px_rgba(14,165,233,0.3)]" />
-                  <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Uruguay</h2>
-                </div>
-                <StatCard 
-                  title="Peso Uruguayo" 
-                  value={`${formatNumber(data?.uyu_venta)}`} 
-                  subtitle="Valor del Dólar Oficial"
-                  icon={Globe} 
-                  color="bg-sky-600"
-                  buy={formatNumber(data?.uyu_compra)}
-                  sell={formatNumber(data?.uyu_venta)}
-                  change={data?.changes?.uyu_percent}
-                />
-              </div>
-
-              {/* Chile Section */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 px-1">
-                  <div className="w-1.5 h-6 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.3)]" />
-                  <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Chile</h2>
-                </div>
-                <StatCard 
-                  title="Peso Chileno" 
-                  value={`${formatNumber(data?.clp_venta)}`} 
-                  subtitle="Valor del Dólar Oficial"
-                  icon={Globe} 
-                  color="bg-red-600"
-                  buy={formatNumber(data?.clp_compra)}
-                  sell={formatNumber(data?.clp_venta)}
-                  change={data?.changes?.clp_percent}
-                />
-              </div>
-
-              {/* Brasil Section */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 px-1">
-                  <div className="w-1.5 h-6 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]" />
-                  <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Brasil</h2>
-                </div>
-                <StatCard 
-                   title="Real Brasileño" 
-                  value={`${formatNumber(data?.brl_venta)}`} 
-                  subtitle="Valor del Dólar Oficial"
-                  icon={Globe} 
-                  color="bg-emerald-600"
-                  buy={formatNumber(data?.brl_compra)}
-                  sell={formatNumber(data?.brl_venta)}
-                  change={data?.changes?.brl_percent}
-                />
-              </div>
-
-              {/* Historical Comparison Section */}
-              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-300">
-                {/* Historical Comparison temporarily removed */}
-                {/* <HistoricalComparison /> */}
-              </div>
-            </div>
           </div>
 
           {/* Venezuela Section */}
           <div className="space-y-10 flex flex-col h-full">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-7 bg-yellow-400 rounded-lg shadow-md" />
-              <h2 className="text-3xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Venezuela</h2>
+            <div className="flex items-center gap-3 px-1">
+              <div className="w-1.5 h-6 bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.3)]" />
+              <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Venezuela</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -780,6 +717,66 @@ function App() {
             <div className="flex-1">
               <Converter data={data} />
             </div>
+          </div>
+
+          {/* Uruguay Section */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 px-1">
+              <div className="w-1.5 h-6 bg-sky-500 rounded-full shadow-[0_0_10px_rgba(14,165,233,0.3)]" />
+              <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Uruguay</h2>
+            </div>
+            <StatCard 
+              title="Peso Uruguayo" 
+              value={`${formatNumber(data?.uyu_venta)}`} 
+              subtitle="Valor del Dólar Oficial"
+              icon={Globe} 
+              color="bg-sky-600"
+              buy={formatNumber(data?.uyu_compra)}
+              sell={formatNumber(data?.uyu_venta)}
+              change={data?.changes?.uyu_percent}
+            />
+          </div>
+
+          {/* Chile Section */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 px-1">
+              <div className="w-1.5 h-6 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.3)]" />
+              <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Chile</h2>
+            </div>
+            <StatCard 
+              title="Peso Chileno" 
+              value={`${formatNumber(data?.clp_venta)}`} 
+              subtitle="Valor del Dólar Oficial"
+              icon={Globe} 
+              color="bg-red-600"
+              buy={formatNumber(data?.clp_compra)}
+              sell={formatNumber(data?.clp_venta)}
+              change={data?.changes?.clp_percent}
+            />
+          </div>
+
+          {/* Brasil Section */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 px-1">
+              <div className="w-1.5 h-6 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]" />
+              <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Brasil</h2>
+            </div>
+            <StatCard 
+               title="Real Brasileño" 
+              value={`${formatNumber(data?.brl_venta)}`} 
+              subtitle="Valor del Dólar Oficial"
+              icon={Globe} 
+              color="bg-emerald-600"
+              buy={formatNumber(data?.brl_compra)}
+              sell={formatNumber(data?.brl_venta)}
+              change={data?.changes?.brl_percent}
+            />
+          </div>
+
+          {/* Historical Comparison Section */}
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-300">
+            {/* Historical Comparison temporarily removed */}
+            {/* <HistoricalComparison /> */}
           </div>
 
         </div>
