@@ -67,6 +67,12 @@ interface MarketData {
     ve_paralelo: number;
     tasa_remesa: string;
     bitcoin: string;
+    uyu_compra: number;
+    uyu_venta: number;
+    clp_compra: number;
+    clp_venta: number;
+    brl_compra: number;
+    brl_venta: number;
     updated_at: string;
     all_ar_dolares?: any[];
     changes?: {
@@ -74,12 +80,16 @@ interface MarketData {
         ve_paralelo_percent: number;
         ar_crypto_percent: number;
         ve_oficial_percent: number;
+        uyu_percent: number;
+        clp_percent: number;
+        brl_percent: number;
         otros_dolares_percents: Record<string, number>;
         bitcoin_percent: number;
     };
     api_status: {
         dolar_api_ar: boolean;
         dolar_api_ve: boolean;
+        dolar_api_latam: boolean;
         binance_api: boolean;
     };
 }
@@ -91,6 +101,9 @@ interface HistoryItem {
     ve_paralelo_venta: number;
     ar_crypto_venta?: number;
     ve_oficial?: number;
+    uyu_venta?: number;
+    clp_venta?: number;
+    brl_venta?: number;
     otros_dolares?: Record<string, number>;
     bitcoin?: number;
 }
@@ -139,12 +152,15 @@ const initializeHistory = () => {
 
 const saveCurrentToHistory = async () => {
     try {
-        const [arOficial, veParalelo, arCrypto, veOficial, allArDolares, btcPrice] = await Promise.all([
+        const [arOficial, veParalelo, arCrypto, veOficial, allArDolares, uyuRes, clpRes, brlRes, btcPrice] = await Promise.all([
             axios.get('https://dolarapi.com/v1/dolares/oficial'),
             axios.get('https://ve.dolarapi.com/v1/dolares/paralelo'),
             axios.get('https://dolarapi.com/v1/dolares/cripto').catch(e => ({ data: {} })),
             axios.get('https://ve.dolarapi.com/v1/dolares/oficial').catch(e => ({ data: {} })),
             axios.get('https://dolarapi.com/v1/dolares').catch(e => ({ data: [] })),
+            axios.get('https://dolarapi.com/v1/cotizaciones/uyu').catch(e => ({ data: {} })),
+            axios.get('https://dolarapi.com/v1/cotizaciones/clp').catch(e => ({ data: {} })),
+            axios.get('https://dolarapi.com/v1/cotizaciones/brl').catch(e => ({ data: {} })),
             axios.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT').catch(e => ({ data: { price: 0 } }))
         ]);
 
@@ -166,6 +182,9 @@ const saveCurrentToHistory = async () => {
             ve_paralelo_venta: veParalelo.data.promedio || 0,
             ar_crypto_venta: arCrypto.data.venta || 0,
             ve_oficial: veOficial.data.promedio || 0,
+            uyu_venta: uyuRes.data.venta || 0,
+            clp_venta: clpRes.data.venta || 0,
+            brl_venta: brlRes.data.venta || 0,
             otros_dolares,
             bitcoin: btcPrice.data.price ? parseFloat(btcPrice.data.price) : 0
         };
@@ -186,6 +205,7 @@ app.get('/api/rates', async (req, res) => {
     let apiStatus = {
         dolar_api_ar: false,
         dolar_api_ve: false,
+        dolar_api_latam: false,
         binance_api: false
     };
 
@@ -196,10 +216,13 @@ app.get('/api/rates', async (req, res) => {
             axios.get('https://dolarapi.com/v1/dolares').catch(e => { return {data: []}; }),
             axios.get('https://ve.dolarapi.com/v1/dolares/paralelo').then(r => { apiStatus.dolar_api_ve = true; return r; }).catch(e => { return {data: {}}; }),
             axios.get('https://ve.dolarapi.com/v1/dolares/oficial').catch(e => { return {data: {}}; }),
+            axios.get('https://dolarapi.com/v1/cotizaciones/uyu').then(r => { apiStatus.dolar_api_latam = true; return r; }).catch(e => { return {data: {}}; }),
+            axios.get('https://dolarapi.com/v1/cotizaciones/clp').catch(e => { return {data: {}}; }),
+            axios.get('https://dolarapi.com/v1/cotizaciones/brl').catch(e => { return {data: {}}; }),
             axios.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT').then(r => { apiStatus.binance_api = true; return r; }).catch(e => { return {data: {price: "0"}}; })
         ];
 
-        const [arOficial, arCrypto, allArDolares, veParalelo, veOficial, btcPrice] = await Promise.all(requests);
+        const [arOficial, arCrypto, allArDolares, veParalelo, veOficial, uyuRes, clpRes, brlRes, btcPrice] = await Promise.all(requests);
 
         const history: HistoryItem[] = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
         
@@ -207,6 +230,9 @@ app.get('/api/rates', async (req, res) => {
         const currentVeParalelo = veParalelo?.data?.promedio || 0;
         const currentArCrypto = arCrypto?.data?.venta || 0;
         const currentVeOficial = veOficial?.data?.promedio || 0;
+        const currentUyuVenta = uyuRes?.data?.venta || 0;
+        const currentClpVenta = clpRes?.data?.venta || 0;
+        const currentBrlVenta = brlRes?.data?.venta || 0;
         const currentOtrosDolares = allArDolares?.data || [];
         const currentBtc = btcPrice?.data?.price ? parseFloat(btcPrice.data.price) : 0;
 
@@ -235,6 +261,9 @@ app.get('/api/rates', async (req, res) => {
         const ve_paralelo_percent = calcPercent('ve_paralelo_venta', currentVeParalelo);
         const ar_crypto_percent = calcPercent('ar_crypto_venta', currentArCrypto);
         const ve_oficial_percent = calcPercent('ve_oficial', currentVeOficial);
+        const uyu_percent = calcPercent('uyu_venta', currentUyuVenta);
+        const clp_percent = calcPercent('clp_venta', currentClpVenta);
+        const brl_percent = calcPercent('brl_venta', currentBrlVenta);
         const bitcoin_percent = calcPercent('bitcoin', currentBtc);
         
         let otros_dolares_percents: Record<string, number> = {};
@@ -273,6 +302,12 @@ app.get('/api/rates', async (req, res) => {
             ve_paralelo: currentVeParalelo,
             tasa_remesa: currentAr > 0 ? (currentVeParalelo / currentAr).toFixed(2) : "0",
             bitcoin: btcPrice?.data?.price ? parseFloat(btcPrice.data.price).toFixed(2) : "0",
+            uyu_compra: uyuRes?.data?.compra || 0,
+            uyu_venta: uyuRes?.data?.venta || 0,
+            clp_compra: clpRes?.data?.compra || 0,
+            clp_venta: clpRes?.data?.venta || 0,
+            brl_compra: brlRes?.data?.compra || 0,
+            brl_venta: brlRes?.data?.venta || 0,
             updated_at: new Date().toISOString(),
             all_ar_dolares: allArDolares?.data,
             changes: {
@@ -280,6 +315,9 @@ app.get('/api/rates', async (req, res) => {
                 ve_paralelo_percent,
                 ar_crypto_percent,
                 ve_oficial_percent,
+                uyu_percent,
+                clp_percent,
+                brl_percent,
                 otros_dolares_percents,
                 bitcoin_percent
             },

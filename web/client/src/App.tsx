@@ -46,12 +46,22 @@ interface MarketData {
     ve_paralelo_percent: number;
     ar_crypto_percent: number;
     ve_oficial_percent: number;
+    uyu_percent: number;
+    clp_percent: number;
+    brl_percent: number;
     otros_dolares_percents: Record<string, number>;
     bitcoin_percent: number;
   };
+  uyu_compra: number;
+  uyu_venta: number;
+  clp_compra: number;
+  clp_venta: number;
+  brl_compra: number;
+  brl_venta: number;
   api_status: {
     dolar_api_ar: boolean;
     dolar_api_ve: boolean;
+    dolar_api_latam: boolean;
     binance_api: boolean;
   };
 }
@@ -70,7 +80,7 @@ const formatNumber = (num: any) => {
   return parsed.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change, badge }: any) => {
+const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change, badge, spread }: any) => {
   const isPositive = change > 0;
   const isNeutral = change === 0;
   const displayValue = value || '---';
@@ -89,13 +99,18 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
         <div className="flex flex-col items-end">
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{title}</span>
           {change !== undefined && (
-            <span className={`flex items-center gap-0.5 text-[10px] font-bold mt-1 px-2 py-0.5 rounded-full ${
-              isNeutral ? 'text-slate-500 bg-slate-100 dark:bg-slate-700' :
-              isPositive ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400' : 'text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400'
-            }`}>
-              {isNeutral ? <TrendingUp className="w-3 h-3 text-slate-400" /> : isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-              {Math.abs(change).toFixed(2)}%
-            </span>
+            <div className="flex flex-col items-end gap-1">
+              <span className={`flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                isNeutral ? 'text-slate-500 bg-slate-100 dark:bg-slate-700' :
+                isPositive ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400' : 'text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400'
+              }`}>
+                {isNeutral ? <TrendingUp className="w-3 h-3 text-slate-400" /> : isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                {Math.abs(change).toFixed(2)}%
+              </span>
+              {spread !== undefined && (
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Spread: {spread}%</span>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -121,7 +136,7 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
 
 const Converter = ({ data }: { data: MarketData | null }) => {
   const [amount, setAmount] = useState<number>(1);
-  const [from, setFrom] = useState<'USD' | 'ARS' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL'>('USD');
+  const [from, setFrom] = useState<'USD' | 'ARS' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL'>('USD');
 
   if (!data) return null;
 
@@ -130,10 +145,13 @@ const Converter = ({ data }: { data: MarketData | null }) => {
     ARS: data.ar_oficial_venta,
     CRYPTO: data.ar_crypto_venta,
     VES: data.ve_paralelo,
-    VES_OFFICIAL: data.ve_oficial
+    VES_OFFICIAL: data.ve_oficial,
+    UYU: data.uyu_venta,
+    CLP: data.clp_venta,
+    BRL: data.brl_venta
   };
 
-  const convert = (to: 'USD' | 'ARS' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL') => {
+  const convert = (to: 'USD' | 'ARS' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL') => {
     const usdAmount = amount / rates[from];
     const result = usdAmount * rates[to];
     
@@ -177,8 +195,11 @@ const Converter = ({ data }: { data: MarketData | null }) => {
                 <option value="USD">USD</option>
                 <option value="ARS">ARS</option>
                 <option value="CRYPTO">CRYPTO</option>
-                <option value="VES">VES (PARALELO)</option>
+                <option value="VES (PARALELO)">VES (PARALELO)</option>
                 <option value="VES_OFFICIAL">VES (OFICIAL)</option>
+                <option value="UYU">UYU</option>
+                <option value="CLP">CLP</option>
+                <option value="BRL">BRL</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-slate-400 pointer-events-none" />
             </div>
@@ -214,6 +235,24 @@ const Converter = ({ data }: { data: MarketData | null }) => {
             <div className="p-4 bg-amber-50 dark:bg-amber-900/30 rounded-2xl flex justify-between items-center border border-amber-100 dark:border-amber-800/50">
               <span className="text-amber-700 dark:text-amber-400 font-black text-xs uppercase">VES (Oficial)</span>
               <span className="text-xl font-black text-amber-800 dark:text-amber-300">{convert('VES_OFFICIAL')}</span>
+            </div>
+          )}
+          {from !== 'UYU' && (
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl flex justify-between items-center border border-emerald-100 dark:border-emerald-800/50">
+              <span className="text-emerald-700 dark:text-emerald-400 font-black text-xs uppercase">UYU (Peso)</span>
+              <span className="text-xl font-black text-emerald-800 dark:text-emerald-300">$ {convert('UYU')}</span>
+            </div>
+          )}
+          {from !== 'CLP' && (
+            <div className="p-4 bg-red-50 dark:bg-red-900/30 rounded-2xl flex justify-between items-center border border-red-100 dark:border-red-800/50">
+              <span className="text-red-700 dark:text-red-400 font-black text-xs uppercase">CLP (Peso)</span>
+              <span className="text-xl font-black text-red-800 dark:text-red-300">$ {convert('CLP')}</span>
+            </div>
+          )}
+          {from !== 'BRL' && (
+            <div className="p-4 bg-green-50 dark:bg-green-900/30 rounded-2xl flex justify-between items-center border border-green-100 dark:border-green-800/50">
+              <span className="text-green-700 dark:text-green-400 font-black text-xs uppercase">BRL (Real)</span>
+              <span className="text-xl font-black text-green-800 dark:text-green-300">$ {convert('BRL')}</span>
             </div>
           )}
         </div>
@@ -612,6 +651,47 @@ function App() {
                 })}
               </div>
             </div>
+
+            {/* neighboring countries */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mt-4">
+                <Globe className="w-8 h-8 text-slate-400" />
+                <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Latinoamérica</h2>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+                <StatCard 
+                  title="Peso Uruguayo" 
+                  value={`$${formatNumber(data?.uyu_venta)}`} 
+                  icon={Globe} 
+                  color="bg-sky-600"
+                  buy={formatNumber(data?.uyu_compra)}
+                  sell={formatNumber(data?.uyu_venta)}
+                  change={data?.changes?.uyu_percent}
+                  spread={data?.uyu_compra ? (((data.uyu_venta - data.uyu_compra) / data.uyu_compra) * 100).toFixed(2) : '0.00'}
+                />
+                <StatCard 
+                  title="Peso Chileno" 
+                  value={`$${formatNumber(data?.clp_venta)}`} 
+                  icon={Globe} 
+                  color="bg-red-600"
+                  buy={formatNumber(data?.clp_compra)}
+                  sell={formatNumber(data?.clp_venta)}
+                  change={data?.changes?.clp_percent}
+                  spread={data?.clp_compra ? (((data.clp_venta - data.clp_compra) / data.clp_compra) * 100).toFixed(2) : '0.00'}
+                />
+                <StatCard 
+                  title="Real Brasileño" 
+                  value={`$${formatNumber(data?.brl_venta)}`} 
+                  icon={Globe} 
+                  color="bg-emerald-600"
+                  buy={formatNumber(data?.brl_compra)}
+                  sell={formatNumber(data?.brl_venta)}
+                  change={data?.changes?.brl_percent}
+                  spread={data?.brl_compra ? (((data.brl_venta - data.brl_compra) / data.brl_compra) * 100).toFixed(2) : '0.00'}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Venezuela Section */}
@@ -669,6 +749,10 @@ function App() {
               <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700">
                 <div className={`w-2 h-2 rounded-full ${data?.api_status.dolar_api_ve ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">DolarApi VE</span>
+              </div>
+              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700">
+                <div className={`w-2 h-2 rounded-full ${data?.api_status.dolar_api_latam ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">DolarApi Latam</span>
               </div>
               <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700">
                 <div className={`w-2 h-2 rounded-full ${data?.api_status.binance_api ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
