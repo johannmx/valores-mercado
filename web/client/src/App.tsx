@@ -17,7 +17,8 @@ import {
   Sun,
   Moon,
   ChevronDown,
-  AlertTriangle
+  AlertTriangle,
+  Github
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -774,7 +775,7 @@ function App() {
                   rel="noopener noreferrer"
                   className="p-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-lg shadow-slate-200 dark:shadow-none"
                 >
-                  <Globe className="w-5 h-5" />
+                  <Github className="w-5 h-5" />
                 </a>
               </div>
             </div>
