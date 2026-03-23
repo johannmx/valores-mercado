@@ -4,12 +4,24 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'README.md'
+      - '**.sh'
+      - '.gitignore'
+      - 'docker-compose**.yml'
+      - 'api_data/**'
 
 env:
   REGISTRY: ghcr.io
 
 jobs:
   build-and-push:
+    if: |
+      github.event_name == 'push' && 
+      !startsWith(github.event.head_commit.message, 'docs:') &&
+      !startsWith(github.event.head_commit.message, 'chore:') &&
+      !startsWith(github.event.head_commit.message, 'style:') &&
+      !startsWith(github.event.head_commit.message, 'test:')
     runs-on: ubuntu-latest
     permissions:
       contents: read
