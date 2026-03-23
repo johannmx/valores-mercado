@@ -223,7 +223,7 @@ const saveCurrentToHistory = async () => {
         try {
             fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
         } catch (writeError) {
-            console.error('Failed to write history file during background save:', writeError.message);
+            console.error('Failed to write history file during background save:', (writeError as any).message);
         }
     } catch (error) {
         console.error('Error saving to history:', error);
