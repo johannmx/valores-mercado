@@ -889,22 +889,10 @@ function App() {
         <footer className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 px-8 py-4 z-50 transition-colors duration-300">
           <div className="max-w-7xl mx-auto space-y-4">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex flex-wrap items-center justify-center gap-4">
-                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700 shadow-sm">
-                  <div className={`w-2 h-2 rounded-full ${data?.api_status.dolar_api_ar ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">DolarApi AR</span>
-                </div>
-                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700 shadow-sm">
-                  <div className={`w-2 h-2 rounded-full ${data?.api_status.dolar_api_ve ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">DolarApi VE</span>
-                </div>
-                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700 shadow-sm">
-                  <div className={`w-2 h-2 rounded-full ${data?.api_status.dolar_api_latam ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">DolarApi Latam</span>
-                </div>
-                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700 shadow-sm">
-                  <div className={`w-2 h-2 rounded-full ${data?.api_status.binance_api ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Binance API</span>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl transition-all border border-indigo-100 dark:border-indigo-800/50 shadow-sm">
+                  <div className={`w-2 h-2 rounded-full ${data?.api_status?.dolar_api_ar ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
+                  <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em]">Dolar Api Status: {data?.api_status?.api_health || 'ok'}</span>
                 </div>
               </div>
               
@@ -920,10 +908,7 @@ function App() {
                 
                 <div className="flex flex-col items-end gap-3">
                   <div className="flex flex-wrap justify-end gap-2">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl transition-all border border-indigo-100 dark:border-indigo-800/50 shadow-sm">
-                      <div className={`w-2 h-2 rounded-full ${data?.api_status?.dolar_api_ar ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
-                      <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em]">Dolar Api Status: {data?.api_status?.api_health || 'ok'}</span>
-                    </div>
+                    {/* Status pill removed from here to be more prominent above */}
                   </div>
                   
                   <a 
