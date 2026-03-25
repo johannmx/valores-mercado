@@ -1,3 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    @apply bg-slate-50 dark:bg-slate-900 m-0 p-0 min-h-screen;
+  }
+}
