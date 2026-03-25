@@ -152,13 +152,14 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
 
 const Converter = ({ data }: { data: MarketData | null }) => {
   const [amount, setAmount] = useState<number>(1);
-  const [from, setFrom] = useState<'USD' | 'ARS' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL' | 'EUR'>('USD');
+  const [from, setFrom] = useState<'USD' | 'ARS_BLUE' | 'ARS_OFFICIAL' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL' | 'EUR'>('USD');
 
   if (!data) return null;
 
   const rates: Record<string, number> = {
     USD: 1,
-    ARS: data.usd_blue,
+    ARS_BLUE: data.usd_blue,
+    ARS_OFFICIAL: data.usd_oficial,
     CRYPTO: data.usd_cripto,
     VES: data.ves_paralelo,
     VES_OFFICIAL: data.ves_oficial,
@@ -168,11 +169,11 @@ const Converter = ({ data }: { data: MarketData | null }) => {
     EUR: data.eur_venta
   };
 
-  const convert = (to: 'USD' | 'ARS' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL' | 'EUR') => {
+  const convert = (to: 'USD' | 'ARS_BLUE' | 'ARS_OFFICIAL' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL' | 'EUR') => {
     const usdAmount = amount / rates[from];
     const result = usdAmount * rates[to];
     
-    if (to === 'ARS' || to === 'CRYPTO' || to === 'VES' || to === 'VES_OFFICIAL') {
+    if (to === 'ARS_BLUE' || to === 'ARS_OFFICIAL' || to === 'CRYPTO' || to === 'VES' || to === 'VES_OFFICIAL') {
       return result.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
     return result.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -210,7 +211,8 @@ const Converter = ({ data }: { data: MarketData | null }) => {
                 className="appearance-none w-full px-4 pr-10 py-2 border border-slate-300 dark:border-slate-600 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-xl font-black outline-none cursor-pointer transition-colors shadow-sm"
               >
                 <option value="USD">USD</option>
-                <option value="ARS">ARS</option>
+                <option value="ARS_BLUE">ARS (BLUE)</option>
+                <option value="ARS_OFFICIAL">ARS (OFICIAL)</option>
                 <option value="CRYPTO">CRYPTO</option>
                 <option value="VES">VES (PARALELO)</option>
                 <option value="VES_OFFICIAL">VES (OFICIAL)</option>
@@ -230,10 +232,16 @@ const Converter = ({ data }: { data: MarketData | null }) => {
               <span className="text-xl font-black text-blue-800 dark:text-blue-300">$ {convert('USD')}</span>
             </div>
           )}
-          {from !== 'ARS' && (
+          {from !== 'ARS_BLUE' && (
+            <div className="p-4 bg-sky-50 dark:bg-sky-900/30 rounded-2xl flex justify-between items-center border border-sky-100 dark:border-sky-800/50">
+              <span className="text-sky-700 dark:text-sky-400 font-black text-xs uppercase">ARS (Blue)</span>
+              <span className="text-xl font-black text-sky-800 dark:text-sky-300">$ {convert('ARS_BLUE')}</span>
+            </div>
+          )}
+          {from !== 'ARS_OFFICIAL' && (
             <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl flex justify-between items-center border border-indigo-100 dark:border-indigo-800/50">
               <span className="text-indigo-700 dark:text-indigo-400 font-black text-xs uppercase">ARS (Oficial)</span>
-              <span className="text-xl font-black text-indigo-800 dark:text-indigo-300">$ {convert('ARS')}</span>
+              <span className="text-xl font-black text-indigo-800 dark:text-indigo-300">$ {convert('ARS_OFFICIAL')}</span>
             </div>
           )}
           {from !== 'CRYPTO' && (
