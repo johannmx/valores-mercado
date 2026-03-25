@@ -54,7 +54,8 @@ interface MarketData {
   changes: {
     usd_oficial_percent: number;
     usd_blue_percent: number;
-    ves_percent: number;
+    ves_oficial_percent: number;
+    ves_paralelo_percent: number;
     uyu_percent: number;
     clp_percent: number;
     brl_percent: number;
@@ -720,7 +721,7 @@ function App() {
                 icon={ShieldCheck} 
                 color="bg-blue-500"
                 subtitle="Tasa Oficial BCV"
-                change={data?.changes?.ves_percent}
+                change={data?.changes?.ves_oficial_percent}
               />
               <StatCard 
                 title="Dólar Paralelo" 
@@ -728,7 +729,7 @@ function App() {
                 icon={DollarSign} 
                 color="bg-yellow-500"
                 subtitle="Promedio Dólar Paralelo"
-                change={data?.changes?.ves_percent}
+                change={data?.changes?.ves_paralelo_percent}
               />
             </div>
 

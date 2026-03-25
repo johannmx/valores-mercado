@@ -91,7 +91,8 @@ interface MarketData {
     changes: {
         usd_oficial_percent: number;
         usd_blue_percent: number;
-        ves_percent: number;
+        ves_oficial_percent: number;
+        ves_paralelo_percent: number;
         uyu_percent: number;
         clp_percent: number;
         brl_percent: number;
@@ -278,7 +279,9 @@ app.get('/api/rates', async (req, res) => {
 
         apiStatus.dolar_api_latam = uyuRes.status === 200 && clpRes.status === 200 && brlRes.status === 200;
 
-        const last24h = history.length > 0 ? history[history.length - 1] : null;
+        const now = new Date();
+        const targetTime = now.getTime() - (24 * 60 * 60 * 1000);
+        const last24h = history.length > 0 ? (history.find(h => new Date(h.timestamp).getTime() >= targetTime) || history[0]) : null;
 
         const calculateChange = (current: number, last: number) => {
             if (!last || last === 0) return 0;
@@ -313,7 +316,8 @@ app.get('/api/rates', async (req, res) => {
             changes: {
                 usd_oficial_percent: calculateChange(arsData.find((d: any) => d.casa === 'oficial')?.venta, last24h?.usd_oficial || 0),
                 usd_blue_percent: calculateChange(arsData.find((d: any) => d.casa === 'blue')?.venta, last24h?.usd_blue || 0),
-                ves_percent: calculateChange(vesData.venta || vesData.promedio, last24h?.ves_oficial || 0),
+                ves_oficial_percent: calculateChange(vesOficialData.promedio || vesOficialData.venta, last24h?.ves_oficial || 0),
+                ves_paralelo_percent: calculateChange(vesData.promedio || vesData.venta, last24h?.ves_paralelo || 0),
                 uyu_percent: uyuChange,
                 clp_percent: clpChange,
                 brl_percent: brlChange,
