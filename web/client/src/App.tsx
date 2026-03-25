@@ -211,7 +211,6 @@ const Converter = ({ data }: { data: MarketData | null }) => {
                 className="appearance-none w-full px-4 pr-10 py-2 border border-slate-300 dark:border-slate-600 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-xl font-black outline-none cursor-pointer transition-colors shadow-sm"
               >
                 <option value="USD">USD</option>
-                <option value="ARS_BLUE">ARS (BLUE)</option>
                 <option value="ARS_OFFICIAL">ARS (OFICIAL)</option>
                 <option value="CRYPTO">CRYPTO</option>
                 <option value="VES">VES (PARALELO)</option>
@@ -232,52 +231,73 @@ const Converter = ({ data }: { data: MarketData | null }) => {
               <span className="text-xl font-black text-blue-800 dark:text-blue-300">$ {convert('USD')}</span>
             </div>
           )}
-          {from !== 'ARS_BLUE' && (
-            <div className="p-4 bg-sky-50 dark:bg-sky-900/30 rounded-2xl flex justify-between items-center border border-sky-100 dark:border-sky-800/50">
-              <span className="text-sky-700 dark:text-sky-400 font-black text-xs uppercase">ARS (Blue)</span>
-              <span className="text-xl font-black text-sky-800 dark:text-sky-300">$ {convert('ARS_BLUE')}</span>
-            </div>
-          )}
+          
+          <div className="mt-4 mb-1">
+            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">Argentina</span>
+          </div>
+
           {from !== 'ARS_OFFICIAL' && (
             <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl flex justify-between items-center border border-indigo-100 dark:border-indigo-800/50">
               <span className="text-indigo-700 dark:text-indigo-400 font-black text-xs uppercase">ARS (Oficial)</span>
               <span className="text-xl font-black text-indigo-800 dark:text-indigo-300">$ {convert('ARS_OFFICIAL')}</span>
             </div>
           )}
+
           {from !== 'CRYPTO' && (
             <div className="p-4 bg-purple-50 dark:bg-purple-900/30 rounded-2xl flex justify-between items-center border border-purple-100 dark:border-purple-800/50">
               <span className="text-purple-700 dark:text-purple-400 font-black text-xs uppercase">ARS (Crypto)</span>
               <span className="text-xl font-black text-purple-800 dark:text-purple-300">$ {convert('CRYPTO')}</span>
             </div>
           )}
+
+          <div className="mt-4 mb-1">
+            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">Venezuela</span>
+          </div>
+
           {from !== 'VES' && (
             <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-2xl flex justify-between items-center border border-yellow-100 dark:border-yellow-800/50">
               <span className="text-yellow-700 dark:text-yellow-400 font-black text-xs uppercase">VES (Paralelo)</span>
               <span className="text-xl font-black text-yellow-800 dark:text-yellow-300">{convert('VES')}</span>
             </div>
           )}
+
           {from !== 'VES_OFFICIAL' && (
             <div className="p-4 bg-amber-50 dark:bg-amber-900/30 rounded-2xl flex justify-between items-center border border-amber-100 dark:border-amber-800/50">
               <span className="text-amber-700 dark:text-amber-400 font-black text-xs uppercase">VES (Oficial)</span>
               <span className="text-xl font-black text-amber-800 dark:text-amber-300">{convert('VES_OFFICIAL')}</span>
             </div>
           )}
+
+          <div className="mt-4 mb-1">
+            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">Uruguay</span>
+          </div>
+
           {from !== 'UYU' && (
             <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl flex justify-between items-center border border-emerald-100 dark:border-emerald-800/50">
               <span className="text-emerald-700 dark:text-emerald-400 font-black text-xs uppercase">UYU (Peso)</span>
               <span className="text-xl font-black text-emerald-800 dark:text-emerald-300">$ {convert('UYU')}</span>
             </div>
           )}
-          {from !== 'CLP' && (
-            <div className="p-4 bg-red-50 dark:bg-red-900/30 rounded-2xl flex justify-between items-center border border-red-100 dark:border-red-800/50">
-              <span className="text-red-700 dark:text-red-400 font-black text-xs uppercase">CLP (Peso)</span>
-              <span className="text-xl font-black text-red-800 dark:text-red-300">$ {convert('CLP')}</span>
-            </div>
-          )}
+
+          <div className="mt-4 mb-1">
+            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">Brasil</span>
+          </div>
+
           {from !== 'BRL' && (
             <div className="p-4 bg-green-50 dark:bg-green-900/30 rounded-2xl flex justify-between items-center border border-green-100 dark:border-green-800/50">
               <span className="text-green-700 dark:text-green-400 font-black text-xs uppercase">BRL (Real)</span>
               <span className="text-xl font-black text-green-800 dark:text-green-300">$ {convert('BRL')}</span>
+            </div>
+          )}
+
+          <div className="mt-4 mb-1">
+            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">Chile</span>
+          </div>
+
+          {from !== 'CLP' && (
+            <div className="p-4 bg-red-50 dark:bg-red-900/30 rounded-2xl flex justify-between items-center border border-red-100 dark:border-red-800/50">
+              <span className="text-red-700 dark:text-red-400 font-black text-xs uppercase">CLP (Peso)</span>
+              <span className="text-xl font-black text-red-800 dark:text-red-300">$ {convert('CLP')}</span>
             </div>
           )}
         </div>
