@@ -52,6 +52,7 @@ interface MarketData {
   eur_compra: number;
   btc_usd: number;
   changes: {
+    usd_oficial_percent: number;
     usd_blue_percent: number;
     ves_percent: number;
     uyu_percent: number;
@@ -651,7 +652,7 @@ function App() {
                 color="bg-slate-600"
                 buy={formatNumber(data?.usd_oficial ? data.usd_oficial - 20 : 0)}
                 sell={formatNumber(data?.usd_oficial)}
-                change={0}
+                change={data?.changes?.usd_oficial_percent}
               />
               <StatCard 
                 title="Dólar Cripto" 

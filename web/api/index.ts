@@ -89,6 +89,7 @@ interface MarketData {
     eur_compra: number;
     btc_usd: number;
     changes: {
+        usd_oficial_percent: number;
         usd_blue_percent: number;
         ves_percent: number;
         uyu_percent: number;
@@ -310,6 +311,7 @@ app.get('/api/rates', async (req, res) => {
             eur_compra: eurData.compra || 0,
             btc_usd: parseFloat(btcData.price) || 0,
             changes: {
+                usd_oficial_percent: calculateChange(arsData.find((d: any) => d.casa === 'oficial')?.venta, last24h?.usd_oficial || 0),
                 usd_blue_percent: calculateChange(arsData.find((d: any) => d.casa === 'blue')?.venta, last24h?.usd_blue || 0),
                 ves_percent: calculateChange(vesData.venta || vesData.promedio, last24h?.ves_oficial || 0),
                 uyu_percent: uyuChange,
