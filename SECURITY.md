@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability within this project, please do not disclose it publicly. Instead, please report it by sending an email to [johann.perez@outlook.com](mailto:johann.perez@outlook.com).
+If you discover a security vulnerability within this project, please do not disclose it publicly. Instead, please report it by sending an email to [dev@johatech.ar](mailto:dev@johatech.ar).
 
 We take security seriously and will investigate all reports promptly.
 
