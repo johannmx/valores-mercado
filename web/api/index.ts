@@ -36,7 +36,7 @@ app.use((req, res, next) => {
     next();
 });
 app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
+    origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : false,
     methods: ['GET'],
     allowedHeaders: ['Content-Type']
 }));
