@@ -36,7 +36,7 @@ app.use((req, res, next) => {
     next();
 });
 app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : true,
+    origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
     methods: ['GET'],
     allowedHeaders: ['Content-Type']
 }));
@@ -338,6 +338,12 @@ app.get('/api/rates', async (req, res) => {
 app.get('/api/historical/:casa', async (req, res) => {
     try {
         const { casa } = req.params;
+        const allowedCasas = ['oficial', 'blue', 'bolsa', 'contadoconliqui', 'cripto', 'tarjeta'];
+        
+        if (!allowedCasas.includes(casa)) {
+            return res.status(400).json({ error: 'Invalid casa parameter' });
+        }
+
         const response = await axios.get(`https://api.argentinadatos.com/v1/cotizaciones/dolares/${casa}`);
         res.json(response.data);
     } catch (error) {
