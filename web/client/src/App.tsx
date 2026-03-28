@@ -102,13 +102,13 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
   const displayValue = value || '---';
 
   return (
-    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-md transition-all duration-300 relative overflow-hidden group h-full min-h-[220px]">
+    <div className="bg-white dark:bg-slate-800 p-3 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-md transition-all duration-300 relative overflow-hidden group min-h-[100px]">
       {badge && (
         <span className="absolute top-3 right-3 text-[9px] font-black uppercase tracking-widest bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full">
           {badge}
         </span>
       )}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <div className={`p-3 rounded-xl ${color} shadow-sm group-hover:scale-110 transition-transform`}>
           <Icon className="w-6 h-6 text-white" />
         </div>
@@ -309,7 +309,7 @@ const Converter = ({ data }: { data: MarketData | null }) => {
 };
 
 const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon, singleLine }: any) => (
-  <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full min-h-[400px]">
+  <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full min-h-[440px]">
     <div className="flex items-center justify-between mb-8">
       <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter flex items-center gap-2">
         <Icon className={`w-6 h-6 ${color.text}`} />
@@ -420,6 +420,7 @@ function App() {
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(
     () => (localStorage.getItem('theme') as 'light' | 'dark' | 'system') || 'system'
   );
+  const [activeTab, setActiveTab] = useState<'Argentina' | 'Venezuela' | 'Conversor' | 'Latam'>('Argentina');
 
   const isMarketOpen = () => {
     const now = new Date();
@@ -604,215 +605,299 @@ function App() {
               </button>
             </div>
 
-            {data && (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-4 px-6 py-3 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-100 dark:border-slate-700">
-                  <div className="flex flex-col items-end">
-                    <span className="text-[9px] uppercase font-black text-slate-300 dark:text-slate-500 leading-none mb-1 tracking-tighter">Última Sincronización</span>
-                    <span className="text-sm font-black text-slate-600 dark:text-white">{new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                  </div>
-                  <button 
-                    onClick={fetchData}
-                    className={`p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all ${isRefreshing ? 'animate-spin' : 'hover:rotate-180'}`}
-                  >
-                    <RefreshCw className="w-5 h-5 text-blue-500" />
-                  </button>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-4 px-6 py-3 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-100 dark:border-slate-700">
+                <div className="flex flex-col items-end">
+                  <span className="text-[9px] uppercase font-black text-slate-300 dark:text-slate-500 leading-none mb-1 tracking-tighter">
+                    {data ? 'Última Sincronización' : isRefreshing ? 'Sincronizando...' : 'Desconectado'}
+                  </span>
+                  <span className="text-sm font-black text-slate-600 dark:text-white">
+                    {data ? new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                  </span>
                 </div>
-                
-                <div className="px-2">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Próxima Sincronización</span>
-                    <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">{formatTimeLeft()}</span>
-                  </div>
-                  <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-blue-500 transition-all duration-1000 ease-linear rounded-full"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
+                <button 
+                  onClick={fetchData}
+                  disabled={isRefreshing}
+                  className={`p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all ${isRefreshing ? 'animate-spin' : 'hover:rotate-180'}`}
+                >
+                  <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'text-blue-400' : 'text-blue-500'}`} />
+                </button>
+              </div>
+              
+              <div className="px-2">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Próxima Sincronización</span>
+                  <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">{formatTimeLeft()}</span>
+                </div>
+                <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 transition-all duration-1000 ease-linear rounded-full"
+                    style={{ width: `${progress}%` }}
+                  />
                 </div>
               </div>
-            )}
+            </div>
           </div>
         </header>
 
         {error && (
-          <div className="mb-8 p-5 bg-red-50 dark:bg-red-900/30 border-2 border-red-100 dark:border-red-800/50 rounded-3xl flex items-center gap-3 text-red-700 dark:text-red-400 animate-pulse">
+          <div className="mb-8 p-5 bg-red-50 dark:bg-red-900/30 border-2 border-red-100 dark:border-red-800/50 rounded-3xl flex items-center gap-3 text-red-700 dark:text-red-400 animate-pulse max-w-7xl mx-auto">
             <TrendingDown className="w-6 h-6" />
             <span className="font-black uppercase text-xs tracking-widest">{error}</span>
           </div>
         )}
 
-        {/* Split Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-12">
+        {/* Tab Navigation (Pill Selector) */}
+        <div className="max-w-md mx-auto flex bg-slate-200/50 dark:bg-slate-800/50 p-1.5 rounded-full border border-slate-100 dark:border-slate-800 mb-12 transition-all duration-300 shadow-sm">
+          <button 
+            onClick={() => setActiveTab('Argentina')}
+            className={`flex-1 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
+              activeTab === 'Argentina' 
+                ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+            }`}
+          >
+            Argentina
+          </button>
+          <button 
+            onClick={() => setActiveTab('Venezuela')}
+            className={`flex-1 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
+              activeTab === 'Venezuela' 
+                ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+            }`}
+          >
+            Venezuela
+          </button>
+          <button 
+            onClick={() => setActiveTab('Latam')}
+            className={`flex-1 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
+              activeTab === 'Latam' 
+                ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+            }`}
+          >
+            LATAM
+          </button>
+          <button 
+            onClick={() => setActiveTab('Conversor')}
+            className={`flex-1 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
+              activeTab === 'Conversor' 
+                ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+            }`}
+          >
+            Calculadora
+          </button>
+        </div>
+
+
+        {/* Main Content Sections */}
+        <div className="mb-24 pb-24">
           
           {/* Argentina Section */}
-          <div className="space-y-10 flex flex-col h-full">
-            <div className="flex items-center gap-3 px-1">
-              <div className="w-1.5 h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.3)]" />
-              <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Argentina</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <StatCard 
-                title="Dólar Oficial" 
-                value={`$${formatNumber(data?.usd_oficial)}`} 
-                icon={ShieldCheck} 
-                color="bg-slate-600"
-                buy={formatNumber(data?.usd_oficial ? data.usd_oficial - 20 : 0)}
-                sell={formatNumber(data?.usd_oficial)}
-                change={data?.changes?.usd_oficial_percent}
-              />
-              <StatCard 
-                title="Dólar Cripto" 
-                value={`$${formatNumber(data?.usd_cripto)}`} 
-                icon={Bitcoin} 
-                color="bg-purple-600"
-                buy={formatNumber(data?.usd_cripto ? data.usd_cripto - 10 : 0)}
-                sell={formatNumber(data?.usd_cripto)}
-                change={data?.changes?.bitcoin_percent}
-                badge="24/7"
-              />
-            </div>
+          {activeTab === 'Argentina' && (
+            <div className="space-y-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
+              <div className="flex items-center gap-3 px-1">
+                <div className="w-1.5 h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.3)]" />
+                <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Mercado Argentina</h2>
+              </div>
 
-            <div className="flex-none h-[400px]">
-              <RegionChart 
-                title="Tendencia AR (Oficial)" 
-                data={history} 
-                dataKey="usd_oficial" 
-                color={{hex: '#64748b', text: 'text-slate-600'}}
-                icon={TrendingUp}
-                singleLine={true}
-              />
-            </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                <div className="space-y-8 flex flex-col h-full">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <StatCard 
+                    title="Dólar Oficial" 
+                    value={`$${formatNumber(data?.usd_oficial)}`} 
+                    icon={ShieldCheck} 
+                    color="bg-slate-600"
+                    buy={formatNumber(data?.usd_oficial ? data.usd_oficial - 20 : 0)}
+                    sell={formatNumber(data?.usd_oficial)}
+                    change={data?.changes?.usd_oficial_percent}
+                  />
+                  <StatCard 
+                    title="Dólar Cripto" 
+                    value={`$${formatNumber(data?.usd_cripto)}`} 
+                    icon={Bitcoin} 
+                    color="bg-purple-600"
+                    buy={formatNumber(data?.usd_cripto ? data.usd_cripto - 10 : 0)}
+                    sell={formatNumber(data?.usd_cripto)}
+                    change={data?.changes?.bitcoin_percent}
+                    badge="24/7"
+                  />
+                </div>
 
-            <div className="flex-1 bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col">
-              <h3 className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
-                <Info className="w-4 h-4 text-slate-300 dark:text-slate-500" /> Otros Dólares AR
-              </h3>
-              <div className="grid grid-cols-1 gap-4">
-                <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
-                  <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Blue</span>
-                  <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_blue)}</span>
+                <div className="flex-none h-[440px]">
+                  <RegionChart 
+                    title="Tendencia AR (Oficial)" 
+                    data={history} 
+                    dataKey="usd_oficial" 
+                    color={{hex: '#64748b', text: 'text-slate-600'}}
+                    icon={TrendingUp}
+                    singleLine={true}
+                  />
                 </div>
-                <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
-                  <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Euro Oficial</span>
-                  <span className="font-black text-indigo-700 dark:text-indigo-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.eur_venta)}</span>
+              </div>
+
+              <div className="flex-1 bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full">
+                <h3 className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+                  <Info className="w-4 h-4 text-slate-300 dark:text-slate-500" /> Otros Dólares AR
+                </h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                    <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Blue</span>
+                    <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_blue)}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                    <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Euro Oficial</span>
+                    <span className="font-black text-indigo-700 dark:text-indigo-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.eur_venta)}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                    <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Tarjeta</span>
+                    <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_tarjeta)}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                    <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar MEP (Bolsa)</span>
+                    <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_mep)}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                    <span className="font-black text-slate-500 uppercase text-xs tracking-tight">CCL</span>
+                    <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_ccl)}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
-                  <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Tarjeta</span>
-                  <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_tarjeta)}</span>
+              </div>
+              </div>
+            </div>
+          )}
+
+          {/* Venezuela Section */}
+          {activeTab === 'Venezuela' && (
+            <div className="space-y-8 animate-in fade-in duration-700">
+              <div className="flex items-center gap-3 px-1">
+                <div className="w-1.5 h-6 bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.3)]" />
+                <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Mercado Venezuela</h2>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Oficial Column */}
+                <div className="space-y-8">
+                  <StatCard 
+                    title="Dólar Oficial" 
+                    value={`${formatNumber(data?.ves_oficial)} VES`} 
+                    icon={ShieldCheck} 
+                    color="bg-blue-500"
+                    subtitle="Tasa Oficial BCV"
+                    change={data?.changes?.ves_oficial_percent}
+                  />
+                  <div className="h-[440px]">
+                    <RegionChart 
+                      title="Tendencia VE (Oficial)" 
+                      data={history} 
+                      dataKey="ves_oficial" 
+                      color={{hex: '#3b82f6', text: 'text-blue-500'}}
+                      icon={ShieldCheck}
+                      singleLine={true}
+                    />
+                  </div>
                 </div>
-                <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
-                  <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar MEP (Bolsa)</span>
-                  <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_mep)}</span>
-                </div>
-                <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
-                  <span className="font-black text-slate-500 uppercase text-xs tracking-tight">CCL</span>
-                  <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_ccl)}</span>
+
+                {/* Paralelo Column */}
+                <div className="space-y-8">
+                  <StatCard 
+                    title="Dólar Paralelo" 
+                    value={`${formatNumber(data?.ves_paralelo)} VES`} 
+                    icon={DollarSign} 
+                    color="bg-yellow-500"
+                    subtitle="Promedio Dólar Paralelo"
+                    change={data?.changes?.ves_paralelo_percent}
+                  />
+                  <div className="h-[440px]">
+                    <RegionChart 
+                      title="Tendencia VE (Paralelo)" 
+                      data={history} 
+                      dataKey="ves_paralelo" 
+                      color={{hex: '#eab308', text: 'text-yellow-500'}}
+                      icon={TrendingUp}
+                      singleLine={true}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Venezuela Section */}
-          <div className="space-y-10 flex flex-col h-full">
-            <div className="flex items-center gap-3 px-1">
-              <div className="w-1.5 h-6 bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.3)]" />
-              <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Venezuela</h2>
+          {/* LATAM Section */}
+          {activeTab === 'Latam' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
+              {/* Uruguay Section */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 px-1">
+                  <div className="w-1.5 h-6 bg-sky-500 rounded-full shadow-[0_0_10px_rgba(14,165,233,0.3)]" />
+                  <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Uruguay</h2>
+                </div>
+                <StatCard 
+                  title="Peso Uruguayo" 
+                  value={`${formatNumber(data?.uyu_venta)}`} 
+                  subtitle="Valor del Dólar Oficial"
+                  icon={Globe} 
+                  color="bg-sky-600"
+                  buy={formatNumber(data?.uyu_compra)}
+                  sell={formatNumber(data?.uyu_venta)}
+                  change={data?.changes?.uyu_percent}
+                />
+              </div>
+
+              {/* Chile Section */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 px-1">
+                  <div className="w-1.5 h-6 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.3)]" />
+                  <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Chile</h2>
+                </div>
+                <StatCard 
+                  title="Peso Chileno" 
+                  value={`${formatNumber(data?.clp_venta)}`} 
+                  subtitle="Valor del Dólar Oficial"
+                  icon={Globe} 
+                  color="bg-red-600"
+                  buy={formatNumber(data?.clp_compra)}
+                  sell={formatNumber(data?.clp_venta)}
+                  change={data?.changes?.clp_percent}
+                />
+              </div>
+
+              {/* Brasil Section */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 px-1">
+                  <div className="w-1.5 h-6 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]" />
+                  <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Brasil</h2>
+                </div>
+                <StatCard 
+                   title="Real Brasileño" 
+                  value={`${formatNumber(data?.brl_venta)}`} 
+                  subtitle="Valor del Dólar Oficial"
+                  icon={Globe} 
+                  color="bg-emerald-600"
+                  buy={formatNumber(data?.brl_compra)}
+                  sell={formatNumber(data?.brl_venta)}
+                  change={data?.changes?.brl_percent}
+                />
+              </div>
             </div>
+          )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <StatCard 
-                title="Dólar Oficial" 
-                value={`${formatNumber(data?.ves_oficial)} VES`} 
-                icon={ShieldCheck} 
-                color="bg-blue-500"
-                subtitle="Tasa Oficial BCV"
-                change={data?.changes?.ves_oficial_percent}
-              />
-              <StatCard 
-                title="Dólar Paralelo" 
-                value={`${formatNumber(data?.ves_paralelo)} VES`} 
-                icon={DollarSign} 
-                color="bg-yellow-500"
-                subtitle="Promedio Dólar Paralelo"
-                change={data?.changes?.ves_paralelo_percent}
-              />
-            </div>
-
-            <div className="flex-none h-[400px]">
-              <RegionChart 
-                title="Tendencia VE (Paralelo)" 
-                data={history} 
-                dataKey="ves_paralelo" 
-                color={{hex: '#eab308', text: 'text-yellow-500'}}
-                icon={TrendingUp}
-                singleLine={true}
-              />
-            </div>
-
-            <div className="flex-1">
+          {/* Calculadora Section */}
+          {activeTab === 'Conversor' && (
+            <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
+              <div className="flex items-center gap-3 px-1">
+                <div className="w-1.5 h-6 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.3)]" />
+                <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Calculadora</h2>
+              </div>
               <Converter data={data} />
             </div>
-          </div>
-
-          {/* Uruguay Section */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-3 px-1">
-              <div className="w-1.5 h-6 bg-sky-500 rounded-full shadow-[0_0_10px_rgba(14,165,233,0.3)]" />
-              <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Uruguay</h2>
-            </div>
-            <StatCard 
-              title="Peso Uruguayo" 
-              value={`${formatNumber(data?.uyu_venta)}`} 
-              subtitle="Valor del Dólar Oficial"
-              icon={Globe} 
-              color="bg-sky-600"
-              buy={formatNumber(data?.uyu_compra)}
-              sell={formatNumber(data?.uyu_venta)}
-              change={data?.changes?.uyu_percent}
-            />
-          </div>
-
-          {/* Chile Section */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-3 px-1">
-              <div className="w-1.5 h-6 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.3)]" />
-              <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Chile</h2>
-            </div>
-            <StatCard 
-              title="Peso Chileno" 
-              value={`${formatNumber(data?.clp_venta)}`} 
-              subtitle="Valor del Dólar Oficial"
-              icon={Globe} 
-              color="bg-red-600"
-              buy={formatNumber(data?.clp_compra)}
-              sell={formatNumber(data?.clp_venta)}
-              change={data?.changes?.clp_percent}
-            />
-          </div>
-
-          {/* Brasil Section */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-3 px-1">
-              <div className="w-1.5 h-6 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]" />
-              <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Brasil</h2>
-            </div>
-            <StatCard 
-               title="Real Brasileño" 
-              value={`${formatNumber(data?.brl_venta)}`} 
-              subtitle="Valor del Dólar Oficial"
-              icon={Globe} 
-              color="bg-emerald-600"
-              buy={formatNumber(data?.brl_compra)}
-              sell={formatNumber(data?.brl_venta)}
-              change={data?.changes?.brl_percent}
-            />
-          </div>
+          )}
 
           {/* Historical Comparison Section */}
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-300">
+          <div className="mt-16 space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-300">
             {/* Historical Comparison temporarily removed */}
             {/* <HistoricalComparison /> */}
           </div>
