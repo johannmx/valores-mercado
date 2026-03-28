@@ -50,6 +50,9 @@ interface MarketData {
   brl_compra: number;
   eur_venta: number;
   eur_compra: number;
+  uyu_ar: number;
+  clp_ar: number;
+  brl_ar: number;
   btc_usd: number;
   changes: {
     usd_oficial_percent: number;
@@ -60,6 +63,9 @@ interface MarketData {
     clp_percent: number;
     brl_percent: number;
     eur_percent: number;
+    uyu_ar_percent: number;
+    clp_ar_percent: number;
+    brl_ar_percent: number;
     otros_dolares_percents: Record<string, number>;
     bitcoin_percent: number;
   };
@@ -739,30 +745,54 @@ function App() {
                 </div>
               </div>
 
-              <div className="flex-1 bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full">
-                <h3 className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
-                  <Info className="w-4 h-4 text-slate-300 dark:text-slate-500" /> Otros Dólares AR
-                </h3>
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
-                    <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Blue</span>
-                    <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_blue)}</span>
+              <div className="space-y-8 flex flex-col h-full">
+                {/* Otros Dólares Card */}
+                <div className="flex-1 bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col">
+                  <h3 className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+                    <Info className="w-4 h-4 text-slate-300 dark:text-slate-500" /> Otros Dólares AR
+                  </h3>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Blue</span>
+                      <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_blue)}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Tarjeta</span>
+                      <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_tarjeta)}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar MEP (Bolsa)</span>
+                      <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_mep)}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">CCL</span>
+                      <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_ccl)}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
-                    <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Euro Oficial</span>
-                    <span className="font-black text-indigo-700 dark:text-indigo-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.eur_venta)}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
-                    <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Tarjeta</span>
-                    <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_tarjeta)}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
-                    <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar MEP (Bolsa)</span>
-                    <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_mep)}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
-                    <span className="font-black text-slate-500 uppercase text-xs tracking-tight">CCL</span>
-                    <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_ccl)}</span>
+                </div>
+
+                {/* Otras Monedas Card */}
+                <div className="flex-1 bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col">
+                  <h3 className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-slate-300 dark:text-slate-500" /> Otras Monedas
+                  </h3>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Euro Oficial</span>
+                      <span className="font-black text-indigo-700 dark:text-indigo-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.eur_venta)}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Real Brasileño</span>
+                      <span className="font-black text-emerald-700 dark:text-emerald-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.brl_ar)}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Peso Chileno</span>
+                      <span className="font-black text-red-700 dark:text-red-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.clp_ar)}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Peso Uruguayo</span>
+                      <span className="font-black text-sky-700 dark:text-sky-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.uyu_ar)}</span>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -64,6 +64,9 @@ const DOLAR_API_VES_OFFICIAL_URL = 'https://ve.dolarapi.com/v1/dolares/oficial';
 const DOLAR_API_UYU_URL = 'https://uy.dolarapi.com/v1/cotizaciones/usd';
 const DOLAR_API_CLP_URL = 'https://cl.dolarapi.com/v1/cotizaciones/usd';
 const DOLAR_API_BRL_URL = 'https://br.dolarapi.com/v1/cotacoes/usd';
+const DOLAR_API_UYU_AR_URL = 'https://dolarapi.com/v1/cotizaciones/uyu';
+const DOLAR_API_CLP_AR_URL = 'https://dolarapi.com/v1/cotizaciones/clp';
+const DOLAR_API_BRL_AR_URL = 'https://dolarapi.com/v1/cotizaciones/brl';
 const DOLAR_API_EURO_URL = 'https://dolarapi.com/v1/cotizaciones/eur';
 const DOLAR_API_STATUS_URL = 'https://dolarapi.com/v1/estado';
 const BINANCE_API_URL = 'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT';
@@ -87,6 +90,9 @@ interface MarketData {
     brl_compra: number;
     eur_venta: number;
     eur_compra: number;
+    uyu_ar: number;
+    clp_ar: number;
+    brl_ar: number;
     btc_usd: number;
     changes: {
         usd_oficial_percent: number;
@@ -97,6 +103,9 @@ interface MarketData {
         clp_percent: number;
         brl_percent: number;
         eur_percent: number;
+        uyu_ar_percent: number;
+        clp_ar_percent: number;
+        brl_ar_percent: number;
         otros_dolares_percents: Record<string, number>;
         bitcoin_percent: number;
     };
@@ -122,6 +131,9 @@ interface HistoryItem {
     clp_venta: number;
     brl_venta: number;
     eur_venta: number;
+    uyu_ar: number;
+    clp_ar: number;
+    brl_ar: number;
     btc_usd: number;
 }
 
@@ -147,6 +159,9 @@ const generateMockHistory = () => {
             clp_venta: 950 + Math.random() * 10,
             brl_venta: 5 + Math.random() * 0.1,
             eur_venta: 1100 + Math.random() * 20,
+            uyu_ar: 20 + Math.random() * 2,
+            clp_ar: 1.2 + Math.random() * 0.2,
+            brl_ar: 200 + Math.random() * 20,
             btc_usd: 90000 + Math.random() * 500
         });
     }
@@ -188,7 +203,7 @@ const initializeHistory = () => {
 
 const saveCurrentToHistory = async () => {
     try {
-        const [arsRes, vesRes, vesOficialRes, uyuRes, clpRes, brlRes, eurRes, btcRes] = await Promise.all([
+        const [arsRes, vesRes, vesOficialRes, uyuRes, clpRes, brlRes, eurRes, uyuArRes, clpArRes, brlArRes, btcRes] = await Promise.all([
             axios.get(DOLAR_API_ARS_URL).catch(e => ({ data: [] })),
             axios.get(DOLAR_API_VES_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_VES_OFFICIAL_URL).catch(e => ({ data: {} })),
@@ -196,6 +211,9 @@ const saveCurrentToHistory = async () => {
             axios.get(DOLAR_API_CLP_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_BRL_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_EURO_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_UYU_AR_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_CLP_AR_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_BRL_AR_URL).catch(e => ({ data: {} })),
             axios.get(BINANCE_API_URL).catch(e => ({ data: { price: "0" } }))
         ]);
 
@@ -208,6 +226,9 @@ const saveCurrentToHistory = async () => {
         const clpData = clpRes.data as any;
         const brlData = brlRes.data as any;
         const eurData = eurRes.data as any;
+        const uyuArData = uyuArRes.data as any;
+        const clpArData = clpArRes.data as any;
+        const brlArData = brlArRes.data as any;
         const btcData = btcRes.data as any;
 
         const newItem: HistoryItem = {
@@ -224,6 +245,9 @@ const saveCurrentToHistory = async () => {
             clp_venta: clpData.venta || 0,
             brl_venta: brlData.venda || 0,
             eur_venta: eurData.venta || 0,
+            uyu_ar: uyuArData.venta || 0,
+            clp_ar: clpArData.venta || 0,
+            brl_ar: brlArData.venta || 0,
             btc_usd: btcData.price ? parseFloat(btcData.price) : 0
         };
         
@@ -260,11 +284,14 @@ app.get('/api/rates', async (req, res) => {
             axios.get(DOLAR_API_CLP_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_BRL_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_EURO_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_UYU_AR_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_CLP_AR_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_BRL_AR_URL).catch(e => ({ data: {} })),
             axios.get(BINANCE_API_URL).then(r => { apiStatus.binance_api = true; return r; }).catch(e => { return {data: {price: "0"}}; }),
             axios.get(DOLAR_API_STATUS_URL).then(r => { apiStatus.api_health = r.data.estado || 'ok'; return r; }).catch(e => { return {data: {estado: 'error'}}; })
         ];
 
-        const [arsRes, vesRes, vesOficialRes, uyuRes, clpRes, brlRes, eurRes, btcRes, statusRes] = await Promise.all(requests) as any[];
+        const [arsRes, vesRes, vesOficialRes, uyuRes, clpRes, brlRes, eurRes, uyuArRes, clpArRes, brlArRes, btcRes, statusRes] = await Promise.all(requests) as any[];
 
         const history: HistoryItem[] = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
         
@@ -275,6 +302,9 @@ app.get('/api/rates', async (req, res) => {
         const clpData = clpRes.data;
         const brlData = brlRes.data;
         const eurData = eurRes.data;
+        const uyuArData = uyuArRes.data;
+        const clpArData = clpArRes.data;
+        const brlArData = brlArRes.data;
         const btcData = btcRes.data;
 
         apiStatus.dolar_api_latam = uyuRes.status === 200 && clpRes.status === 200 && brlRes.status === 200;
@@ -292,6 +322,9 @@ app.get('/api/rates', async (req, res) => {
         const clpChange = clpData.ultimoCierre ? calculateChange(clpData.venta, clpData.ultimoCierre) : calculateChange(clpData.venta, last24h?.clp_venta || clpData.compra);
         const brlChange = brlData.fechoAnterior ? calculateChange(brlData.venda, brlData.fechoAnterior) : calculateChange(brlData.venda, last24h?.brl_venta || brlData.compra);
         const eurChange = calculateChange(eurData.venta, last24h?.eur_venta || eurData.compra);
+        const uyuArChange = calculateChange(uyuArData.venta, last24h?.uyu_ar || uyuArData.compra);
+        const clpArChange = calculateChange(clpArData.venta, last24h?.clp_ar || clpArData.compra);
+        const brlArChange = calculateChange(brlArData.venta, last24h?.brl_ar || brlArData.compra);
 
         const marketData: MarketData = {
             timestamp: new Date().toISOString(),
@@ -312,6 +345,9 @@ app.get('/api/rates', async (req, res) => {
             brl_compra: brlData.compra || 0,
             eur_venta: eurData.venta || 0,
             eur_compra: eurData.compra || 0,
+            uyu_ar: uyuArData.venta || 0,
+            clp_ar: clpArData.venta || 0,
+            brl_ar: brlArData.venta || 0,
             btc_usd: parseFloat(btcData.price) || 0,
             changes: {
                 usd_oficial_percent: calculateChange(arsData.find((d: any) => d.casa === 'oficial')?.venta, last24h?.usd_oficial || 0),
@@ -322,6 +358,9 @@ app.get('/api/rates', async (req, res) => {
                 clp_percent: clpChange,
                 brl_percent: brlChange,
                 eur_percent: eurChange,
+                uyu_ar_percent: uyuArChange,
+                clp_ar_percent: clpArChange,
+                brl_ar_percent: brlArChange,
                 otros_dolares_percents: {},
                 bitcoin_percent: calculateChange(parseFloat(btcData.price), last24h?.btc_usd || 0)
             },
