@@ -114,11 +114,6 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
           <Icon className="w-6 h-6 text-white" />
         </div>
         <div className="flex flex-col items-end gap-1">
-          {badge && (
-            <span className="text-[9px] font-black uppercase tracking-widest bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full mb-0.5">
-              {badge}
-            </span>
-          )}
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-tight">{title}</span>
           {change !== undefined && (
             <div className="flex flex-col items-end gap-1 mt-1">
@@ -139,16 +134,27 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
       <div className="space-y-1">
         <h3 className="text-4xl font-black text-slate-800 dark:text-white tracking-tight leading-none">{displayValue}</h3>
         {subtitle && <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter">{subtitle}</p>}
-        {(buy !== undefined || sell !== undefined) && (
-          <div className="flex gap-4 mt-4 pt-4 border-t border-slate-50 dark:border-slate-700/50 text-[10px] font-bold uppercase">
-            <div className="flex flex-col">
-              <span className="text-slate-300 dark:text-slate-500 mb-0.5">Compra</span>
-              <span className="text-slate-600 dark:text-slate-300">$ {buy || '-'}</span>
+        {(buy !== undefined || sell !== undefined || badge) && (
+          <div className="flex justify-between items-end mt-4 pt-4 border-t border-slate-50 dark:border-slate-700/50 text-[10px] font-bold uppercase">
+            <div className="flex gap-4">
+              {buy !== undefined && (
+                <div className="flex flex-col">
+                  <span className="text-slate-300 dark:text-slate-500 mb-0.5">Compra</span>
+                  <span className="text-slate-600 dark:text-slate-300">$ {buy || '-'}</span>
+                </div>
+              )}
+              {sell !== undefined && (
+                <div className="flex flex-col">
+                  <span className="text-slate-300 dark:text-slate-500 mb-0.5">Venta</span>
+                  <span className="text-slate-600 dark:text-slate-300">$ {sell || '-'}</span>
+                </div>
+              )}
             </div>
-            <div className="flex flex-col">
-              <span className="text-slate-300 dark:text-slate-500 mb-0.5">Venta</span>
-              <span className="text-slate-600 dark:text-slate-300">$ {sell || '-'}</span>
-            </div>
+            {badge && (
+              <span className="text-[9px] font-black uppercase tracking-widest bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full mb-0.5">
+                {badge}
+              </span>
+            )}
           </div>
         )}
       </div>
