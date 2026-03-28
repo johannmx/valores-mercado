@@ -103,19 +103,19 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
 
   return (
     <div className="bg-white dark:bg-slate-800 p-3 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-md transition-all duration-300 relative overflow-hidden group min-h-[100px]">
-      {badge && (
-        <span className="absolute top-3 right-3 text-[9px] font-black uppercase tracking-widest bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full">
-          {badge}
-        </span>
-      )}
       <div className="flex items-center justify-between mb-2">
         <div className={`p-3 rounded-xl ${color} shadow-sm group-hover:scale-110 transition-transform`}>
           <Icon className="w-6 h-6 text-white" />
         </div>
-        <div className="flex flex-col items-end">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{title}</span>
+        <div className="flex flex-col items-end gap-1">
+          {badge && (
+            <span className="text-[9px] font-black uppercase tracking-widest bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full mb-0.5">
+              {badge}
+            </span>
+          )}
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-tight">{title}</span>
           {change !== undefined && (
-            <div className="flex flex-col items-end gap-1">
+            <div className="flex flex-col items-end gap-1 mt-1">
               <span className={`flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
                 isNeutral ? 'text-slate-500 bg-slate-100 dark:bg-slate-700' :
                 isPositive ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400' : 'text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400'
