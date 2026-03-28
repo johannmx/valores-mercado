@@ -716,40 +716,54 @@ function App() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-                <div className="space-y-8 flex flex-col h-full">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <StatCard 
-                    title="Dólar Oficial" 
-                    value={`$${formatNumber(data?.usd_oficial)}`} 
-                    icon={ShieldCheck} 
-                    color="bg-slate-600"
-                    buy={formatNumber(data?.usd_oficial ? data.usd_oficial - 20 : 0)}
-                    sell={formatNumber(data?.usd_oficial)}
-                    change={data?.changes?.usd_oficial_percent}
-                  />
-                  <StatCard 
-                    title="Dólar Cripto" 
-                    value={`$${formatNumber(data?.usd_cripto)}`} 
-                    icon={Bitcoin} 
-                    color="bg-purple-600"
-                    buy={formatNumber(data?.usd_cripto ? data.usd_cripto - 10 : 0)}
-                    sell={formatNumber(data?.usd_cripto)}
-                    change={data?.changes?.bitcoin_percent}
-                    badge="24/7"
-                  />
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:col-span-1">
+                  {/* Oficial Group */}
+                  <div className="space-y-8">
+                    <StatCard 
+                      title="Dólar Oficial" 
+                      value={`$${formatNumber(data?.usd_oficial)}`} 
+                      icon={ShieldCheck} 
+                      color="bg-slate-600"
+                      buy={formatNumber(data?.usd_oficial ? data.usd_oficial - 20 : 0)}
+                      sell={formatNumber(data?.usd_oficial)}
+                      change={data?.changes?.usd_oficial_percent}
+                    />
+                    <div className="h-[440px]">
+                      <RegionChart 
+                        title="Tendencia AR (Oficial)" 
+                        data={history} 
+                        dataKey="usd_oficial" 
+                        color={{hex: '#64748b', text: 'text-slate-600'}}
+                        icon={TrendingUp}
+                        singleLine={true}
+                      />
+                    </div>
+                  </div>
 
-                <div className="flex-none h-[440px]">
-                  <RegionChart 
-                    title="Tendencia AR (Oficial)" 
-                    data={history} 
-                    dataKey="usd_oficial" 
-                    color={{hex: '#64748b', text: 'text-slate-600'}}
-                    icon={TrendingUp}
-                    singleLine={true}
-                  />
+                  {/* Cripto Group */}
+                  <div className="space-y-8">
+                    <StatCard 
+                      title="Dólar Cripto" 
+                      value={`$${formatNumber(data?.usd_cripto)}`} 
+                      icon={Bitcoin} 
+                      color="bg-purple-600"
+                      buy={formatNumber(data?.usd_cripto ? data.usd_cripto - 10 : 0)}
+                      sell={formatNumber(data?.usd_cripto)}
+                      change={data?.changes?.bitcoin_percent}
+                      badge="24/7"
+                    />
+                    <div className="h-[440px]">
+                      <RegionChart 
+                        title="Tendencia AR (Cripto)" 
+                        data={history} 
+                        dataKey="usd_cripto" 
+                        color={{hex: '#9333ea', text: 'text-purple-600'}}
+                        icon={Bitcoin}
+                        singleLine={true}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
 
               <div className="space-y-8 flex flex-col h-full">
                 {/* Otros Dólares Card */}
