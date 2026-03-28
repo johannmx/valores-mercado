@@ -18,7 +18,8 @@ import {
   Moon,
   ChevronDown,
   AlertTriangle,
-  Github
+  Github,
+  Euro
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -41,6 +42,8 @@ interface MarketData {
   usd_tarjeta: number;
   ves_oficial: number;
   ves_paralelo: number;
+  ves_eur_oficial: number;
+  ves_eur_paralelo: number;
   ves_compra: number;
   uyu_venta: number;
   uyu_compra: number;
@@ -59,6 +62,8 @@ interface MarketData {
     usd_blue_percent: number;
     ves_oficial_percent: number;
     ves_paralelo_percent: number;
+    ves_eur_oficial_percent: number;
+    ves_eur_paralelo_percent: number;
     uyu_percent: number;
     clp_percent: number;
     brl_percent: number;
@@ -828,48 +833,79 @@ function App() {
                 <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Mercado Venezuela</h2>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Oficial Column */}
-                <div className="space-y-8">
-                  <StatCard 
-                    title="Dólar Oficial" 
-                    value={`${formatNumber(data?.ves_oficial)} VES`} 
-                    icon={ShieldCheck} 
-                    color="bg-blue-500"
-                    subtitle="Tasa Oficial BCV"
-                    change={data?.changes?.ves_oficial_percent}
-                  />
-                  <div className="h-[440px]">
-                    <RegionChart 
-                      title="Tendencia VE (Oficial)" 
-                      data={history} 
-                      dataKey="ves_oficial" 
-                      color={{hex: '#3b82f6', text: 'text-blue-500'}}
-                      icon={ShieldCheck}
-                      singleLine={true}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:col-span-1">
+                  {/* Oficial Column */}
+                  <div className="space-y-8">
+                    <StatCard 
+                      title="Dólar Oficial" 
+                      value={`${formatNumber(data?.ves_oficial)} VES`} 
+                      icon={ShieldCheck} 
+                      color="bg-blue-500"
+                      subtitle="Tasa Oficial BCV"
+                      change={data?.changes?.ves_oficial_percent}
                     />
+                    <div className="h-[440px]">
+                      <RegionChart 
+                        title="Tendencia VE (Oficial)" 
+                        data={history} 
+                        dataKey="ves_oficial" 
+                        color={{hex: '#3b82f6', text: 'text-blue-500'}}
+                        icon={ShieldCheck}
+                        singleLine={true}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Paralelo Column */}
+                  <div className="space-y-8">
+                    <StatCard 
+                      title="Dólar Paralelo" 
+                      value={`${formatNumber(data?.ves_paralelo)} VES`} 
+                      icon={DollarSign} 
+                      color="bg-yellow-500"
+                      subtitle="Promedio Dólar Paralelo"
+                      change={data?.changes?.ves_paralelo_percent}
+                    />
+                    <div className="h-[440px]">
+                      <RegionChart 
+                        title="Tendencia VE (Paralelo)" 
+                        data={history} 
+                        dataKey="ves_paralelo" 
+                        color={{hex: '#eab308', text: 'text-yellow-500'}}
+                        icon={TrendingUp}
+                        singleLine={true}
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Paralelo Column */}
-                <div className="space-y-8">
-                  <StatCard 
-                    title="Dólar Paralelo" 
-                    value={`${formatNumber(data?.ves_paralelo)} VES`} 
-                    icon={DollarSign} 
-                    color="bg-yellow-500"
-                    subtitle="Promedio Dólar Paralelo"
-                    change={data?.changes?.ves_paralelo_percent}
-                  />
-                  <div className="h-[440px]">
-                    <RegionChart 
-                      title="Tendencia VE (Paralelo)" 
-                      data={history} 
-                      dataKey="ves_paralelo" 
-                      color={{hex: '#eab308', text: 'text-yellow-500'}}
-                      icon={TrendingUp}
-                      singleLine={true}
-                    />
+                <div className="space-y-8 flex flex-col h-full">
+                  {/* Mercado Euro Card */}
+                  <div className="flex-1 bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full">
+                    <h3 className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+                      <Euro className="w-4 h-4 text-slate-300 dark:text-slate-500" /> Mercado Euro VE
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                        <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Euro Oficial</span>
+                        <div className="flex flex-col items-end">
+                          <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">{formatNumber(data?.ves_eur_oficial)} VES</span>
+                          <span className={`text-[10px] font-bold ${(data?.changes?.ves_eur_oficial_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {(data?.changes?.ves_eur_oficial_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.ves_eur_oficial_percent ?? 0).toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                        <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Euro Paralelo</span>
+                        <div className="flex flex-col items-end">
+                          <span className="font-black text-yellow-700 dark:text-yellow-400 text-lg group-hover:scale-110 transition-transform">{formatNumber(data?.ves_eur_paralelo)} VES</span>
+                          <span className={`text-[10px] font-bold ${(data?.changes?.ves_eur_paralelo_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {(data?.changes?.ves_eur_paralelo_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.ves_eur_paralelo_percent ?? 0).toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
