@@ -434,6 +434,7 @@ function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
+  const [targetTime, setTargetTime] = useState(() => Date.now() + 300000);
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(
     () => (localStorage.getItem('theme') as 'light' | 'dark' | 'system') || 'system'
   );
@@ -497,6 +498,7 @@ function App() {
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+      setTargetTime(Date.now() + 300000);
       setTimeLeft(300);
       setProgress(0);
     }
@@ -532,18 +534,30 @@ function App() {
   useEffect(() => {
     if (loading) return;
 
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          fetchData();
-          return 300;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    const tick = () => {
+      const remainingSeconds = Math.max(0, Math.floor((targetTime - Date.now()) / 1000));
+      if (remainingSeconds <= 0) {
+        fetchData();
+      } else {
+        setTimeLeft(remainingSeconds);
+      }
+    };
 
-    return () => clearInterval(timer);
-  }, [loading]);
+    const timer = setInterval(tick, 1000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        tick();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loading, targetTime]);
 
   // Update progress bar
   useEffect(() => {
