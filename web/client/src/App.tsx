@@ -32,6 +32,14 @@ import {
   Legend
 } from 'recharts';
 
+declare global {
+  interface Window {
+    umami?: {
+      track: (eventName: string, eventData?: Record<string, any>) => void;
+    };
+  }
+}
+
 interface MarketData {
   timestamp: string;
   usd_oficial: number;
@@ -253,7 +261,13 @@ const Converter = ({ data }: { data: MarketData | null }) => {
             <div className="relative flex-shrink-0 min-w-[200px]">
               <select 
                 value={from} 
-                onChange={(e) => setFrom(e.target.value as any)}
+                onChange={(e) => {
+                  const selected = e.target.value as any;
+                  setFrom(selected);
+                  if (window.umami) {
+                    window.umami.track('Calculadora - Conversion', { moneda: selected });
+                  }
+                }}
                 className="appearance-none w-full h-full px-6 py-3 pr-12 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-white rounded-2xl font-black outline-none cursor-pointer transition-all shadow-sm text-sm"
               >
                 <option value="USD">USD - Dólar USA</option>
@@ -682,6 +696,7 @@ function App() {
         <div className="max-w-md mx-auto flex bg-slate-200/50 dark:bg-slate-800/50 p-1.5 rounded-full border border-slate-100 dark:border-slate-800 mb-12 transition-all duration-300 shadow-sm">
           <button 
             onClick={() => setActiveTab('Argentina')}
+            data-umami-event="Tab - Argentina"
             className={`flex-1 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
               activeTab === 'Argentina' 
                 ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
@@ -692,6 +707,7 @@ function App() {
           </button>
           <button 
             onClick={() => setActiveTab('Venezuela')}
+            data-umami-event="Tab - Venezuela"
             className={`flex-1 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
               activeTab === 'Venezuela' 
                 ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
@@ -702,6 +718,7 @@ function App() {
           </button>
           <button 
             onClick={() => setActiveTab('Latam')}
+            data-umami-event="Tab - Latam"
             className={`flex-1 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
               activeTab === 'Latam' 
                 ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
@@ -712,6 +729,7 @@ function App() {
           </button>
           <button 
             onClick={() => setActiveTab('Conversor')}
+            data-umami-event="Tab - Calculadora"
             className={`flex-1 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
               activeTab === 'Conversor' 
                 ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
