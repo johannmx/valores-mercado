@@ -779,19 +779,39 @@ function App() {
                   <div className="grid grid-cols-1 gap-4">
                     <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
                       <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Blue</span>
-                      <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_blue)}</span>
+                      <div className="flex flex-col items-end">
+                        <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_blue)}</span>
+                        <span className={`text-[10px] font-bold ${(data?.changes?.usd_blue_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {(data?.changes?.usd_blue_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.usd_blue_percent ?? 0).toFixed(2)}%
+                        </span>
+                      </div>
                     </div>
                     <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
                       <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Tarjeta</span>
-                      <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_tarjeta)}</span>
+                      <div className="flex flex-col items-end">
+                        <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_tarjeta)}</span>
+                        <span className={`text-[10px] font-bold ${(data?.changes?.otros_dolares_percents?.tarjeta ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {(data?.changes?.otros_dolares_percents?.tarjeta ?? 0) >= 0 ? '+' : ''}{(data?.changes?.otros_dolares_percents?.tarjeta ?? 0).toFixed(2)}%
+                        </span>
+                      </div>
                     </div>
                     <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
                       <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar MEP (Bolsa)</span>
-                      <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_mep)}</span>
+                      <div className="flex flex-col items-end">
+                        <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_mep)}</span>
+                        <span className={`text-[10px] font-bold ${(data?.changes?.otros_dolares_percents?.mep ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {(data?.changes?.otros_dolares_percents?.mep ?? 0) >= 0 ? '+' : ''}{(data?.changes?.otros_dolares_percents?.mep ?? 0).toFixed(2)}%
+                        </span>
+                      </div>
                     </div>
                     <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
                       <span className="font-black text-slate-500 uppercase text-xs tracking-tight">CCL</span>
-                      <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_ccl)}</span>
+                      <div className="flex flex-col items-end">
+                        <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_ccl)}</span>
+                        <span className={`text-[10px] font-bold ${(data?.changes?.otros_dolares_percents?.ccl ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {(data?.changes?.otros_dolares_percents?.ccl ?? 0) >= 0 ? '+' : ''}{(data?.changes?.otros_dolares_percents?.ccl ?? 0).toFixed(2)}%
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -804,19 +824,39 @@ function App() {
                   <div className="grid grid-cols-1 gap-4">
                     <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
                       <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Euro Oficial</span>
-                      <span className="font-black text-indigo-700 dark:text-indigo-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.eur_venta)}</span>
+                      <div className="flex flex-col items-end">
+                        <span className="font-black text-indigo-700 dark:text-indigo-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.eur_venta)}</span>
+                        <span className={`text-[10px] font-bold ${(data?.changes?.eur_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {(data?.changes?.eur_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.eur_percent ?? 0).toFixed(2)}%
+                        </span>
+                      </div>
                     </div>
                     <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
                       <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Real Brasileño</span>
-                      <span className="font-black text-emerald-700 dark:text-emerald-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.brl_ar)}</span>
+                      <div className="flex flex-col items-end">
+                        <span className="font-black text-emerald-700 dark:text-emerald-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.brl_ar)}</span>
+                        <span className={`text-[10px] font-bold ${(data?.changes?.brl_ar_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {(data?.changes?.brl_ar_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.brl_ar_percent ?? 0).toFixed(2)}%
+                        </span>
+                      </div>
                     </div>
                     <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
                       <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Peso Chileno</span>
-                      <span className="font-black text-red-700 dark:text-red-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.clp_ar)}</span>
+                      <div className="flex flex-col items-end">
+                        <span className="font-black text-red-700 dark:text-red-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.clp_ar)}</span>
+                        <span className={`text-[10px] font-bold ${(data?.changes?.clp_ar_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {(data?.changes?.clp_ar_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.clp_ar_percent ?? 0).toFixed(2)}%
+                        </span>
+                      </div>
                     </div>
                     <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
                       <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Peso Uruguayo</span>
-                      <span className="font-black text-sky-700 dark:text-sky-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.uyu_ar)}</span>
+                      <div className="flex flex-col items-end">
+                        <span className="font-black text-sky-700 dark:text-sky-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.uyu_ar)}</span>
+                        <span className={`text-[10px] font-bold ${(data?.changes?.uyu_ar_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {(data?.changes?.uyu_ar_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.uyu_ar_percent ?? 0).toFixed(2)}%
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>

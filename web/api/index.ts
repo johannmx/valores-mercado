@@ -385,7 +385,11 @@ app.get('/api/rates', async (req, res) => {
                 uyu_ar_percent: uyuArChange,
                 clp_ar_percent: clpArChange,
                 brl_ar_percent: brlArChange,
-                otros_dolares_percents: {},
+                otros_dolares_percents: {
+                    mep: calculateChange(arsData.find((d: any) => d.casa === 'bolsa')?.venta, last24h?.usd_mep || 0),
+                    ccl: calculateChange(arsData.find((d: any) => d.casa === 'contadoconliqui')?.venta, last24h?.usd_ccl || 0),
+                    tarjeta: calculateChange(arsData.find((d: any) => d.casa === 'tarjeta')?.venta, last24h?.usd_tarjeta || 0)
+                },
                 bitcoin_percent: calculateChange(parseFloat(btcData.price), last24h?.btc_usd || 0)
             },
             api_status: apiStatus

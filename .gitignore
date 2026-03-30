@@ -31,3 +31,9 @@ history.json
 MercadoNotificationsLog.txt
 config.sh
 !config.sh.example
+
+# Agent
+.agents/
+.agent/
+skills-lock.json
+skills.md
