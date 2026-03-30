@@ -198,17 +198,43 @@ const Converter = ({ data }: { data: MarketData | null }) => {
     return result.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  return (
-    <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 h-full flex flex-col">
+  const ResultCard = ({ title, items, icon: Icon, color }: any) => (
+    <div className="bg-white dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-700/50 shadow-sm flex flex-col h-full hover:shadow-md transition-all duration-300">
       <div className="flex items-center gap-2 mb-6">
-        <ArrowRightLeft className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-        <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Conversor Rápido</h2>
+        <div className={`p-2 rounded-lg ${color.bg}`}>
+          <Icon className={`w-4 h-4 ${color.text}`} />
+        </div>
+        <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">{title}</h3>
       </div>
-      
       <div className="space-y-4 flex-1">
+        {items.map((item: any) => (
+          <div key={item.label} className="flex justify-between items-center group">
+            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tight group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">{item.label}</span>
+            <div className="flex flex-col items-end">
+              <span className={`text-lg font-black ${item.highlight ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-white'}`}>
+                {item.prefix && <span className="mr-1">{item.prefix}</span>}
+                {item.value}
+                {item.suffix && <span className="ml-1 text-[10px] opacity-60">{item.suffix}</span>}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-8">
+      {/* Input Header Card */}
+      <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700">
+        <div className="flex items-center gap-2 mb-6">
+          <ArrowRightLeft className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Conversor Rápido</h2>
+        </div>
+        
         <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-transparent dark:border-slate-700">
           <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Monto a convertir</label>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-3">
             <input 
               type="number" 
               value={amount.toString()} 
@@ -221,105 +247,79 @@ const Converter = ({ data }: { data: MarketData | null }) => {
                   setAmount(Number(noLeadingZeros));
                 }
               }}
-              className="flex-1 min-w-0 px-4 py-2 border-0 bg-white dark:bg-slate-800 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all font-black text-slate-700 dark:text-white"
+              className="flex-1 min-w-0 px-6 py-3 border-0 bg-white dark:bg-slate-800 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all font-black text-2xl text-slate-800 dark:text-white"
+              placeholder="0.00"
             />
-            <div className="relative flex-shrink-0">
+            <div className="relative flex-shrink-0 min-w-[200px]">
               <select 
                 value={from} 
                 onChange={(e) => setFrom(e.target.value as any)}
-                className="appearance-none w-full px-4 pr-10 py-2 border border-slate-300 dark:border-slate-600 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-xl font-black outline-none cursor-pointer transition-colors shadow-sm"
+                className="appearance-none w-full h-full px-6 py-3 pr-12 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-white rounded-2xl font-black outline-none cursor-pointer transition-all shadow-sm text-sm"
               >
-                <option value="USD">USD</option>
-                <option value="ARS_OFFICIAL">ARS (OFICIAL)</option>
-                <option value="CRYPTO">CRYPTO</option>
-                <option value="VES">VES (PARALELO)</option>
-                <option value="VES_OFFICIAL">VES (OFICIAL)</option>
-                <option value="UYU">UYU</option>
-                <option value="CLP">CLP</option>
-                <option value="BRL">BRL</option>
+                <option value="USD">USD - Dólar USA</option>
+                <option value="ARS_OFFICIAL">ARS - Dólar Oficial</option>
+                <option value="CRYPTO">ARS - Dólar Crypto</option>
+                <option value="VES">VES - Bolívar Paralelo</option>
+                <option value="VES_OFFICIAL">VES - Bolívar Oficial</option>
+                <option value="UYU">UYU - Peso Uruguayo</option>
+                <option value="CLP">CLP - Peso Chileno</option>
+                <option value="BRL">BRL - Real Brasileño</option>
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-slate-400 pointer-events-none" />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                <ChevronDown className="w-5 h-5 text-slate-400" />
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 gap-3 mt-6">
-          {from !== 'USD' && (
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex justify-between items-center border border-blue-100 dark:border-blue-800/50">
-              <span className="text-blue-700 dark:text-blue-400 font-black text-xs uppercase">USD</span>
-              <span className="text-xl font-black text-blue-800 dark:text-blue-300">$ {convert('USD')}</span>
-            </div>
-          )}
-          
-          <div className="mt-4 mb-1">
-            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">Argentina</span>
-          </div>
+      {/* Results Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Global/Base */}
+        {from !== 'USD' && (
+          <ResultCard 
+            title="Global" 
+            icon={Globe} 
+            color={{bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400'}}
+            items={[
+              { label: 'Dólar USA', value: convert('USD'), prefix: '$', highlight: true }
+            ]}
+          />
+        )}
 
-          {from !== 'ARS_OFFICIAL' && (
-            <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl flex justify-between items-center border border-indigo-100 dark:border-indigo-800/50">
-              <span className="text-indigo-700 dark:text-indigo-400 font-black text-xs uppercase">ARS (Oficial)</span>
-              <span className="text-xl font-black text-indigo-800 dark:text-indigo-300">$ {convert('ARS_OFFICIAL')}</span>
-            </div>
-          )}
+        {/* Argentina */}
+        <ResultCard 
+          title="Argentina" 
+          icon={ShieldCheck} 
+          color={{bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400'}}
+          items={[
+            ...(from !== 'ARS_OFFICIAL' ? [{ label: 'ARS (Oficial)', value: convert('ARS_OFFICIAL'), prefix: '$' }] : []),
+            ...(from !== 'CRYPTO' ? [{ label: 'ARS (Crypto)', value: convert('CRYPTO'), prefix: '$' }] : [])
+          ]}
+        />
 
-          {from !== 'CRYPTO' && (
-            <div className="p-4 bg-purple-50 dark:bg-purple-900/30 rounded-2xl flex justify-between items-center border border-purple-100 dark:border-purple-800/50">
-              <span className="text-purple-700 dark:text-purple-400 font-black text-xs uppercase">ARS (Crypto)</span>
-              <span className="text-xl font-black text-purple-800 dark:text-purple-300">$ {convert('CRYPTO')}</span>
-            </div>
-          )}
+        {/* Venezuela */}
+        <ResultCard 
+          title="Venezuela" 
+          icon={TrendingUp} 
+          color={{bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400'}}
+          items={[
+            ...(from !== 'VES' ? [{ label: 'VES (Paralelo)', value: convert('VES'), suffix: 'VES' }] : []),
+            ...(from !== 'VES_OFFICIAL' ? [{ label: 'VES (Oficial)', value: convert('VES_OFFICIAL'), suffix: 'VES' }] : [])
+          ]}
+        />
 
-          <div className="mt-4 mb-1">
-            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">Venezuela</span>
-          </div>
-
-          {from !== 'VES' && (
-            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-2xl flex justify-between items-center border border-yellow-100 dark:border-yellow-800/50">
-              <span className="text-yellow-700 dark:text-yellow-400 font-black text-xs uppercase">VES (Paralelo)</span>
-              <span className="text-xl font-black text-yellow-800 dark:text-yellow-300">{convert('VES')}</span>
-            </div>
-          )}
-
-          {from !== 'VES_OFFICIAL' && (
-            <div className="p-4 bg-amber-50 dark:bg-amber-900/30 rounded-2xl flex justify-between items-center border border-amber-100 dark:border-amber-800/50">
-              <span className="text-amber-700 dark:text-amber-400 font-black text-xs uppercase">VES (Oficial)</span>
-              <span className="text-xl font-black text-amber-800 dark:text-amber-300">{convert('VES_OFFICIAL')}</span>
-            </div>
-          )}
-
-          <div className="mt-4 mb-1">
-            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">Uruguay</span>
-          </div>
-
-          {from !== 'UYU' && (
-            <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl flex justify-between items-center border border-emerald-100 dark:border-emerald-800/50">
-              <span className="text-emerald-700 dark:text-emerald-400 font-black text-xs uppercase">UYU (Peso)</span>
-              <span className="text-xl font-black text-emerald-800 dark:text-emerald-300">$ {convert('UYU')}</span>
-            </div>
-          )}
-
-          <div className="mt-4 mb-1">
-            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">Brasil</span>
-          </div>
-
-          {from !== 'BRL' && (
-            <div className="p-4 bg-green-50 dark:bg-green-900/30 rounded-2xl flex justify-between items-center border border-green-100 dark:border-green-800/50">
-              <span className="text-green-700 dark:text-green-400 font-black text-xs uppercase">BRL (Real)</span>
-              <span className="text-xl font-black text-green-800 dark:text-green-300">$ {convert('BRL')}</span>
-            </div>
-          )}
-
-          <div className="mt-4 mb-1">
-            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">Chile</span>
-          </div>
-
-          {from !== 'CLP' && (
-            <div className="p-4 bg-red-50 dark:bg-red-900/30 rounded-2xl flex justify-between items-center border border-red-100 dark:border-red-800/50">
-              <span className="text-red-700 dark:text-red-400 font-black text-xs uppercase">CLP (Peso)</span>
-              <span className="text-xl font-black text-red-800 dark:text-red-300">$ {convert('CLP')}</span>
-            </div>
-          )}
-        </div>
+        {/* LATAM */}
+        <ResultCard 
+          title="LATAM" 
+          icon={Globe} 
+          color={{bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400'}}
+          items={[
+            ...(from !== 'UYU' ? [{ label: 'UYU (Peso)', value: convert('UYU'), prefix: '$' }] : []),
+            ...(from !== 'BRL' ? [{ label: 'BRL (Real)', value: convert('BRL'), prefix: '$' }] : []),
+            ...(from !== 'CLP' ? [{ label: 'CLP (Peso)', value: convert('CLP'), prefix: '$' }] : [])
+          ]}
+        />
       </div>
     </div>
   );
@@ -1013,7 +1013,7 @@ function App() {
 
           {/* Calculadora Section */}
           {activeTab === 'Conversor' && (
-            <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
+            <div className="space-y-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
               <div className="flex items-center gap-3 px-1">
                 <div className="w-1.5 h-6 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.3)]" />
                 <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Calculadora</h2>
