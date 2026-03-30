@@ -40,6 +40,12 @@ declare global {
   }
 }
 
+interface AppNotification {
+  id: number;
+  message: string;
+  type: 'up' | 'down';
+}
+
 interface MarketData {
   timestamp: string;
   usd_oficial: number;
@@ -115,13 +121,20 @@ const formatNumber = (num: any) => {
   return parsed.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change, badge, spread }: any) => {
+const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change, badge, spread, pulseType }: any) => {
   const isPositive = change > 0;
   const isNeutral = change === 0;
   const displayValue = value || '---';
 
+  const baseClasses = "bg-white dark:bg-slate-800 p-3 rounded-2xl transition-all duration-500 relative overflow-hidden group min-h-[100px]";
+  const pulseClasses = pulseType === 'up' 
+    ? 'ring-2 ring-emerald-500 dark:ring-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)] border-transparent' 
+    : pulseType === 'down' 
+    ? 'ring-2 ring-red-500 dark:ring-red-400 shadow-[0_0_20px_rgba(239,68,68,0.3)] border-transparent' 
+    : 'border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md';
+
   return (
-    <div className="bg-white dark:bg-slate-800 p-3 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-md transition-all duration-300 relative overflow-hidden group min-h-[100px]">
+    <div className={`${baseClasses} ${pulseClasses}`}>
       <div className="flex items-center justify-between mb-2">
         <div className={`p-3 rounded-xl ${color} shadow-sm group-hover:scale-110 transition-transform`}>
           <Icon className="w-6 h-6 text-white" />
@@ -453,6 +466,8 @@ function App() {
     () => (localStorage.getItem('theme') as 'light' | 'dark' | 'system') || 'system'
   );
   const [activeTab, setActiveTab] = useState<'Argentina' | 'Venezuela' | 'Conversor' | 'Latam'>('Argentina');
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [changedKeys, setChangedKeys] = useState<Record<string, 'up' | 'down'>>({});
 
   const isMarketOpen = () => {
     const now = new Date();
@@ -504,7 +519,49 @@ function App() {
         btc_usd: ratesData.btc_usd
       };
 
-      setData(ratesData);
+      setData(prevData => {
+        if (prevData) {
+          const newNotifications: AppNotification[] = [];
+          const newChangedKeys: Record<string, 'up' | 'down'> = {};
+
+          const checkChange = (key: keyof MarketData, label: string, isVes = false) => {
+            const oldVal = prevData[key] as number;
+            const newVal = ratesData[key] as number;
+            if (oldVal && newVal && oldVal !== newVal) {
+              const type = newVal > oldVal ? 'up' : 'down';
+              newChangedKeys[key as string] = type;
+              const prefix = isVes ? 'Bs. ' : '$';
+              newNotifications.push({
+                id: Date.now() + Math.random(),
+                message: `${label} ${type === 'up' ? 'subió a' : 'bajó a'} ${prefix}${formatNumber(newVal)}`,
+                type,
+              });
+            }
+          };
+
+          checkChange('usd_blue', 'Dólar Blue');
+          checkChange('usd_oficial', 'Dólar Oficial');
+          checkChange('usd_cripto', 'Dólar Cripto');
+          checkChange('ves_paralelo', 'Bolívar Paralelo', true);
+          checkChange('ves_oficial', 'Bolívar Oficial', true);
+
+          if (newNotifications.length > 0) {
+            setNotifications(prev => [...prev, ...newNotifications]);
+            setChangedKeys(prev => ({ ...prev, ...newChangedKeys }));
+            
+            setTimeout(() => {
+              setNotifications(prev => prev.filter(n => !newNotifications.some(nn => nn.id === n.id)));
+              setChangedKeys(prev => {
+                const next = { ...prev };
+                Object.keys(newChangedKeys).forEach(k => delete next[k]);
+                return next;
+              });
+            }, 6000);
+          }
+        }
+        return ratesData;
+      });
+      
       setHistory([...historyData, currentAsHistory]);
       setError(null);
     } catch (err) {
@@ -764,6 +821,7 @@ function App() {
                       buy={formatNumber(data?.usd_oficial ? data.usd_oficial - 20 : 0)}
                       sell={formatNumber(data?.usd_oficial)}
                       change={data?.changes?.usd_oficial_percent}
+                      pulseType={changedKeys['usd_oficial']}
                     />
                     <div className="h-[440px]">
                       <RegionChart 
@@ -788,6 +846,7 @@ function App() {
                       sell={formatNumber(data?.usd_cripto)}
                       change={data?.changes?.bitcoin_percent}
                       badge="24/7"
+                      pulseType={changedKeys['usd_cripto']}
                     />
                     <div className="h-[440px]">
                       <RegionChart 
@@ -809,7 +868,11 @@ function App() {
                     <Info className="w-4 h-4 text-slate-300 dark:text-slate-500" /> Otros Dólares AR
                   </h3>
                   <div className="grid grid-cols-1 gap-4">
-                    <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                    <div className={`flex justify-between items-center p-5 rounded-2xl transition-all duration-500 group ${
+                      changedKeys['usd_blue'] === 'up' ? 'bg-emerald-50 dark:bg-emerald-900/40 ring-2 ring-emerald-500 dark:ring-emerald-400' :
+                      changedKeys['usd_blue'] === 'down' ? 'bg-red-50 dark:bg-red-900/40 ring-2 ring-red-500 dark:ring-red-400' :
+                      'bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50'
+                    }`}>
                       <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Blue</span>
                       <div className="flex flex-col items-end">
                         <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_blue)}</span>
@@ -916,6 +979,7 @@ function App() {
                       color="bg-blue-500"
                       subtitle="Tasa Oficial BCV"
                       change={data?.changes?.ves_oficial_percent}
+                      pulseType={changedKeys['ves_oficial']}
                     />
                     <div className="h-[440px]">
                       <RegionChart 
@@ -938,6 +1002,7 @@ function App() {
                       color="bg-yellow-500"
                       subtitle="Promedio Dólar Paralelo"
                       change={data?.changes?.ves_paralelo_percent}
+                      pulseType={changedKeys['ves_paralelo']}
                     />
                     <div className="h-[440px]">
                       <RegionChart 
@@ -1060,6 +1125,21 @@ function App() {
             {/* <HistoricalComparison /> */}
           </div>
 
+        </div>
+
+        {/* Toast Notifications */}
+        <div className="fixed bottom-24 right-4 md:right-8 z-[100] flex flex-col gap-3 pointer-events-none">
+          {notifications.map(note => (
+            <div key={note.id} className="pointer-events-auto flex items-center gap-3 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 animate-in slide-in-from-right-8 fade-in duration-500 max-w-sm">
+              <div className={`p-2 rounded-full flex-shrink-0 ${note.type === 'up' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400'}`}>
+                {note.type === 'up' ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-tighter truncate">{note.message}</p>
+                <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Hace un momento</p>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Global Footer with API Status and Contact */}
