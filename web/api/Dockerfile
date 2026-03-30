@@ -18,4 +18,4 @@ EXPOSE 3001
 USER node
 
 # Using tsx which is more robust for ESM + TypeScript in Node 20
-CMD ["npx", "tsx", "index.ts"]
+CMD ["./node_modules/.bin/tsx", "index.ts"]

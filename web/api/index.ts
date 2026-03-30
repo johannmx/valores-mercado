@@ -436,6 +436,23 @@ app.get('/api/history', (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+const server = app.listen(PORT, () => {
+    console.log(`🚀 [API] Server running on port ${PORT}`);
+});
+
+// Graceful shutdown handlers
+process.on('SIGTERM', () => {
+    console.log('🛑 [API] SIGTERM received. Starting graceful shutdown...');
+    server.close(() => {
+        console.log('✅ [API] Server closed. Process terminated.');
+        process.exit(0);
+    });
+});
+
+process.on('SIGINT', () => {
+    console.log('🛑 [API] SIGINT received. Cleaning up resources...');
+    server.close(() => {
+        console.log('✅ [API] Server closed. Process interrupted.');
+        process.exit(0);
+    });
 });
