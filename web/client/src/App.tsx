@@ -608,7 +608,13 @@ function App() {
     const tick = () => {
       const remainingSeconds = Math.max(0, Math.floor((targetTime - Date.now()) / 1000));
       if (remainingSeconds <= 0) {
-        fetchData();
+        // Solo actualizamos de fondo si la pestaña está activa, 
+        // de otra forma los toast y animaciones suceden sin que el usuario los vea
+        if (document.visibilityState === 'visible') {
+          fetchData();
+        } else {
+          setTimeLeft(0); // Dejamos listo para que cargue en el momento que vuelvan
+        }
       } else {
         setTimeLeft(remainingSeconds);
       }
