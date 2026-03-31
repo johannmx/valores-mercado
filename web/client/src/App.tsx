@@ -19,7 +19,8 @@ import {
   ChevronDown,
   AlertTriangle,
   Github,
-  Euro
+  Euro,
+  X
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -44,6 +45,7 @@ interface AppNotification {
   id: number;
   message: string;
   type: 'up' | 'down';
+  key: string;
 }
 
 interface MarketData {
@@ -469,6 +471,15 @@ function App() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [changedKeys, setChangedKeys] = useState<Record<string, 'up' | 'down'>>({});
 
+  const dismissNotification = (id: number, key: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    setChangedKeys(prev => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
+
   const isMarketOpen = () => {
     const now = new Date();
     // Argentina is UTC-3
@@ -535,6 +546,7 @@ function App() {
                 id: Date.now() + Math.random(),
                 message: `${label} ${type === 'up' ? 'subió a' : 'bajó a'} ${prefix}${formatNumber(newVal)}`,
                 type,
+                key: key as string,
               });
             }
           };
@@ -556,7 +568,7 @@ function App() {
                 Object.keys(newChangedKeys).forEach(k => delete next[k]);
                 return next;
               });
-            }, 6000);
+            }, 8000);
           }
         }
         return ratesData;
@@ -1136,14 +1148,21 @@ function App() {
         {/* Toast Notifications */}
         <div className="fixed bottom-24 right-4 md:right-8 z-[100] flex flex-col gap-3 pointer-events-none">
           {notifications.map(note => (
-            <div key={note.id} className="pointer-events-auto flex items-center gap-3 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 animate-in slide-in-from-right-8 fade-in duration-500 max-w-sm">
+            <div key={note.id} className="pointer-events-auto flex items-center gap-3 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 animate-in slide-in-from-right-8 fade-in duration-500 max-w-sm group">
               <div className={`p-2 rounded-full flex-shrink-0 ${note.type === 'up' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400'}`}>
                 {note.type === 'up' ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 pr-2">
                 <p className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-tighter truncate">{note.message}</p>
                 <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Hace un momento</p>
               </div>
+              <button 
+                onClick={() => dismissNotification(note.id, note.key)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+                aria-label="Cerrar notificación"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           ))}
         </div>
