@@ -481,8 +481,8 @@ const ToastNotification = ({ note, onDismiss }: { note: AppNotification, onDismi
     <div 
       onMouseEnter={() => setIsHovered(true)} 
       onMouseLeave={() => setIsHovered(false)}
-      className={`pointer-events-auto flex items-center gap-3 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 max-w-sm group transition-all duration-300
-        ${isClosing ? 'animate-out slide-out-to-right-4 fade-out fill-mode-forwards' : 'animate-in slide-in-from-right-8 fade-in duration-500'}`}
+      className={`pointer-events-auto flex items-center gap-3 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 max-w-sm group transition-all duration-500 transform
+        ${isClosing ? 'opacity-0 translate-x-12 scale-95 duration-300' : 'opacity-100 translate-x-0 scale-100 animate-in slide-in-from-right-8 fade-in'}`}
     >
       <div className={`p-2 rounded-full flex-shrink-0 ${note.type === 'up' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400'}`}>
         {note.type === 'up' ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
