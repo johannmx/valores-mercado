@@ -5,6 +5,9 @@ import fs from 'fs';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 
+// Set a default timeout of 10 seconds for all external API requests to prevent hanging connections
+axios.defaults.timeout = 10000;
+
 const app = express();
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
