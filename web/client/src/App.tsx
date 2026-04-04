@@ -1183,17 +1183,6 @@ function App() {
 
         </div>
 
-        {/* Toast Notifications */}
-        <div className="fixed bottom-24 right-4 md:right-8 z-[100] flex flex-col gap-3 pointer-events-none">
-          {notifications.map(note => (
-            <ToastNotification 
-              key={note.id} 
-              note={note} 
-              onDismiss={dismissNotification} 
-            />
-          ))}
-        </div>
-
         {/* Global Footer with API Status and Contact */}
         <footer className="relative lg:fixed lg:bottom-0 lg:left-0 lg:right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 px-4 lg:px-8 py-3 lg:py-4 z-50 transition-colors duration-300">
           <div className="max-w-7xl mx-auto space-y-2 lg:space-y-4">
@@ -1243,6 +1232,17 @@ function App() {
             </div>
           </div>
         </footer>
+      </div>
+
+      {/* Toast Notifications - Moved outside the overflow-x-hidden container */}
+      <div className="fixed bottom-24 right-4 md:right-8 z-[100] flex flex-col gap-3 pointer-events-none">
+        {notifications.map(note => (
+          <ToastNotification
+            key={note.id}
+            note={note}
+            onDismiss={dismissNotification}
+          />
+        ))}
       </div>
     </div>
   );
