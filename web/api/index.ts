@@ -53,7 +53,7 @@ const limiter = rateLimit({
 });
 
 app.use('/api/', limiter);
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
