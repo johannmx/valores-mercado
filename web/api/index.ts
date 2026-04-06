@@ -439,6 +439,12 @@ app.get('/api/history', (req, res) => {
     }
 });
 
+// Global Error Handler to prevent stack trace leaks
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('Unhandled Server Error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+});
+
 const server = app.listen(PORT, () => {
     console.log(`🚀 [API] Server running on port ${PORT}`);
 });
