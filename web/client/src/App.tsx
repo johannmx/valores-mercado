@@ -1109,7 +1109,7 @@ function App() {
           {activeTab === 'Latam' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
               {/* Uruguay Section */}
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div className="flex items-center gap-3 px-1">
                   <div className="w-1.5 h-6 bg-sky-500 rounded-full shadow-[0_0_10px_rgba(14,165,233,0.3)]" />
                   <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Uruguay</h2>
@@ -1124,10 +1124,20 @@ function App() {
                   sell={formatNumber(data?.uyu_venta)}
                   change={data?.changes?.uyu_percent}
                 />
+                <div className="h-[440px]">
+                  <RegionChart 
+                    title="Tendencia UYU" 
+                    data={history} 
+                    dataKey="uyu_venta" 
+                    color={{hex: '#0284c7', text: 'text-sky-600'}}
+                    icon={TrendingUp}
+                    singleLine={true}
+                  />
+                </div>
               </div>
 
               {/* Chile Section */}
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div className="flex items-center gap-3 px-1">
                   <div className="w-1.5 h-6 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.3)]" />
                   <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Chile</h2>
@@ -1142,10 +1152,20 @@ function App() {
                   sell={formatNumber(data?.clp_venta)}
                   change={data?.changes?.clp_percent}
                 />
+                <div className="h-[440px]">
+                  <RegionChart 
+                    title="Tendencia CLP" 
+                    data={history} 
+                    dataKey="clp_venta" 
+                    color={{hex: '#dc2626', text: 'text-red-600'}}
+                    icon={TrendingUp}
+                    singleLine={true}
+                  />
+                </div>
               </div>
 
               {/* Brasil Section */}
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div className="flex items-center gap-3 px-1">
                   <div className="w-1.5 h-6 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]" />
                   <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Brasil</h2>
@@ -1160,6 +1180,16 @@ function App() {
                   sell={formatNumber(data?.brl_venta)}
                   change={data?.changes?.brl_percent}
                 />
+                <div className="h-[440px]">
+                  <RegionChart 
+                    title="Tendencia BRL" 
+                    data={history} 
+                    dataKey="brl_venta" 
+                    color={{hex: '#059669', text: 'text-emerald-600'}}
+                    icon={TrendingUp}
+                    singleLine={true}
+                  />
+                </div>
               </div>
             </div>
           )}
