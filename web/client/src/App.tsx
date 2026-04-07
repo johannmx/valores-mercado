@@ -263,6 +263,7 @@ const Converter = ({ data }: { data: MarketData | null }) => {
               value={amount.toString()} 
               onChange={(e) => {
                 const val = e.target.value;
+                if (val.length > 15) return; // Security: Prevent excessive input length (DoS mitigation)
                 if (val === '') {
                   setAmount(0);
                 } else {
