@@ -245,7 +245,8 @@ const saveCurrentToHistory = async () => {
             axios.get(BINANCE_API_URL).catch(e => ({ data: { price: "0" } }))
         ]);
 
-        const history: HistoryItem[] = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
+        const historyFileContent = await fs.promises.readFile(HISTORY_FILE, 'utf-8');
+        const history: HistoryItem[] = JSON.parse(historyFileContent);
         
         const arsData = arsRes.data as any[];
         const vesData = vesRes.data as any;
@@ -286,7 +287,7 @@ const saveCurrentToHistory = async () => {
         history.push(newItem);
         if (history.length > 500) history.shift();
         try {
-            fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
+            await fs.promises.writeFile(HISTORY_FILE, JSON.stringify(history, null, 2));
         } catch (writeError) {
             console.error('Failed to write history file during background save:', (writeError as any).message);
         }
@@ -327,7 +328,8 @@ app.get('/api/rates', async (req, res) => {
 
         const [arsRes, vesRes, vesOficialRes, uyuRes, clpRes, brlRes, eurRes, uyuArRes, clpArRes, brlArRes, vesEurOficialRes, vesEurParaleloRes, btcRes, statusRes] = await Promise.all(requests) as any[];
 
-        const history: HistoryItem[] = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
+        const historyFileContent = await fs.promises.readFile(HISTORY_FILE, 'utf-8');
+        const history: HistoryItem[] = JSON.parse(historyFileContent);
         
         const arsData = arsRes.data;
         const vesData = vesRes.data;
@@ -430,9 +432,9 @@ app.get('/api/historical/:casa', async (req, res) => {
     }
 });
 
-app.get('/api/history', (req, res) => {
+app.get('/api/history', async (req, res) => {
     try {
-        const fileContent = fs.readFileSync(HISTORY_FILE, 'utf-8');
+        const fileContent = await fs.promises.readFile(HISTORY_FILE, 'utf-8');
         const history = JSON.parse(fileContent);
         
         // Backfill ves_paralelo for legacy data if needed
