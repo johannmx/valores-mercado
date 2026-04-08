@@ -194,29 +194,32 @@ const generateMockHistory = () => {
     return history;
 };
 
-const initializeHistory = () => {
+const initializeHistory = async () => {
     try {
         // Asegurar que el directorio de datos existe
-        if (!fs.existsSync(DATA_DIR)) {
-            fs.mkdirSync(DATA_DIR, { recursive: true });
+        try {
+            await fs.promises.access(DATA_DIR);
+        } catch {
+            await fs.promises.mkdir(DATA_DIR, { recursive: true });
         }
 
         let shouldReset = false;
-        if (!fs.existsSync(HISTORY_FILE)) {
-            shouldReset = true;
-        } else {
+        try {
+            await fs.promises.access(HISTORY_FILE);
             try {
-                const data = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
+                const data = JSON.parse(await fs.promises.readFile(HISTORY_FILE, 'utf-8'));
                 if (data.length > 0 && !data[0].usd_oficial) { // Check for new field
                     shouldReset = true;
                 }
             } catch (e) {
                 shouldReset = true;
             }
+        } catch {
+            shouldReset = true;
         }
 
         if (shouldReset) {
-            fs.writeFileSync(HISTORY_FILE, JSON.stringify(generateMockHistory(), null, 2));
+            await fs.promises.writeFile(HISTORY_FILE, JSON.stringify(generateMockHistory(), null, 2));
         }
     } catch (error) {
         console.error('CRITICAL: Failed to initialize history file due to permission errors.');
@@ -296,7 +299,7 @@ const saveCurrentToHistory = async () => {
     }
 };
 
-initializeHistory();
+await initializeHistory();
 setInterval(saveCurrentToHistory, 300000); // 5 minutes
 
 app.get('/api/rates', async (req, res) => {
