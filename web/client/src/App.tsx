@@ -116,7 +116,7 @@ interface HistoryItem {
   btc_usd: number;
 }
 
-const formatNumber = (num: any) => {
+export const formatNumber = (num: any) => {
   if (num === null || num === undefined || num === '') return '';
   const parsed = Number(num);
   if (isNaN(parsed)) return num;
