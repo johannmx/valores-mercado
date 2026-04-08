@@ -42,8 +42,36 @@ app.use((req, res, next) => {
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), browsing-topics=()');
     next();
 });
+
+// Security Enhancement: Use a validated array of domains for CORS instead of blindly parsing environment variables
+const getStricterCorsOrigins = (): string[] => {
+    const defaultOrigins = [
+        'http://localhost:5173',
+        'http://localhost:4173',
+        'http://localhost:3000'
+    ];
+
+    if (!process.env.ALLOWED_ORIGINS) {
+        return defaultOrigins;
+    }
+
+    // Parse and strictly validate origins to ensure they are valid URLs
+    const envOrigins = process.env.ALLOWED_ORIGINS.split(',')
+        .map(origin => origin.trim())
+        .filter(origin => {
+            try {
+                const url = new URL(origin);
+                return url.protocol === 'http:' || url.protocol === 'https:';
+            } catch {
+                return false;
+            }
+        });
+
+    return [...new Set([...defaultOrigins, ...envOrigins])];
+};
+
 app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : false,
+    origin: getStricterCorsOrigins(),
     methods: ['GET'],
     allowedHeaders: ['Content-Type']
 }));

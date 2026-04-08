@@ -12,3 +12,8 @@
 **Vulnerability:** The Express backend used `fs.readFileSync` and `fs.writeFileSync` within request handlers and recurring background tasks. This blocks the single-threaded Node.js event loop for the duration of the I/O operation.
 **Learning:** For an application handling historical data as a local JSON file, the I/O delay increases as the file size grows. Blocking the event loop prevents the server from processing other concurrent requests, effectively creating a self-inflicted Denial of Service (DoS) vulnerability.
 **Prevention:** Always use the asynchronous versions of I/O operations (e.g., `fs.promises.readFile`) within request handlers and scheduled background tasks to keep the event loop responsive.
+
+## 2026-04-08 - Insecure CORS Configuration
+* **Vulnerability:** The API blindly parsed the `ALLOWED_ORIGINS` environment variable and passed it directly to the CORS configuration, leading to a risk where incorrect env configuration could open the application to Cross-Origin Resource Sharing attacks, potentially allowing malicious sites to access API responses.
+* **Learning:** Always strictly validate configuration input, especially for security features like CORS. Relying on an unvalidated environment variable or `false` flag to protect cross-origin access is highly error-prone.
+* **Prevention:** Ensure the origin parameter passed to `cors` middleware explicitly validates parsed domains, ensuring they form a valid URL and fallback to secure defaults instead of turning CORS checking off entirely.
