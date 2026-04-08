@@ -8,6 +8,10 @@ import { rateLimit } from 'express-rate-limit';
 // Set a default timeout of 10 seconds for all external API requests to prevent hanging connections
 axios.defaults.timeout = 10000;
 
+// Security Enhancement: Set maximum response size to 500KB to prevent DoS via memory exhaustion from upstream APIs
+axios.defaults.maxContentLength = 500000;
+axios.defaults.maxBodyLength = 500000;
+
 const app = express();
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
