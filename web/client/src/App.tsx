@@ -190,8 +190,6 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
   );
 };
 
-// HistoricalComparison was here (lines 151-261) and has been removed to fix build errors.
-
 const Converter = ({ data }: { data: MarketData | null }) => {
   const [amount, setAmount] = useState<number>(1);
   const [from, setFrom] = useState<'USD' | 'ARS_BLUE' | 'ARS_OFFICIAL' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL' | 'EUR'>('USD');
@@ -1205,12 +1203,6 @@ function App() {
               <Converter data={data} />
             </div>
           )}
-
-          {/* Historical Comparison Section */}
-          <div className="mt-16 space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-300">
-            {/* Historical Comparison temporarily removed */}
-            {/* <HistoricalComparison /> */}
-          </div>
 
         </div>
 
