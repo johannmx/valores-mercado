@@ -359,17 +359,29 @@ app.get('/api/rates', async (req, res) => {
         const clpArChange = calculateChange(clpArData.venta, last24h?.clp_ar || clpArData.compra);
         const brlArChange = calculateChange(brlArData.venta, last24h?.brl_ar || brlArData.compra);
 
+        const usd_oficial_venta = getVentaByCasa(arsData, 'oficial');
+        const usd_blue_venta = getVentaByCasa(arsData, 'blue');
+        const usd_mep_venta = getVentaByCasa(arsData, 'bolsa');
+        const usd_ccl_venta = getVentaByCasa(arsData, 'contadoconliqui');
+        const usd_cripto_venta = getVentaByCasa(arsData, 'cripto');
+        const usd_tarjeta_venta = getVentaByCasa(arsData, 'tarjeta');
+
+        const ves_oficial_venta = vesOficialData.promedio || vesOficialData.venta || 0;
+        const ves_paralelo_venta = vesData.promedio || vesData.venta || 0;
+        const ves_eur_oficial_venta = vesEurOficialData.promedio || vesEurOficialData.venta || 0;
+        const ves_eur_paralelo_venta = vesEurParaleloData.promedio || vesEurParaleloData.venta || 0;
+
         const marketData: MarketData = {
             timestamp: new Date().toISOString(),
-            usd_oficial: getVentaByCasa(arsData, 'oficial'),
-            usd_blue: getVentaByCasa(arsData, 'blue'),
-            usd_mep: getVentaByCasa(arsData, 'bolsa'),
-            usd_ccl: getVentaByCasa(arsData, 'contadoconliqui'),
-            usd_cripto: getVentaByCasa(arsData, 'cripto'),
-            usd_tarjeta: getVentaByCasa(arsData, 'tarjeta'),
-            ves_oficial: vesOficialData.promedio || vesOficialData.venta || 0,
-            ves_paralelo: vesData.promedio || vesData.venta || 0,
-            ves_compra: vesOficialData.promedio || vesOficialData.venta || 0,
+            usd_oficial: usd_oficial_venta,
+            usd_blue: usd_blue_venta,
+            usd_mep: usd_mep_venta,
+            usd_ccl: usd_ccl_venta,
+            usd_cripto: usd_cripto_venta,
+            usd_tarjeta: usd_tarjeta_venta,
+            ves_oficial: ves_oficial_venta,
+            ves_paralelo: ves_paralelo_venta,
+            ves_compra: ves_oficial_venta,
             uyu_venta: uyuData.venta || 0,
             uyu_compra: uyuData.compra || 0,
             clp_venta: clpData.venta || 0,
@@ -381,16 +393,16 @@ app.get('/api/rates', async (req, res) => {
             uyu_ar: uyuArData.venta || 0,
             clp_ar: clpArData.venta || 0,
             brl_ar: brlArData.venta || 0,
-            ves_eur_oficial: vesEurOficialData.promedio || vesEurOficialData.venta || 0,
-            ves_eur_paralelo: vesEurParaleloData.promedio || vesEurParaleloData.venta || 0,
+            ves_eur_oficial: ves_eur_oficial_venta,
+            ves_eur_paralelo: ves_eur_paralelo_venta,
             btc_usd: parseFloat(btcData.price) || 0,
             changes: {
-                usd_oficial_percent: calculateChange(getVentaByCasa(arsData, 'oficial'), last24h?.usd_oficial || 0),
-                usd_blue_percent: calculateChange(getVentaByCasa(arsData, 'blue'), last24h?.usd_blue || 0),
-                ves_oficial_percent: calculateChange(vesOficialData.promedio || vesOficialData.venta, last24h?.ves_oficial || 0),
-                ves_paralelo_percent: calculateChange(vesData.promedio || vesData.venta, last24h?.ves_paralelo || 0),
-                ves_eur_oficial_percent: calculateChange(vesEurOficialData.promedio || vesEurOficialData.venta, last24h?.ves_eur_oficial || 0),
-                ves_eur_paralelo_percent: calculateChange(vesEurParaleloData.promedio || vesEurParaleloData.venta, last24h?.ves_eur_paralelo || 0),
+                usd_oficial_percent: calculateChange(usd_oficial_venta, last24h?.usd_oficial || 0),
+                usd_blue_percent: calculateChange(usd_blue_venta, last24h?.usd_blue || 0),
+                ves_oficial_percent: calculateChange(ves_oficial_venta, last24h?.ves_oficial || 0),
+                ves_paralelo_percent: calculateChange(ves_paralelo_venta, last24h?.ves_paralelo || 0),
+                ves_eur_oficial_percent: calculateChange(ves_eur_oficial_venta, last24h?.ves_eur_oficial || 0),
+                ves_eur_paralelo_percent: calculateChange(ves_eur_paralelo_venta, last24h?.ves_eur_paralelo || 0),
                 uyu_percent: uyuChange,
                 clp_percent: clpChange,
                 brl_percent: brlChange,
@@ -399,9 +411,9 @@ app.get('/api/rates', async (req, res) => {
                 clp_ar_percent: clpArChange,
                 brl_ar_percent: brlArChange,
                 otros_dolares_percents: {
-                    mep: calculateChange(getVentaByCasa(arsData, 'bolsa'), last24h?.usd_mep || 0),
-                    ccl: calculateChange(getVentaByCasa(arsData, 'contadoconliqui'), last24h?.usd_ccl || 0),
-                    tarjeta: calculateChange(getVentaByCasa(arsData, 'tarjeta'), last24h?.usd_tarjeta || 0)
+                    mep: calculateChange(usd_mep_venta, last24h?.usd_mep || 0),
+                    ccl: calculateChange(usd_ccl_venta, last24h?.usd_ccl || 0),
+                    tarjeta: calculateChange(usd_tarjeta_venta, last24h?.usd_tarjeta || 0)
                 },
                 bitcoin_percent: calculateChange(parseFloat(btcData.price), last24h?.btc_usd || 0)
             },
