@@ -811,7 +811,7 @@ function App() {
           <button 
             onClick={() => setActiveTab('Argentina')}
             data-umami-event="Tab - Argentina"
-            className={`flex-1 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
+            className={`flex-1 px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${
               activeTab === 'Argentina' 
                 ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
                 : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
@@ -822,7 +822,7 @@ function App() {
           <button 
             onClick={() => setActiveTab('Venezuela')}
             data-umami-event="Tab - Venezuela"
-            className={`flex-1 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
+            className={`flex-1 px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${
               activeTab === 'Venezuela' 
                 ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
                 : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
@@ -833,7 +833,7 @@ function App() {
           <button 
             onClick={() => setActiveTab('Latam')}
             data-umami-event="Tab - Latam"
-            className={`flex-1 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
+            className={`flex-1 px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${
               activeTab === 'Latam' 
                 ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
                 : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
@@ -844,7 +844,7 @@ function App() {
           <button 
             onClick={() => setActiveTab('Conversor')}
             data-umami-event="Tab - Calculadora"
-            className={`flex-1 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
+            className={`flex-1 px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${
               activeTab === 'Conversor' 
                 ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
                 : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
