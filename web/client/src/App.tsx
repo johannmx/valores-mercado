@@ -207,6 +207,18 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
 const Converter = ({ data }: { data: MarketData | null }) => {
   const [amount, setAmount] = useState<number>(1);
   const [from, setFrom] = useState<'USD' | 'ARS_BLUE' | 'ARS_OFFICIAL' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL' | 'EUR'>('USD');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const OPTIONS = [
+    { value: 'USD', label: 'USD - Dólar USA' },
+    { value: 'ARS_OFFICIAL', label: 'ARS - Dólar Oficial' },
+    { value: 'CRYPTO', label: 'ARS - Dólar Crypto' },
+    { value: 'VES', label: 'VES - Bolívar Paralelo' },
+    { value: 'VES_OFFICIAL', label: 'VES - Bolívar Oficial' },
+    { value: 'UYU', label: 'UYU - Peso Uruguayo' },
+    { value: 'CLP', label: 'CLP - Peso Chileno' },
+    { value: 'BRL', label: 'BRL - Real Brasileño' }
+  ];
 
   if (!data) return null;
 
@@ -286,30 +298,42 @@ const Converter = ({ data }: { data: MarketData | null }) => {
               className="flex-1 min-w-0 px-6 py-3 border-0 bg-white dark:bg-slate-800 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all font-black text-2xl text-slate-800 dark:text-white"
               placeholder="0.00"
             />
-            <div className="relative flex-shrink-0 min-w-[200px]">
-              <select 
-                value={from} 
-                onChange={(e) => {
-                  const selected = e.target.value as any;
-                  setFrom(selected);
-                  if (window.umami) {
-                    window.umami.track('Calculadora - Conversion', { moneda: selected });
-                  }
-                }}
-                className="appearance-none w-full h-full px-6 py-3 pr-12 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-white rounded-2xl font-black outline-none cursor-pointer transition-all shadow-sm text-sm"
+            <div className="relative flex-shrink-0 min-w-[220px]">
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-full h-full flex items-center justify-between px-6 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-white rounded-2xl font-black outline-none cursor-pointer transition-all shadow-sm text-sm"
               >
-                <option value="USD">USD - Dólar USA</option>
-                <option value="ARS_OFFICIAL">ARS - Dólar Oficial</option>
-                <option value="CRYPTO">ARS - Dólar Crypto</option>
-                <option value="VES">VES - Bolívar Paralelo</option>
-                <option value="VES_OFFICIAL">VES - Bolívar Oficial</option>
-                <option value="UYU">UYU - Peso Uruguayo</option>
-                <option value="CLP">CLP - Peso Chileno</option>
-                <option value="BRL">BRL - Real Brasileño</option>
-              </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                <ChevronDown className="w-5 h-5 text-slate-400" />
-              </div>
+                <span>{OPTIONS.find(o => o.value === from)?.label || 'Seleccionar moneda'}</span>
+                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {isDropdownOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-10" 
+                    onClick={() => setIsDropdownOpen(false)} 
+                  />
+                  <div className="absolute z-20 w-full mt-2 py-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl max-h-[280px] overflow-y-auto overflow-x-hidden animate-in slide-in-from-top-2 fade-in duration-200">
+                    {OPTIONS.map(option => (
+                      <div
+                        key={option.value}
+                        onClick={() => {
+                          setFrom(option.value as any);
+                          setIsDropdownOpen(false);
+                          if (window.umami) {
+                            window.umami.track('Calculadora - Conversion', { moneda: option.value });
+                          }
+                        }}
+                        className={`px-6 py-3 cursor-pointer text-sm font-black transition-colors flex items-center justify-between group ${from === option.value ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white'}`}
+                      >
+                        {option.label}
+                        {from === option.value && <CheckCircle2 className="w-4 h-4" />}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
