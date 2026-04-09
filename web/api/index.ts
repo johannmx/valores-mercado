@@ -158,7 +158,7 @@ interface MarketData {
     };
 }
 
-interface HistoryItem {
+export interface HistoryItem {
     timestamp: string;
     usd_blue: number;
     usd_oficial: number;
@@ -189,7 +189,7 @@ const calculateChange = (current: number, last: number): number => {
     return ((current - last) / last) * 100;
 };
 
-const generateMockHistory = () => {
+export const generateMockHistory = () => {
     const history: HistoryItem[] = [];
     const today = new Date();
     for (let i = 24; i >= 0; i--) {
@@ -498,23 +498,31 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
     res.status(500).json({ error: 'Internal Server Error' });
 });
 
-const server = app.listen(PORT, () => {
-    console.log(`🚀 [API] Server running on port ${PORT}`);
-});
+export const server = process.env.NODE_ENV !== 'test'
+    ? app.listen(PORT, () => console.log(`🚀 [API] Server running on port ${PORT}`))
+    : null;
 
 // Graceful shutdown handlers
 process.on('SIGTERM', () => {
     console.log('🛑 [API] SIGTERM received. Starting graceful shutdown...');
-    server.close(() => {
-        console.log('✅ [API] Server closed. Process terminated.');
+    if (server) {
+        server.close(() => {
+            console.log('✅ [API] Server closed. Process terminated.');
+            process.exit(0);
+        });
+    } else {
         process.exit(0);
-    });
+    }
 });
 
 process.on('SIGINT', () => {
     console.log('🛑 [API] SIGINT received. Cleaning up resources...');
-    server.close(() => {
-        console.log('✅ [API] Server closed. Process interrupted.');
+    if (server) {
+        server.close(() => {
+            console.log('✅ [API] Server closed. Process interrupted.');
+            process.exit(0);
+        });
+    } else {
         process.exit(0);
-    });
+    }
 });
