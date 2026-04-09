@@ -320,7 +320,7 @@ const saveCurrentToHistory = async () => {
         try {
             await fs.promises.writeFile(HISTORY_FILE, JSON.stringify(history, null, 2));
         } catch (writeError) {
-            console.error('Failed to write history file during background save:', (writeError as any).message);
+            console.error('Failed to write history file during background save:', writeError instanceof Error ? writeError.message : writeError);
         }
     } catch (error) {
         console.error('Error saving to history:', error);
@@ -470,7 +470,7 @@ app.get('/api/historical/:casa', async (req, res) => {
         const response = await axios.get(`https://api.argentinadatos.com/v1/cotizaciones/dolares/${casa}`);
         res.json(response.data);
     } catch (error) {
-        console.error('Historical Fetch Error:', (error as any).message);
+        console.error('Historical Fetch Error:', error instanceof Error ? error.message : error);
         res.status(500).json({ error: 'Failed to fetch historical data' });
     }
 });
