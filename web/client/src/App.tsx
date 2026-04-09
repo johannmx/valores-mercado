@@ -458,6 +458,13 @@ const ToastNotification = ({ note, onDismiss }: { note: AppNotification, onDismi
   const [isClosing, setIsClosing] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
+  const handleClose = useCallback(() => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onDismiss(note.id, note.key);
+    }, 400); // Allow time for exit animation
+  }, [note.id, note.key, onDismiss]);
+
   useEffect(() => {
     if (isHovered) return;
     
@@ -467,14 +474,7 @@ const ToastNotification = ({ note, onDismiss }: { note: AppNotification, onDismi
     }, 8000);
 
     return () => clearTimeout(timer);
-  }, [isHovered]);
-
-  const handleClose = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      onDismiss(note.id, note.key);
-    }, 400); // Allow time for exit animation
-  };
+  }, [isHovered, handleClose]);
 
   return (
     <div 
