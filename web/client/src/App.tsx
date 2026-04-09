@@ -123,8 +123,22 @@ export const formatNumber = (num: number | string | null | undefined) => {
   return parsed.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change, badge, spread, pulseType }: any) => {
-  const isPositive = change > 0;
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  icon: React.ElementType;
+  color: string;
+  subtitle?: string;
+  buy?: string | number;
+  sell?: string | number;
+  change?: number;
+  badge?: string;
+  spread?: number | string;
+  pulseType?: 'up' | 'down';
+}
+
+const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change, badge, spread, pulseType }: StatCardProps) => {
+  const isPositive = change !== undefined && change > 0;
   const isNeutral = change === 0;
   const displayValue = value || '---';
 
