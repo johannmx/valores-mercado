@@ -1,9 +1,10 @@
-import express from 'express';
+import Fastify from 'fastify';
 import axios from 'axios';
-import cors from 'cors';
+import cors from '@fastify/cors';
 import fs from 'fs';
-import helmet from 'helmet';
-import { rateLimit } from 'express-rate-limit';
+import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
+import NodeCache from 'node-cache';
 
 // Set a default timeout of 10 seconds for all external API requests to prevent hanging connections
 axios.defaults.timeout = 10000;
@@ -12,15 +13,20 @@ axios.defaults.timeout = 10000;
 axios.defaults.maxContentLength = 500000;
 axios.defaults.maxBodyLength = 500000;
 
-const app = express();
-app.set('trust proxy', 1);
-app.disable('x-powered-by');
-const PORT = process.env.PORT || 3001;
+const server = Fastify({
+    logger: true,
+    trustProxy: true
+});
+
+const PORT = (process.env.PORT && parseInt(process.env.PORT)) || 3001;
 const DATA_DIR = 'data';
 const HISTORY_FILE = `${DATA_DIR}/history.json`;
 
+// Cache configuration: 60 seconds standard TTL
+const rateCache = new NodeCache({ stdTTL: 60, checkperiod: 60 });
+
 // Security Middleware
-app.use(helmet({
+server.register(helmet, {
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
@@ -36,11 +42,10 @@ app.use(helmet({
     referrerPolicy: { policy: 'no-referrer-when-downgrade' },
     hsts: { maxAge: 31536000, includeSubDomains: true },
     xContentTypeOptions: true,
-}));
+});
 
-app.use((req, res, next) => {
-    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), browsing-topics=()');
-    next();
+server.addHook('onRequest', async (request, reply) => {
+    reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), browsing-topics=()');
 });
 
 // Security Enhancement: Use a validated array of domains for CORS instead of blindly parsing environment variables
@@ -70,22 +75,23 @@ const getStricterCorsOrigins = (): string[] => {
     return [...new Set([...defaultOrigins, ...envOrigins])];
 };
 
-app.use(cors({
+server.register(cors, {
     origin: getStricterCorsOrigins(),
     methods: ['GET'],
     allowedHeaders: ['Content-Type']
-}));
-
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    limit: 100, // Limit each IP to 100 requests per windowMs
-    standardHeaders: 'draft-7',
-    legacyHeaders: false,
-    message: { error: 'Too many requests, please try again later.' }
 });
 
-app.use('/api/', limiter);
-app.use(express.json({ limit: '10kb' }));
+server.register(rateLimit, {
+    max: 100,
+    timeWindow: '15 minutes',
+    errorResponseBuilder: function (request, context) {
+        return {
+            statusCode: 429,
+            error: 'Too Many Requests',
+            message: 'Too many requests, please try again later.'
+        }
+    }
+});
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
@@ -253,8 +259,6 @@ const initializeHistory = async () => {
         console.error('CRITICAL: Failed to initialize history file due to permission errors.');
         console.error('Check if the "data" directory is writable by the user running the process.');
         console.error(error);
-        // We don't crash here to allow the server to at least start,
-        // though some features might fail.
     }
 };
 
@@ -330,7 +334,20 @@ const saveCurrentToHistory = async () => {
 await initializeHistory();
 setInterval(saveCurrentToHistory, 300000); // 5 minutes
 
-app.get('/api/rates', async (req, res) => {
+server.get('/api/rates', {
+    config: {
+        rateLimit: {
+            max: 100,
+            timeWindow: '15 minutes'
+        }
+    }
+}, async (request, reply) => {
+    // Check Cache first
+    const cachedData = rateCache.get('market_data');
+    if (cachedData) {
+        return reply.send(cachedData);
+    }
+
     const apiStatus = {
         dolar_api_ar: false,
         dolar_api_ve: false,
@@ -451,31 +468,34 @@ app.get('/api/rates', async (req, res) => {
             api_status: apiStatus
         };
 
-        res.json(marketData);
+        // Guardar en caché antes de devolver
+        rateCache.set('market_data', marketData);
+
+        return reply.send(marketData);
     } catch (error) {
-        console.error('API Error:', error);
-        res.status(500).json({ error: 'Failed to fetch market data' });
+        server.log.error('API Error:', error);
+        return reply.status(500).send({ error: 'Failed to fetch market data' });
     }
 });
 
-app.get('/api/historical/:casa', async (req, res) => {
+server.get<{ Params: { casa: string } }>('/api/historical/:casa', async (request, reply) => {
     try {
-        const { casa } = req.params;
+        const { casa } = request.params;
         const allowedCasas = ['oficial', 'blue', 'bolsa', 'contadoconliqui', 'cripto', 'tarjeta'];
         
         if (!allowedCasas.includes(casa)) {
-            return res.status(400).json({ error: 'Invalid casa parameter' });
+            return reply.status(400).send({ error: 'Invalid casa parameter' });
         }
 
         const response = await axios.get(`https://api.argentinadatos.com/v1/cotizaciones/dolares/${casa}`);
-        res.json(response.data);
+        return reply.send(response.data);
     } catch (error) {
-        console.error('Historical Fetch Error:', error instanceof Error ? error.message : error);
-        res.status(500).json({ error: 'Failed to fetch historical data' });
+        server.log.error('Historical Fetch Error:', error instanceof Error ? error.message : error);
+        return reply.status(500).send({ error: 'Failed to fetch historical data' });
     }
 });
 
-app.get('/api/history', async (req, res) => {
+server.get('/api/history', async (request, reply) => {
     try {
         const fileContent = await fs.promises.readFile(HISTORY_FILE, 'utf-8');
         const history = JSON.parse(fileContent);
@@ -486,43 +506,38 @@ app.get('/api/history', async (req, res) => {
             ves_paralelo: item.ves_paralelo ?? item.ves_oficial
         }));
         
-        res.json(processedHistory);
+        return reply.send(processedHistory);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to read history' });
+        return reply.status(500).send({ error: 'Failed to read history' });
     }
 });
 
-// Global Error Handler to prevent stack trace leaks
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error('Unhandled Server Error:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
-});
+// Start the server
+const startServer = async () => {
+    try {
+        if (process.env.NODE_ENV !== 'test') {
+            await server.listen({ port: PORT as number, host: '0.0.0.0' });
+            console.log(`🚀 [API] Fastify Server running on port ${PORT}`);
+        }
+    } catch (err) {
+        server.log.error(err);
+        process.exit(1);
+    }
+};
 
-export const server = process.env.NODE_ENV !== 'test'
-    ? app.listen(PORT, () => console.log(`🚀 [API] Server running on port ${PORT}`))
-    : null;
+startServer();
 
 // Graceful shutdown handlers
-process.on('SIGTERM', () => {
-    console.log('🛑 [API] SIGTERM received. Starting graceful shutdown...');
-    if (server) {
-        server.close(() => {
-            console.log('✅ [API] Server closed. Process terminated.');
+['SIGINT', 'SIGTERM'].forEach(signal => {
+    process.on(signal, async () => {
+        console.log(`🛑 [API] ${signal} received. Starting graceful shutdown...`);
+        try {
+            await server.close();
+            console.log('✅ [API] Fastify Server closed. Process terminated.');
             process.exit(0);
-        });
-    } else {
-        process.exit(0);
-    }
-});
-
-process.on('SIGINT', () => {
-    console.log('🛑 [API] SIGINT received. Cleaning up resources...');
-    if (server) {
-        server.close(() => {
-            console.log('✅ [API] Server closed. Process interrupted.');
-            process.exit(0);
-        });
-    } else {
-        process.exit(0);
-    }
+        } catch (err) {
+            console.error('Error during graceful shutdown:', err);
+            process.exit(1);
+        }
+    });
 });
