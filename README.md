@@ -35,7 +35,7 @@ Conjunto de herramientas profesionales para el monitoreo de divisas y criptomone
 
 - **Frontend:** React 19 + Vite + Tailwind CSS + Lucide Icons.
 - **Visualización:** Recharts para gráficos de área minimalistas.
-- **Backend:** Node.js + Express + Proxy API para evitar CORS y persistencia de datos.
+- **Backend:** Node.js + Fastify + NodeCache + Proxy API para evitar CORS y persistencia de datos.
 - **Infraestructura:** Docker & Docker Compose para despliegue simplificado.
 
 ---
