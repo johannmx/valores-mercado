@@ -478,7 +478,14 @@ server.get('/api/rates', {
     }
 });
 
-server.get<{ Params: { casa: string } }>('/api/historical/:casa', async (request, reply) => {
+server.get<{ Params: { casa: string } }>('/api/historical/:casa', {
+    config: {
+        rateLimit: {
+            max: 100,
+            timeWindow: '15 minutes'
+        }
+    }
+}, async (request, reply) => {
     try {
         const { casa } = request.params;
         const allowedCasas = ['oficial', 'blue', 'bolsa', 'contadoconliqui', 'cripto', 'tarjeta'];
@@ -495,7 +502,14 @@ server.get<{ Params: { casa: string } }>('/api/historical/:casa', async (request
     }
 });
 
-server.get('/api/history', async (request, reply) => {
+server.get('/api/history', {
+    config: {
+        rateLimit: {
+            max: 100,
+            timeWindow: '15 minutes'
+        }
+    }
+}, async (request, reply) => {
     try {
         const fileContent = await fs.promises.readFile(HISTORY_FILE, 'utf-8');
         const history = JSON.parse(fileContent);
