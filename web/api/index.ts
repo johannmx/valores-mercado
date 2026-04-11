@@ -502,6 +502,12 @@ export const server = process.env.NODE_ENV !== 'test'
     ? app.listen(PORT, () => console.log(`🚀 [API] Server running on port ${PORT}`))
     : null;
 
+if (server) {
+    // Security Enhancement: Protect against Slowloris attacks by enforcing timeouts
+    server.keepAliveTimeout = 65000;
+    server.headersTimeout = 66000;
+}
+
 // Graceful shutdown handlers
 process.on('SIGTERM', () => {
     console.log('🛑 [API] SIGTERM received. Starting graceful shutdown...');

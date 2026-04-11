@@ -17,3 +17,8 @@
 * **Vulnerability:** The API blindly parsed the `ALLOWED_ORIGINS` environment variable and passed it directly to the CORS configuration, leading to a risk where incorrect env configuration could open the application to Cross-Origin Resource Sharing attacks, potentially allowing malicious sites to access API responses.
 * **Learning:** Always strictly validate configuration input, especially for security features like CORS. Relying on an unvalidated environment variable or `false` flag to protect cross-origin access is highly error-prone.
 * **Prevention:** Ensure the origin parameter passed to `cors` middleware explicitly validates parsed domains, ensuring they form a valid URL and fallback to secure defaults instead of turning CORS checking off entirely.
+
+## 2026-04-11 - [MEDIUM] Missing Timeout Configurations in Express
+**Vulnerability:** The Express backend relied on Node's default `keepAliveTimeout` (5s) and `headersTimeout`. When operating behind a reverse proxy (like Nginx), mismatched timeouts can cause 502 Bad Gateway errors, and leaving them unconfigured can make the server slightly more susceptible to connection exhaustion or Slowloris-style delays if the proxy buffers are misconfigured.
+**Learning:** Security robusting isn't just about preventing unauthorized access, but also ensuring stability and availability against malformed or slow network traffic at the Node.js level.
+**Prevention:** Always configure `keepAliveTimeout` and `headersTimeout` on the underlying `http.Server` instance returned by `app.listen()` to values that align with or exceed the reverse proxy's timeout expectations (e.g., 65s and 66s).
