@@ -542,11 +542,11 @@ const startServer = async () => {
 };
 
 startServer();
-
-if (server) {
+if (server.server) {
     // Security Enhancement: Protect against Slowloris attacks by enforcing timeouts
-    server.keepAliveTimeout = 65000;
-    server.headersTimeout = 66000;
+    // In Fastify, these properties must be set on the underlying Node.js server
+    server.server.keepAliveTimeout = 65000;
+    server.server.headersTimeout = 66000;
 }
 
 // Graceful shutdown handlers
