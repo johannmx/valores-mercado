@@ -15,7 +15,8 @@ axios.defaults.maxBodyLength = 500000;
 
 const server = Fastify({
     logger: true,
-    trustProxy: true
+    // Security Enhancement: Only trust proxies from local network to prevent IP spoofing rate-limit bypass
+    trustProxy: ['127.0.0.1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16']
 });
 
 const PORT = (process.env.PORT && parseInt(process.env.PORT)) || 3001;
