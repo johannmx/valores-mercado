@@ -15,7 +15,9 @@ axios.defaults.maxBodyLength = 500000;
 
 const server = Fastify({
     logger: true,
-    trustProxy: true
+    // Security Fix: Do not blindly trust all proxies as it allows IP spoofing via X-Forwarded-For
+    // Explicitly list trusted private IP ranges used by reverse proxies (e.g., Docker Nginx)
+    trustProxy: ['127.0.0.1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16']
 });
 
 const PORT = (process.env.PORT && parseInt(process.env.PORT)) || 3001;

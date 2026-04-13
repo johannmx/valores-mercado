@@ -22,3 +22,8 @@
 **Vulnerability:** The Express backend relied on Node's default `keepAliveTimeout` (5s) and `headersTimeout`. When operating behind a reverse proxy (like Nginx), mismatched timeouts can cause 502 Bad Gateway errors, and leaving them unconfigured can make the server slightly more susceptible to connection exhaustion or Slowloris-style delays if the proxy buffers are misconfigured.
 **Learning:** Security robusting isn't just about preventing unauthorized access, but also ensuring stability and availability against malformed or slow network traffic at the Node.js level.
 **Prevention:** Always configure `keepAliveTimeout` and `headersTimeout` on the underlying `http.Server` instance returned by `app.listen()` to values that align with or exceed the reverse proxy's timeout expectations (e.g., 65s and 66s).
+
+## 2024-05-18 - [HIGH] Fastify Rate Limiting Bypass via trustProxy: true
+**Vulnerability:** Fastify was configured with `trustProxy: true`, which implicitly trusts all incoming `X-Forwarded-For` headers. In environments where the reverse proxy (like Nginx) does not strictly overwrite the `X-Forwarded-For` header, an attacker can supply a spoofed IP address.
+**Learning:** Setting `trustProxy: true` in Fastify acts differently than explicit IP lists. If an attacker spoofs the IP, rate limiters (`@fastify/rate-limit`) will evaluate against the spoofed IP rather than the actual IP, allowing trivial bypass of rate limiting.
+**Prevention:** Never use `trustProxy: true` in production if rate limiting or IP-based security relies on it. Instead, configure it to explicitly trust the private IP ranges or the specific IP of the reverse proxy (e.g., `['127.0.0.1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16']`).
