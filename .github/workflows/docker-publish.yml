@@ -47,13 +47,13 @@ jobs:
       - name: Install and Test API
         run: |
           cd web/api
-          npm ci
+          npm install
           npm test
 
       - name: Install and Test Client
         run: |
           cd web/client
-          npm ci
+          npm install
           npm test
 
       - name: Log in to the Container registry
