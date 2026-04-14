@@ -1,0 +1,23 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":separateMajorReleases",
+    ":combinePatchMinorReleases",
+    "npm:unpublishSafe"
+  ],
+  "platformAutomerge": true,
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    },
+    {
+      "description": "Group all development dependencies",
+      "matchPackageNames": ["*"],
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "Development Dependencies"
+    }
+  ],
+  "timezone": "America/Argentina/Buenos_Aires"
+}
