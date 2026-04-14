@@ -41,7 +41,7 @@ jobs:
 
       - name: Extract metadata for API image
         id: meta-api
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}-api
           tags: |
@@ -50,7 +50,7 @@ jobs:
 
       - name: Extract metadata for Client image
         id: meta-client
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}-client
           tags: |
