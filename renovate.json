@@ -17,6 +17,12 @@
       "matchPackageNames": ["*"],
       "matchDepTypes": ["devDependencies"],
       "groupName": "Development Dependencies"
+    },
+    {
+      "description": "Ignore major updates for breaking core tools",
+      "matchPackageNames": ["tailwindcss", "eslint", "typescript"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
     }
   ],
   "timezone": "America/Argentina/Buenos_Aires"
