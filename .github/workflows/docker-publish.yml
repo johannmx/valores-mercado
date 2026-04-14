@@ -65,7 +65,7 @@ jobs:
 
       - name: Build and push API image
         id: push-api
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: ./web/api
           push: true
@@ -75,7 +75,7 @@ jobs:
 
       - name: Build and push Client image
         id: push-client
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: ./web/client
           push: true
