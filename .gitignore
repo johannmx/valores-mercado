@@ -29,7 +29,9 @@ Thumbs.db
 # Project Specific
 history.json
 MercadoNotificationsLog.txt
+# Ignore actual configuration files to prevent secret leaks
 config.sh
+# Track the template example
 !config.sh.example
 
 # Agent
