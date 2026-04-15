@@ -477,8 +477,14 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
             contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'}}
             itemStyle={{fontWeight: '900', textTransform: 'uppercase', fontSize: '10px'}}
             labelStyle={{fontWeight: '900', marginBottom: '8px', color: '#64748b'}}
-            labelFormatter={(label: string) => new Date(label).toLocaleString()}
-            formatter={(value: number | string) => [
+            labelFormatter={(label: any) => {
+              try {
+                return label ? new Date(label).toLocaleString() : '';
+              } catch (e) {
+                return String(label);
+              }
+            }}
+            formatter={(value: any) => [
               formatNumber(value),
               "VALOR"
             ] as [string, string]}
@@ -489,7 +495,7 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
             <Area 
               name="Valor"
               type="monotone" 
-              dataKey={dataKey} 
+              dataKey={dataKey || ""} 
               stroke={color.hex} 
               strokeWidth={4}
               fillOpacity={1} 
@@ -1325,7 +1331,7 @@ function App() {
                 <Globe className="w-3 h-3 text-blue-500" />
                 Realizado por <span className="text-slate-900 dark:text-white">@johannmx</span>
               </div>
-              <div className="flex items-center gap-4 text-[9px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.3em]">
+              <div className="flex items-center gap-4 text-[9px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.3em] teacher-none">
                 © 2026 MarketDash • Financial Pulse
               </div>
             </div>
