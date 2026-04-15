@@ -245,7 +245,25 @@ const Converter = ({ data }: { data: MarketData | null }) => {
     return result.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const ResultCard = ({ title, items, icon: Icon, color }: any) => (
+  interface ResultCardItem {
+    label: string;
+    value: string | number;
+    highlight?: boolean;
+    prefix?: string;
+    suffix?: string;
+  }
+
+  interface ResultCardProps {
+    title: string;
+    items: ResultCardItem[];
+    icon: React.ElementType;
+    color: {
+      bg: string;
+      text: string;
+    };
+  }
+
+  const ResultCard = ({ title, items, icon: Icon, color }: ResultCardProps) => (
     <div className="bg-white dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-700/50 shadow-sm flex flex-col h-full hover:shadow-md transition-all duration-300">
       <div className="flex items-center gap-2 mb-6">
         <div className={`p-2 rounded-lg ${color.bg}`}>
@@ -254,7 +272,7 @@ const Converter = ({ data }: { data: MarketData | null }) => {
         <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">{title}</h3>
       </div>
       <div className="space-y-4 flex-1">
-        {items.map((item: any) => (
+        {items.map((item: ResultCardItem) => (
           <div key={item.label} className="flex justify-between items-center group">
             <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tight group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">{item.label}</span>
             <div className="flex flex-col items-end">
@@ -391,7 +409,23 @@ const Converter = ({ data }: { data: MarketData | null }) => {
   );
 };
 
-const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon, singleLine }: any) => (
+interface RegionChartProps {
+  title: string;
+  data: HistoryItem[];
+  buyKey?: string;
+  sellKey?: string;
+  dataKey?: string;
+  color: {
+    text: string;
+    hex?: string;
+    buyHex?: string;
+    sellHex?: string;
+  };
+  icon: React.ElementType;
+  singleLine?: boolean;
+}
+
+const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon, singleLine }: RegionChartProps) => (
   <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full min-h-[440px]">
     <div className="flex items-center justify-between mb-8">
       <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter flex items-center gap-2">
@@ -444,7 +478,7 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
             itemStyle={{fontWeight: '900', textTransform: 'uppercase', fontSize: '10px'}}
             labelStyle={{fontWeight: '900', marginBottom: '8px', color: '#64748b'}}
             labelFormatter={(label) => new Date(label).toLocaleString()}
-            formatter={(value: any) => [Number(value).toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2}), "VALOR"]}
+            formatter={(value: number | string) => [Number(value).toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2}), "VALOR"]}
           />
           {!singleLine && <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase'}} />}
           
