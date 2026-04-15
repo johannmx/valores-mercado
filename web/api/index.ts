@@ -324,6 +324,8 @@ const saveCurrentToHistory = async () => {
         if (history.length > 500) history.shift();
         try {
             await fs.promises.writeFile(HISTORY_FILE, JSON.stringify(history, null, 2));
+            // Invalidate history cache after successful write
+            rateCache.del('history_data');
         } catch (writeError) {
             console.error('Failed to write history file during background save:', writeError instanceof Error ? writeError.message : writeError);
         }
@@ -514,6 +516,12 @@ server.get('/api/history', {
     }
 }, async (request, reply) => {
     try {
+        // Check Cache first
+        const cachedHistory = rateCache.get('history_data');
+        if (cachedHistory) {
+            return reply.send(cachedHistory);
+        }
+
         const fileContent = await fs.promises.readFile(HISTORY_FILE, 'utf-8');
         const history = JSON.parse(fileContent);
         
@@ -523,6 +531,9 @@ server.get('/api/history', {
             ves_paralelo: item.ves_paralelo ?? item.ves_oficial
         }));
         
+        // Cache the processed history
+        rateCache.set('history_data', processedHistory);
+
         return reply.send(processedHistory);
     } catch (error) {
         return reply.status(500).send({ error: 'Failed to read history' });
