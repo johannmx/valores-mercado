@@ -464,7 +464,7 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
             tickLine={false} 
             tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'bold'}}
             dy={10}
-            tickFormatter={(str) => {
+            tickFormatter={(str: string) => {
               try {
                 return new Date(str).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               } catch (e) {
@@ -477,8 +477,11 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
             contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'}}
             itemStyle={{fontWeight: '900', textTransform: 'uppercase', fontSize: '10px'}}
             labelStyle={{fontWeight: '900', marginBottom: '8px', color: '#64748b'}}
-            labelFormatter={(label) => new Date(label).toLocaleString()}
-            formatter={(value: number | string) => [Number(value).toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2}), "VALOR"]}
+            labelFormatter={(label: string) => new Date(label).toLocaleString()}
+            formatter={(value: number | string) => [
+              formatNumber(value),
+              "VALOR"
+            ] as [string, string]}
           />
           {!singleLine && <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase'}} />}
           
