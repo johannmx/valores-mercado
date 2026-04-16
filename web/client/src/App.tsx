@@ -99,6 +99,40 @@ interface MarketData {
   };
 }
 
+interface ResultCardItem {
+  label: string;
+  value: string | number;
+  highlight?: boolean;
+  prefix?: string;
+  suffix?: string;
+}
+
+interface ResultCardProps {
+  title: string;
+  items: ResultCardItem[];
+  icon: React.ElementType;
+  color: {
+    bg: string;
+    text: string;
+  };
+}
+
+interface RegionChartProps {
+  title: string;
+  data: HistoryItem[];
+  buyKey?: string;
+  sellKey?: string;
+  dataKey?: string;
+  color: {
+    text: string;
+    hex?: string;
+    buyHex?: string;
+    sellHex?: string;
+  };
+  icon: React.ElementType;
+  singleLine?: boolean;
+}
+
 interface HistoryItem {
   timestamp: string;
   usd_blue: number;
@@ -245,23 +279,6 @@ const Converter = ({ data }: { data: MarketData | null }) => {
     return result.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  interface ResultCardItem {
-    label: string;
-    value: string | number;
-    highlight?: boolean;
-    prefix?: string;
-    suffix?: string;
-  }
-
-  interface ResultCardProps {
-    title: string;
-    items: ResultCardItem[];
-    icon: React.ElementType;
-    color: {
-      bg: string;
-      text: string;
-    };
-  }
 
   const ResultCard = ({ title, items, icon: Icon, color }: ResultCardProps) => (
     <div className="bg-white dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-700/50 shadow-sm flex flex-col h-full hover:shadow-md transition-all duration-300">
@@ -409,21 +426,7 @@ const Converter = ({ data }: { data: MarketData | null }) => {
   );
 };
 
-interface RegionChartProps {
-  title: string;
-  data: HistoryItem[];
-  buyKey?: string;
-  sellKey?: string;
-  dataKey?: string;
-  color: {
-    text: string;
-    hex?: string;
-    buyHex?: string;
-    sellHex?: string;
-  };
-  icon: React.ElementType;
-  singleLine?: boolean;
-}
+
 
 const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon, singleLine }: RegionChartProps) => (
   <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full min-h-[440px]">
@@ -495,11 +498,11 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
             <Area 
               name="Valor"
               type="monotone" 
-              dataKey={dataKey || ""} 
+              dataKey={dataKey || 'value'}
               stroke={color.hex} 
               strokeWidth={4}
               fillOpacity={1} 
-              fill={`url(#color-${dataKey})`} 
+              fill={`url(#color-${dataKey || 'value'})`}
               animationDuration={1500}
             />
           ) : (
