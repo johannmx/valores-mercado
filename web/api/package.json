@@ -17,7 +17,7 @@
     "@fastify/helmet": "^11.1.1",
     "@fastify/rate-limit": "^9.1.0",
     "axios": "^1.13.6",
-    "fastify": "^5.8.3",
+    "fastify": "^5.8.5",
     "node-cache": "^5.1.2",
     "tsx": "^4.19.3"
   },
