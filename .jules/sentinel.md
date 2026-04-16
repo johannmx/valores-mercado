@@ -26,3 +26,9 @@
 **Vulnerability:** Fastify was configured with `trustProxy: true`, blindly trusting all incoming `X-Forwarded-For` headers.
 **Learning:** When using `trustProxy: true`, an attacker can easily spoof their IP address by injecting an `X-Forwarded-For` header, bypassing rate-limiting middleware.
 **Prevention:** Restrict `trustProxy` to an array of trusted private network CIDR blocks (e.g., `['127.0.0.1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16']`) instead of using `true`.
+
+## 2026-04-15 - Remove hardcoded secrets template from tracking
+
+**Vulnerability:** Hardcoded placeholder secrets in tracked configuration files.
+**Learning:** Committing even "placeholder" secrets like "YOUR_BOT_TOKEN" in a file named `config.sh` encourages users to modify the tracked file, leading to accidental credential leaks.
+**Prevention:** Always use a `.example` or `.template` suffix for configuration files committed to the repository, and ensure the actual configuration filename is explicitly listed in `.gitignore`.

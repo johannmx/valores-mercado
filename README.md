@@ -54,8 +54,9 @@ Conjunto de herramientas profesionales para el monitoreo de divisas y criptomone
 
 El repositorio incluye un motor de notificaciones en Bash ideal para servidores ligeros.
 
-1. Configura `config.sh` con tu `BOT_TOKEN` y `CHAT_ID`.
-2. Ejecuta `./live.sh` para alertas automáticas cada 5 minutos.
+1. Copia `config.sh.example` a `config.sh`: `cp config.sh.example config.sh`
+2. Configura `config.sh` con tu `BOT_TOKEN` y `CHAT_ID`.
+3. Ejecuta `./live.sh` para alertas automáticas cada 5 minutos.
 
 ---
 

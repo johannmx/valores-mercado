@@ -279,6 +279,7 @@ const Converter = ({ data }: { data: MarketData | null }) => {
     return result.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
+
   const ResultCard = ({ title, items, icon: Icon, color }: ResultCardProps) => (
     <div className="bg-white dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-700/50 shadow-sm flex flex-col h-full hover:shadow-md transition-all duration-300">
       <div className="flex items-center gap-2 mb-6">
@@ -426,6 +427,7 @@ const Converter = ({ data }: { data: MarketData | null }) => {
 };
 
 
+
 const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon, singleLine }: RegionChartProps) => (
   <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full min-h-[440px]">
     <div className="flex items-center justify-between mb-8">
@@ -465,7 +467,7 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
             tickLine={false} 
             tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'bold'}}
             dy={10}
-            tickFormatter={(str) => {
+            tickFormatter={(str: string) => {
               try {
                 return new Date(str).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               } catch (e) {
@@ -478,8 +480,17 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
             contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'}}
             itemStyle={{fontWeight: '900', textTransform: 'uppercase', fontSize: '10px'}}
             labelStyle={{fontWeight: '900', marginBottom: '8px', color: '#64748b'}}
-            labelFormatter={(label: any) => new Date(label).toLocaleString()}
-            formatter={(value: any) => [Number(value).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "VALOR"]}
+            labelFormatter={(label: any) => {
+              try {
+                return label ? new Date(label).toLocaleString() : '';
+              } catch (e) {
+                return String(label);
+              }
+            }}
+            formatter={(value: any) => [
+              formatNumber(value),
+              "VALOR"
+            ] as [string, string]}
           />
           {!singleLine && <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase'}} />}
           
@@ -1323,7 +1334,7 @@ function App() {
                 <Globe className="w-3 h-3 text-blue-500" />
                 Realizado por <span className="text-slate-900 dark:text-white">@johannmx</span>
               </div>
-              <div className="flex items-center gap-4 text-[9px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.3em]">
+              <div className="flex items-center gap-4 text-[9px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.3em] teacher-none">
                 © 2026 MarketDash • Financial Pulse
               </div>
             </div>
