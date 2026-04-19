@@ -50,15 +50,15 @@ interface AppNotification {
 
 interface MarketData {
   timestamp: string;
-  usd_official: number;
+  usd_oficial: number;
   usd_blue: number;
   usd_mep: number;
   usd_ccl: number;
   usd_cripto: number;
   usd_tarjeta: number;
-  ves_official: number;
+  ves_oficial: number;
   ves_paralelo: number;
-  ves_eur_official: number;
+  ves_eur_oficial: number;
   ves_eur_paralelo: number;
   ves_compra: number;
   uyu_venta: number;
@@ -74,11 +74,11 @@ interface MarketData {
   brl_ar: number;
   btc_usd: number;
   changes: {
-    usd_official_percent: number;
+    usd_oficial_percent: number;
     usd_blue_percent: number;
-    ves_official_percent: number;
+    ves_oficial_percent: number;
     ves_paralelo_percent: number;
-    ves_eur_official_percent: number;
+    ves_eur_oficial_percent: number;
     ves_eur_paralelo_percent: number;
     uyu_percent: number;
     clp_percent: number;
@@ -136,12 +136,12 @@ interface RegionChartProps {
 interface HistoryItem {
   timestamp: string;
   usd_blue: number;
-  usd_official: number;
+  usd_oficial: number;
   usd_mep: number;
   usd_ccl: number;
   usd_cripto: number;
   usd_tarjeta: number;
-  ves_official: number;
+  ves_oficial: number;
   ves_paralelo: number;
   uyu_venta: number;
   clp_venta: number;
@@ -259,10 +259,10 @@ const Converter = ({ data }: { data: MarketData | null }) => {
   const rates: Record<string, number> = {
     USD: 1,
     ARS_BLUE: data.usd_blue,
-    ARS_OFFICIAL: data.usd_official,
+    ARS_OFFICIAL: data.usd_oficial,
     CRYPTO: data.usd_cripto,
     VES: data.ves_paralelo,
-    VES_OFFICIAL: data.ves_official,
+    VES_OFFICIAL: data.ves_oficial,
     UYU: data.uyu_venta,
     CLP: data.clp_venta,
     BRL: data.brl_venta,
@@ -519,7 +519,7 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
               />
               <Area 
                 type="monotone" 
-                dataKey="usd_official" 
+                dataKey="usd_oficial" 
                 stroke="#64748b" 
                 strokeWidth={2}
                 strokeDasharray="5 5"
@@ -646,12 +646,12 @@ function App() {
       const currentAsHistory: HistoryItem = {
         timestamp: ratesData.timestamp,
         usd_blue: ratesData.usd_blue,
-        usd_official: ratesData.usd_official,
+        usd_oficial: ratesData.usd_oficial,
         usd_mep: ratesData.usd_mep,
         usd_ccl: ratesData.usd_ccl,
         usd_cripto: ratesData.usd_cripto,
         usd_tarjeta: ratesData.usd_tarjeta,
-        ves_official: ratesData.ves_official,
+        ves_oficial: ratesData.ves_oficial,
         ves_paralelo: ratesData.ves_paralelo,
         uyu_venta: ratesData.uyu_venta,
         clp_venta: ratesData.clp_venta,
@@ -681,11 +681,11 @@ function App() {
             }
           };
 
+          checkChange('usd_oficial', 'Dólar Oficial');
           checkChange('usd_blue', 'Dólar Blue');
-          checkChange('usd_official', 'Dólar Oficial');
           checkChange('usd_cripto', 'Dólar Cripto');
           checkChange('ves_paralelo', 'Bolívar Paralelo', true);
-          checkChange('ves_official', 'Bolívar Oficial', true);
+          checkChange('ves_oficial', 'Bolívar Oficial', true);
 
           if (newNotifications.length > 0) {
             setNotifications(prev => [...prev, ...newNotifications]);
