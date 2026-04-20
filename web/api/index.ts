@@ -498,7 +498,17 @@ server.get<{ Params: { casa: string } }>('/api/historical/:casa', {
             return reply.status(400).send({ error: 'Invalid casa parameter' });
         }
 
+        const cacheKey = `historical_${casa}`;
+        const cachedData = rateCache.get(cacheKey);
+        if (cachedData) {
+            return reply.send(cachedData);
+        }
+
         const response = await axios.get(`https://api.argentinadatos.com/v1/cotizaciones/dolares/${casa}`);
+
+        // Security Enhancement: Cache external API response to prevent upstream DoS
+        rateCache.set(cacheKey, response.data);
+
         return reply.send(response.data);
     } catch (error) {
         server.log.error('Historical Fetch Error:', error instanceof Error ? error.message : error);

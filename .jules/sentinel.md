@@ -32,3 +32,8 @@
 **Vulnerability:** Hardcoded placeholder secrets in tracked configuration files.
 **Learning:** Committing even "placeholder" secrets like "YOUR_BOT_TOKEN" in a file named `config.sh` encourages users to modify the tracked file, leading to accidental credential leaks.
 **Prevention:** Always use a `.example` or `.template` suffix for configuration files committed to the repository, and ensure the actual configuration filename is explicitly listed in `.gitignore`.
+
+## 2026-04-20 - [MEDIUM] Upstream API Exhaustion via Uncached Dynamic Routes
+**Vulnerability:** The backend endpoint `/api/historical/:casa` validated its parameter but failed to cache the result from the external upstream API (`api.argentinadatos.com`). Although the endpoint itself was rate-limited to 100 requests per 15 minutes per IP, an aggregate of requests from multiple users, or even legitimate traffic spikes, could rapidly multiply and exhaust the external API limits, causing downstream service degradation or IP bans.
+**Learning:** Rate-limiting local routes is necessary but insufficient if external, expensive resources are fetched dynamically on each request without intermediate caching. External resources require an explicit caching layer to decouple internal scaling from external limits.
+**Prevention:** Always implement a short-lived cache (e.g., using `node-cache`) for endpoints that proxy data from external third-party APIs. This bounds the maximum request rate to the external API regardless of internal route traffic.
