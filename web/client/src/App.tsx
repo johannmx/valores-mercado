@@ -144,6 +144,8 @@ interface HistoryItem {
   usd_tarjeta: number;
   ves_oficial: number;
   ves_paralelo: number;
+  ves_eur_oficial: number;
+  ves_eur_paralelo: number;
   uyu_venta: number;
   clp_venta: number;
   brl_venta: number;
@@ -644,6 +646,8 @@ function App() {
         usd_tarjeta: ratesData.usd_tarjeta,
         ves_oficial: ratesData.ves_oficial,
         ves_paralelo: ratesData.ves_paralelo,
+        ves_eur_oficial: ratesData.ves_eur_oficial,
+        ves_eur_paralelo: ratesData.ves_eur_paralelo,
         uyu_venta: ratesData.uyu_venta,
         clp_venta: ratesData.clp_venta,
         brl_venta: ratesData.brl_venta,
@@ -1020,7 +1024,7 @@ function App() {
                   {/* Otros Dólares Card */}
                   <div className="flex-1 bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col">
                     <h3 className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
-                      <Info className="w-4 h-4 text-slate-300 dark:text-slate-500" /> Otros Dólares AR
+                      <Bug className="w-4 h-4 text-slate-300 dark:text-slate-500" /> Otros Dólares AR
                     </h3>
                     <div className="grid grid-cols-1 gap-4">
                       <div className={`flex justify-between items-center p-5 rounded-2xl transition-all duration-500 group ${
@@ -1173,6 +1177,40 @@ function App() {
                 </div>
 
                 <div className="space-y-8 flex flex-col h-full">
+                  {/* Brecha Cambiaria Card */}
+                  <div className="flex flex-col gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <StatCard 
+                        title="Brecha Dólar" 
+                        value={`${((data?.ves_paralelo && data?.ves_oficial) ? ((data.ves_paralelo / data.ves_oficial) - 1) * 100 : 0).toFixed(2)}%`} 
+                        icon={ArrowRightLeft} 
+                        color="bg-indigo-500"
+                        subtitle="Diferencia Paralelo vs BCV"
+                      />
+                      <StatCard 
+                        title="Brecha Euro" 
+                        value={`${((data?.ves_eur_paralelo && data?.ves_eur_oficial) ? ((data.ves_eur_paralelo / data.ves_eur_oficial) - 1) * 100 : 0).toFixed(2)}%`} 
+                        icon={ArrowRightLeft} 
+                        color="bg-emerald-500"
+                        subtitle="Diferencia Paralelo vs BCV"
+                      />
+                    </div>
+                    
+                    <div className="h-[300px]">
+                      <RegionChart 
+                        title="Tendencia (Brecha Cambiaria)" 
+                        data={history.map(h => ({
+                          ...h,
+                          gap: (h.ves_oficial && h.ves_paralelo) ? ((h.ves_paralelo / h.ves_oficial) - 1) * 100 : 0
+                        }))} 
+                        dataKey="gap" 
+                        color={{hex: '#6366f1', text: 'text-indigo-500'}}
+                        icon={TrendingUp}
+                        singleLine={true}
+                      />
+                    </div>
+                  </div>
+
                   {/* Mercado Euro Card */}
                   <div className="flex-1 bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full">
                     <h3 className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
