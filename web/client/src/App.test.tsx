@@ -3,15 +3,6 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import axios from 'axios';
 import App from './App';
 
-// Define formatNumber locally to test the logic independently
-// This mirrors the implementation in App.tsx
-const formatNumber = (num: number | string | undefined | null): string => {
-  if (num === undefined || num === null || num === '') return '';
-  const n = typeof num === 'string' ? parseFloat(num) : num;
-  if (isNaN(n)) return num.toString();
-  return n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-};
-
 vi.mock('axios');
 const mockedAxios = vi.mocked(axios, true);
 
@@ -35,35 +26,6 @@ console.error = (...args) => {
   }
   originalConsoleError(...args);
 };
-
-describe('formatNumber utility', () => {
-  it('handles null, undefined, and empty string', () => {
-    expect(formatNumber(null)).toBe('');
-    expect(formatNumber(undefined)).toBe('');
-    expect(formatNumber('')).toBe('');
-  });
-
-  it('handles regular numbers', () => {
-    expect(formatNumber(1000.5)).toBe('1.000,50');
-    expect(formatNumber(42)).toBe('42,00');
-    expect(formatNumber(0)).toBe('0,00');
-  });
-
-  it('handles string numbers', () => {
-    expect(formatNumber('1234.56')).toBe('1.234,56');
-    expect(formatNumber('0')).toBe('0,00');
-  });
-
-  it('handles non-numeric strings (NaN cases)', () => {
-    expect(formatNumber('not a number')).toBe('not a number');
-    expect(formatNumber('abc')).toBe('abc');
-  });
-
-  it('handles edge case formatting rounding', () => {
-    expect(formatNumber(10.123)).toBe('10,12');
-    expect(formatNumber(10.128)).toBe('10,13');
-  });
-});
 
 describe('App component', () => {
   const mockMarketData = {
@@ -160,7 +122,7 @@ describe('App component', () => {
     expect(screen.getByText(/35,00/)).toBeInTheDocument();
     expect(screen.getAllByText(/VES/).length).toBeGreaterThan(0);
 
-    const latamTab = screen.getByRole('button', { name: /Latam/i });
+    const latamTab = screen.getByRole('button', { name: /LATAM/i });
     fireEvent.click(latamTab);
 
     await waitFor(() => {
@@ -171,7 +133,7 @@ describe('App component', () => {
     fireEvent.click(calcTab);
 
     await waitFor(() => {
-      expect(screen.getByText('Calculadora')).toBeInTheDocument();
+      expect(screen.getByText('Conversor Rápido')).toBeInTheDocument();
     });
   });
 });
