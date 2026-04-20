@@ -25,9 +25,33 @@ console.error = (...args) => {
 };
 
 describe('formatNumber utility', () => {
+  it('handles null, undefined, and empty string', () => {
+    expect(formatNumber(null)).toBe('');
+    expect(formatNumber(undefined)).toBe('');
+    expect(formatNumber('')).toBe('');
+  });
+
   it('handles regular numbers', () => {
     const result = formatNumber(1000.5);
+    // Flexible matching for decimal/thousands separators
     expect(result).toMatch(/1[.,]000[.,]50/);
+    expect(formatNumber(42)).toMatch(/42[.,]00/);
+    expect(formatNumber(0)).toMatch(/0[.,]00/);
+  });
+
+  it('handles string numbers', () => {
+    expect(formatNumber('1234.56')).toMatch(/1[.,]234[.,]56/);
+    expect(formatNumber('0')).toMatch(/0[.,]00/);
+  });
+
+  it('handles non-numeric strings (NaN cases)', () => {
+    expect(formatNumber('not a number')).toBe('not a number');
+    expect(formatNumber('abc')).toBe('abc');
+  });
+
+  it('handles edge case formatting rounding', () => {
+    expect(formatNumber(10.123)).toMatch(/10[.,]12/);
+    expect(formatNumber(10.128)).toMatch(/10[.,]13/);
   });
 });
 
@@ -114,17 +138,15 @@ describe('App component', () => {
     });
 
     // Switch to LATAM (Uruguay & Chile)
-    // The button name in accessible roles is "LATAM"
     const latamTab = screen.getByRole('button', { name: /LATAM/i });
     fireEvent.click(latamTab);
     await waitFor(() => {
-      // Check for Uruguay header in LATAM section
       expect(screen.getByText(/^Uruguay$/i)).toBeInTheDocument();
     });
 
-    // Switch to Calculadora
-    const calcTab = screen.getByRole('button', { name: /Calculadora/i });
-    fireEvent.click(calcTab);
+    // Switch to Conversor
+    const convTab = screen.getByRole('button', { name: /Conversor/i });
+    fireEvent.click(convTab);
     await waitFor(() => {
       expect(screen.getByText(/Calculadora Global/i)).toBeInTheDocument();
     });
