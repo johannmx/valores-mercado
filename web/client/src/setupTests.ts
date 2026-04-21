@@ -24,7 +24,7 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock localStorage
-const localStorageMock = (() => {
+const localStorageMock = (function() {
   let store: Record<string, string> = {};
   return {
     getItem: (key: string) => store[key] || null,
@@ -36,10 +36,10 @@ const localStorageMock = (() => {
     },
     removeItem: (key: string) => {
       delete store[key];
-    },
+    }
   };
 })();
 
 Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock,
+  value: localStorageMock
 });

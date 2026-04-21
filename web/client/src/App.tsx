@@ -1,752 +1,826 @@
-import { useState, useEffect, useMemo, type ElementType } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { 
-  TrendingUp, 
-  TrendingDown, 
-  RefreshCw, 
-  ArrowRightLeft, 
-  Globe, 
-  Github, 
   DollarSign, 
-  Activity,
-  ChevronRight,
-  Clock,
-  Zap,
-  BarChart3,
-  Moon,
-  Sun,
-  X,
+  TrendingUp, 
+  ArrowRightLeft, 
+  Bitcoin, 
+  RefreshCw,
+  TrendingDown,
+  Info,
+  ArrowUpRight,
+  ArrowDownRight,
+  Globe,
+  ShieldCheck,
+  Monitor,
   CheckCircle2,
-  Coins,
-  Menu,
-  Bell
+  Sun,
+  Moon,
+  ChevronDown,
+  AlertTriangle,
+  Github,
+  Euro,
+  X
 } from 'lucide-react';
 import { 
+  AreaChart, 
+  Area, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  AreaChart,
-  Area
+  Legend
 } from 'recharts';
+import { isMarketOpen, formatNumber } from './utils/market';
 
-// --- Types ---
+declare global {
+  interface Window {
+    umami?: {
+      track: (eventName: string, eventData?: Record<string, string | number | boolean>) => void;
+    };
+    _env_?: {
+      VITE_API_URL?: string;
+    };
+  }
+}
+
+interface AppNotification {
+  id: number;
+  message: string;
+  type: 'up' | 'down';
+  key: string;
+}
 
 interface MarketData {
-  oficial?: {
-    value_buy: number;
-    value_sell: number;
-    date: string;
-  };
-  blue?: {
-    value_buy: number;
-    value_sell: number;
-    date: string;
-  };
-  mep?: {
-    value_buy: number;
-    value_sell: number;
-    date: string;
-  };
-  ccl?: {
-    value_buy: number;
-    value_sell: number;
-    date: string;
-  };
-  cripto?: {
-    value_buy: number;
-    value_sell: number;
-    date: string;
-  };
-  tarjeta?: {
-    value_buy: number;
-    value_sell: number;
-    date: string;
-  };
-  oficial_euro?: {
-    value_buy: number;
-    value_sell: number;
-    date: string;
-  };
-  blue_euro?: {
-    value_buy: number;
-    value_sell: number;
-    date: string;
-  };
+  timestamp: string;
+  usd_oficial?: number;
+  usd_blue?: number;
+  usd_mep?: number;
+  usd_ccl?: number;
+  usd_cripto?: number;
+  usd_tarjeta?: number;
   ves_oficial?: number;
   ves_paralelo?: number;
   ves_eur_oficial?: number;
   ves_eur_paralelo?: number;
-  uyu_ar?: number;
-  clp_ar?: number;
-  brl_ar?: number;
-  eur_ar?: number;
   uyu_venta?: number;
+  uyu_compra?: number;
   clp_venta?: number;
+  clp_compra?: number;
   brl_venta?: number;
+  brl_compra?: number;
   eur_venta?: number;
   btc_usd?: number;
-  last_update?: string;
-  api_status?: {
-    dolar_api_ar: boolean;
-    bcv_ves: boolean;
-    bluelytics_ar: boolean;
-  };
+  brl_ar?: number;
+  clp_ar?: number;
+  uyu_ar?: number;
   changes?: {
-    usd_blue_percent: number;
-    ves_paralelo_percent: number;
-    brl_ar_percent: number;
-    clp_ar_percent: number;
-    uyu_ar_percent: number;
+    usd_oficial_percent?: number;
+    usd_blue_percent?: number;
+    usd_mep_percent?: number;
+    usd_ccl_percent?: number;
+    usd_cripto_percent?: number;
+    usd_tarjeta_percent?: number;
+    ves_oficial_percent?: number;
+    ves_paralelo_percent?: number;
+    ves_eur_oficial_percent?: number;
+    ves_eur_paralelo_percent?: number;
+    uyu_percent?: number;
+    clp_percent?: number;
+    brl_percent?: number;
+    eur_percent?: number;
+    btc_percent?: number;
+    brl_ar_percent?: number;
+    clp_ar_percent?: number;
+    uyu_ar_percent?: number;
   };
-}
-
-interface RegionChartProps {
-  title: string;
-  data: HistoryItem[];
-  buyKey?: string;
-  sellKey?: string;
-  dataKey?: string;
-  color: {
-    text: string;
-    hex?: string;
-    buyHex?: string;
-    sellHex?: string;
+  api_status?: {
+    dolar_api_ar?: boolean;
+    dolar_api_ve?: boolean;
   };
-  icon: ElementType;
-  singleLine?: boolean;
 }
 
 interface HistoryItem {
   timestamp: string;
   usd_blue: number;
   usd_oficial: number;
-  usd_mep: number;
-  usd_ccl: number;
-  usd_cripto: number;
-  usd_tarjeta: number;
-  ves_oficial: number;
-  ves_paralelo: number;
-  uyu_venta: number;
-  clp_venta: number;
-  brl_venta: number;
-  eur_venta: number;
   btc_usd: number;
 }
 
-export const formatNumber = (num: number | string | undefined | null): string => {
-  if (num === undefined || num === null || num === '') return '';
-  const n = typeof num === 'string' ? parseFloat(num) : num;
-  if (isNaN(n)) return num.toString();
-  return n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-};
 
-// --- Components ---
+interface StatCardProps {
+  title: string;
+  value: string;
+  icon: any;
+  color: string;
+  subtitle?: string;
+  buy?: string;
+  sell?: string;
+  change?: number;
+  pulseType?: 'up' | 'down';
+}
 
-const StatCard = ({ title, value, icon: Icon, color, subtitle, trend }: { 
-  title: string, 
-  value: string, 
-  icon: any, 
-  color: string, 
-  subtitle?: string,
-  trend?: { value: string, isUp: boolean }
-}) => (
-  <div className="group bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-500 overflow-hidden relative">
-    <div className={`absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full opacity-[0.03] dark:opacity-[0.05] group-hover:scale-150 transition-transform duration-700 ${color}`} />
-    
-    <div className="relative z-10">
-      <div className="flex items-center justify-between mb-6">
-        <div className={`p-3 rounded-2xl ${color.replace('bg-', 'bg-opacity-10 ')} ${color.replace('bg-', 'text-')} transition-colors duration-300`}>
-          <Icon className="w-6 h-6" />
+const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change, pulseType }: StatCardProps) => {
+  const isPositive = change !== undefined && change >= 0;
+  
+  return (
+    <div className={`bg-white dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-700/50 shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden h-full ${pulseType === 'up' ? 'ring-2 ring-emerald-500/50' : pulseType === 'down' ? 'ring-2 ring-red-500/50' : ''}`}>
+      {pulseType && (
+        <div className={`absolute inset-0 ${pulseType === 'up' ? 'bg-emerald-500/5' : 'bg-red-500/5'} animate-pulse`} />
+      )}
+      
+      <div className="flex justify-between items-start mb-6">
+        <div className={`p-3.5 rounded-2xl ${color} bg-opacity-10 dark:bg-opacity-20 group-hover:scale-110 transition-transform duration-500 shadow-sm`}>
+          <Icon className={`w-6 h-6 ${color.replace('bg-', 'text-')}`} />
         </div>
-        {trend && (
-          <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider ${trend.isUp ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'}`}>
-            {trend.isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-            {trend.value}
+        {change !== undefined && (
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black tracking-wider uppercase ${isPositive ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400'}`}>
+            {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+            {isPositive ? '+' : ''}{change.toFixed(2)}%
           </div>
         )}
       </div>
       
       <div className="space-y-1">
-        <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">{title}</h3>
-        <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter">{value}</span>
+        <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">{title}</h3>
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl font-black text-slate-800 dark:text-white tracking-tighter">
+            {value}
+          </span>
         </div>
-        {subtitle && <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500">{subtitle}</p>}
+        {subtitle && <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pt-1">{subtitle}</p>}
       </div>
+
+      {(buy || sell) && (
+        <div className="mt-6 pt-6 border-t border-slate-50 dark:border-slate-700/50 flex justify-between gap-4">
+          <div className="flex-1">
+            <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Compra</p>
+            <p className="text-base font-black text-slate-700 dark:text-slate-200">{buy || '-'}</p>
+          </div>
+          <div className="w-px h-8 bg-slate-100 dark:bg-slate-700/50 self-end" />
+          <div className="flex-1 text-right">
+            <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Venta</p>
+            <p className="text-base font-black text-slate-700 dark:text-slate-200">{sell || '-'}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+interface ResultCardItem {
+  label: string;
+  value: string;
+  highlight?: boolean;
+  prefix?: string;
+  suffix?: string;
+}
+
+interface ResultCardProps {
+  title: string;
+  items: ResultCardItem[];
+  icon: any;
+  color: {
+    bg: string;
+    text: string;
+  };
+}
+
+const ResultCard = ({ title, items, icon: Icon, color }: ResultCardProps) => (
+  <div className="bg-white dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-700/50 shadow-sm flex flex-col h-full hover:shadow-md transition-all duration-300">
+    <div className="flex items-center gap-2 mb-6">
+      <div className={`p-2 rounded-lg ${color.bg}`}>
+        <Icon className={`w-4 h-4 ${color.text}`} />
+      </div>
+      <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">{title}</h3>
+    </div>
+    <div className="space-y-4 flex-1">
+      {items.map((item: ResultCardItem) => (
+        <div key={item.label} className="flex justify-between items-center group">
+          <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tight group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">{item.label}</span>
+          <div className="flex flex-col items-end">
+            <span className={`text-lg font-black ${item.highlight ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-white'}`}>
+              {item.prefix && <span className="mr-1">{item.prefix}</span>}
+              {item.value}
+              {item.suffix && <span className="ml-1 text-[10px] opacity-60">{item.suffix}</span>}
+            </span>
+          </div>
+        </div>
+      ))}
     </div>
   </div>
 );
 
-const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon, singleLine }: RegionChartProps) => {
-  const chartColor = color.hex || '#6366f1';
-  
-  return (
-    <div className="bg-white dark:bg-slate-800 p-8 rounded-[32px] border border-slate-100 dark:border-slate-700/50 shadow-sm flex flex-col h-full group hover:shadow-xl transition-all duration-500">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <div className={`p-2.5 rounded-xl ${color.text.replace('text-', 'bg-').replace('500', '50')} dark:${color.text.replace('text-', 'bg-').replace('500', '900/30')} ${color.text} transition-colors duration-300`}>
-            <Icon className="w-5 h-5" />
-          </div>
-          <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">{title}</h3>
-        </div>
-        <div className="flex gap-2">
-          <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700" />
-          <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700" />
-        </div>
-      </div>
-      
-      <div className="flex-1 min-h-[240px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data}>
-            <defs>
-              <linearGradient id={`gradient-${title}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={chartColor} stopOpacity={0.15}/>
-                <stop offset="95%" stopColor={chartColor} stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" className="dark:stroke-slate-700/50" />
-            <XAxis 
-              dataKey="timestamp" 
-              hide 
-            />
-            <YAxis 
-              hide 
-              domain={['auto', 'auto']}
-            />
-            <Tooltip 
-              contentStyle={{ 
-                borderRadius: '20px', 
-                border: 'none', 
-                boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                padding: '12px 16px'
-              }}
-              labelStyle={{ display: 'none' }}
-              itemStyle={{ fontWeight: '900', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}
-            />
-            {singleLine ? (
-              <Area
-                type="monotone"
-                dataKey={dataKey || ''}
-                stroke={chartColor}
-                strokeWidth={4}
-                fillOpacity={1}
-                fill={`url(#gradient-${title})`}
-                animationDuration={2000}
-              />
-            ) : (
-              <>
-                <Area
-                  type="monotone"
-                  dataKey={buyKey || ''}
-                  stroke={color.buyHex || chartColor}
-                  strokeWidth={4}
-                  fill="transparent"
-                  animationDuration={1500}
-                />
-                <Area
-                  type="monotone"
-                  dataKey={sellKey || ''}
-                  stroke={color.sellHex || '#10b981'}
-                  strokeWidth={4}
-                  fillOpacity={1}
-                  fill={`url(#gradient-${title})`}
-                  animationDuration={2000}
-                />
-              </>
-            )}
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-};
-
 const Converter = ({ data }: { data: MarketData | null }) => {
-  const [amount, setAmount] = useState<string>('100');
-  const [from, setFrom] = useState<'ARS' | 'USD_BLUE' | 'USD_OFICIAL' | 'VES_PARALELO' | 'VES_OFICIAL'>('USD_BLUE');
+  const [amount, setAmount] = useState<number>(1);
+  const [from, setFrom] = useState<'USD' | 'ARS_BLUE' | 'ARS_OFFICIAL' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL' | 'EUR'>('USD');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
-  const options = [
-    { value: 'USD_BLUE', label: 'Dólar Blue', sub: 'Argentina' },
-    { value: 'USD_OFICIAL', label: 'Dólar Oficial', sub: 'Argentina' },
-    { value: 'VES_PARALELO', label: 'Dólar Paralelo', sub: 'Venezuela' },
-    { value: 'VES_OFICIAL', label: 'Dólar BCV', sub: 'Venezuela' },
-    { value: 'ARS', label: 'Pesos Argentinos', sub: 'Argentina' }
-  ];
 
-  const results = useMemo(() => {
-    const val = parseFloat(amount) || 0;
-    if (!data) return [];
+  const getRate = (type: string) => {
+    if (!data) return 1;
+    switch (type) {
+      case 'ARS_BLUE': return data.usd_blue || 1;
+      case 'ARS_OFFICIAL': return data.usd_oficial || 1;
+      case 'CRYPTO': return data.usd_cripto || 1;
+      case 'VES': return data.ves_paralelo || 1;
+      case 'VES_OFFICIAL': return data.ves_oficial || 1;
+      case 'UYU': return data.uyu_venta || 1;
+      case 'CLP': return data.clp_venta || 1;
+      case 'BRL': return data.brl_venta || 1;
+      case 'EUR': return data.eur_venta || 1;
+      default: return 1;
+    }
+  };
 
-    let usdValue = 0;
-    if (from === 'USD_BLUE') usdValue = val;
-    else if (from === 'USD_OFICIAL') usdValue = val; // simplified
-    else if (from === 'ARS') usdValue = val / (data.blue?.value_sell || 1);
-    else if (from === 'VES_PARALELO') usdValue = val / (data.ves_paralelo || 1);
-    else if (from === 'VES_OFICIAL') usdValue = val / (data.ves_oficial || 1);
+  const convert = (toType: string) => {
+    const fromRate = getRate(from);
+    const toRate = getRate(toType);
+    
+    // Si la moneda de origen es USD, simplemente multiplicamos por el destino
+    if (from === 'USD') return amount * toRate;
+    
+    // Si la moneda de destino es USD, dividimos el monto por su tasa
+    if (toType === 'USD') return amount / fromRate;
+    
+    // Si ninguna es USD, convertimos a USD primero y luego al destino
+    const inUSD = amount / fromRate;
+    return inUSD * toRate;
+  };
 
-    return [
-      { 
-        label: 'Pesos Argentinos (Blue)', 
-        value: formatNumber(usdValue * (data.blue?.value_sell || 0)), 
-        prefix: '$', 
-        color: 'indigo' 
-      },
-      { 
-        label: 'Bolívares (Paralelo)', 
-        value: formatNumber(usdValue * (data.ves_paralelo || 0)), 
-        prefix: 'Bs.', 
-        color: 'emerald' 
-      },
-      { 
-        label: 'Dólares Americanos', 
-        value: formatNumber(usdValue), 
-        prefix: 'US$', 
-        color: 'blue' 
-      },
-      { 
-        label: 'Pesos Uruguayos', 
-        value: formatNumber(usdValue * (data.uyu_venta || 0)), 
-        prefix: '$U', 
-        color: 'sky' 
-      }
-    ];
-  }, [amount, from, data]);
-
-  const selectedOption = options.find(o => o.value === from);
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-[40px] p-8 lg:p-12 shadow-xl border border-slate-100 dark:border-slate-700/50 relative overflow-hidden group">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-indigo-500/10 transition-colors duration-700" />
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 relative z-10">
-        <div className="space-y-10">
-          <div className="space-y-6">
-            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] flex items-center gap-2">
-              <Coins className="w-4 h-4 text-indigo-500" /> Cantidad a Convertir
-            </label>
-            <div className="relative">
+    <div className="space-y-8">
+      {/* Input Header Card */}
+      <div className="bg-white dark:bg-slate-800/50 p-8 rounded-[40px] border border-slate-100 dark:border-slate-700/50 shadow-xl shadow-blue-500/5">
+        <div className="flex flex-col md:flex-row gap-8 items-center">
+          <div className="flex-1 w-full space-y-3">
+            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">Monto a Convertir</label>
+            <div className="relative group">
               <input
                 type="number"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900/50 border-2 border-transparent focus:border-indigo-500 rounded-3xl px-8 py-6 text-3xl font-black text-slate-800 dark:text-white outline-none transition-all shadow-inner"
+                onChange={(e) => setAmount(Number(e.target.value))}
+                className="w-full bg-slate-50 dark:bg-slate-900/50 border-2 border-slate-100 dark:border-slate-700/50 rounded-3xl py-6 px-8 text-3xl font-black text-slate-800 dark:text-white focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-all placeholder:text-slate-300"
                 placeholder="0.00"
               />
-              <div className="absolute right-6 top-1/2 -translate-y-1/2 flex gap-2">
-                <div className="w-2 h-2 rounded-full bg-indigo-500/20" />
-                <div className="w-2 h-2 rounded-full bg-indigo-500/40" />
-                <div className="w-2 h-2 rounded-full bg-indigo-500" />
+              <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                <div className="w-px h-10 bg-slate-200 dark:bg-slate-700/50 mr-4" />
+                
+                {/* Custom Currency Dropdown */}
+                <div className="relative">
+                  <button 
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="flex items-center gap-3 bg-white dark:bg-slate-800 px-5 py-3 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all active:scale-95"
+                  >
+                    <span className="text-sm font-black text-slate-700 dark:text-white uppercase tracking-wider">{from.replace('_', ' ')}</span>
+                    <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isDropdownOpen && (
+                    <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-2xl z-50 overflow-hidden py-2 animate-in fade-in zoom-in duration-200">
+                      {[
+                        { label: 'Dólar (USD)', value: 'USD' },
+                        { label: 'Blue (ARS)', value: 'ARS_BLUE' },
+                        { label: 'Oficial (ARS)', value: 'ARS_OFFICIAL' },
+                        { label: 'Cripto (USDT)', value: 'CRYPTO' },
+                        { label: 'Euro (EUR)', value: 'EUR' },
+                        { label: 'Paralelo (VES)', value: 'VES' },
+                        { label: 'Oficial (VES)', value: 'VES_OFFICIAL' },
+                        { label: 'Peso Uruguayo', value: 'UYU' },
+                        { label: 'Peso Chileno', value: 'CLP' },
+                        { label: 'Real Brasil', value: 'BRL' }
+                      ].map((option) => (
+                        <div
+                          key={option.value}
+                          onClick={() => {
+                            setFrom(option.value as typeof from);
+                            setIsDropdownOpen(false);
+                            if (window.umami) {
+                              window.umami.track('Calculadora - Conversion', { moneda: option.value });
+                            }
+                          }}
+                          className={`px-6 py-3.5 text-xs font-black uppercase tracking-wider cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${from === option.value ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-400/10' : 'text-slate-500 dark:text-slate-400'}`}
+                        >
+                          {option.label}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-
-          <div className="space-y-6">
-            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] flex items-center gap-2">
-              <ArrowRightLeft className="w-4 h-4 text-emerald-500" /> Moneda de Origen
-            </label>
-            <div className="relative">
-              <button 
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 border-2 border-transparent hover:border-slate-200 dark:hover:border-slate-700 rounded-3xl px-8 py-6 transition-all group"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-xl font-black text-indigo-600">
-                    {selectedOption?.label.charAt(0)}
-                  </div>
-                  <div className="text-left">
-                    <div className="font-black text-slate-800 dark:text-white text-lg">{selectedOption?.label}</div>
-                    <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{selectedOption?.sub}</div>
-                  </div>
-                </div>
-                <ChevronRight className={`w-6 h-6 text-slate-300 transition-transform duration-300 ${isDropdownOpen ? 'rotate-90' : ''}`} />
-              </button>
-              
-              {isDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-4 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700/50 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="p-2">
-                    {options.map((option) => (
-                      <div
-                        key={option.value}
-                        onClick={() => {
-                          setFrom(option.value as any);
-                          setIsDropdownOpen(false);
-                          if ((window as any).umami) {
-                            (window as any).umami.track('Calculadora - Conversion', { moneda: option.value });
-                          }
-                        }}
-                        className={`px-6 py-3 cursor-pointer text-sm font-black transition-colors flex items-center justify-between group ${from === option.value ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white'}`}
-                      >
-                        {option.label}
-                        {from === option.value && <CheckCircle2 className="w-4 h-4" />}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+          <div className="hidden md:flex bg-blue-500 p-4 rounded-full text-white shadow-lg shadow-blue-500/20 active:rotate-180 transition-transform duration-500">
+            <ArrowRightLeft className="w-6 h-6" />
           </div>
         </div>
+      </div>
 
-        <div className="bg-slate-50 dark:bg-slate-900/30 rounded-[32px] p-8 lg:p-10 space-y-8 border border-slate-100/50 dark:border-slate-800/50 shadow-inner">
-          <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] mb-4">Resultados Estimados</h4>
-          <div className="space-y-6">
-            {results.map((res, i) => (
-              <div key={i} className="flex items-center justify-between p-5 bg-white dark:bg-slate-800/50 rounded-2xl border border-transparent hover:border-indigo-100 dark:hover:border-indigo-900/30 transition-all group">
-                <span className="text-[11px] font-black text-slate-500 uppercase tracking-tight">{res.label}</span>
-                <div className="text-right">
-                  <span className="text-[10px] font-bold text-slate-400 mr-1">{res.prefix}</span>
-                  <span className="text-xl font-black text-slate-800 dark:text-white tracking-tighter group-hover:scale-110 inline-block transition-transform">{res.value}</span>
-                </div>
-              </div>
-            ))}
+      {/* Results Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <ResultCard 
+          title="Argentina (ARS)"
+          icon={Globe}
+          color={{ bg: 'bg-sky-50 dark:bg-sky-500/10', text: 'text-sky-600 dark:text-sky-400' }}
+          items={[
+            { label: 'Dólar Blue', value: formatNumber(convert('ARS_BLUE')), prefix: '$', highlight: true },
+            { label: 'Dólar Oficial', value: formatNumber(convert('ARS_OFFICIAL')), prefix: '$' },
+            { label: 'Dólar Cripto', value: formatNumber(convert('CRYPTO')), prefix: '$' }
+          ]}
+        />
+        
+        <ResultCard 
+          title="Venezuela (VES)"
+          icon={ShieldCheck}
+          color={{ bg: 'bg-yellow-50 dark:bg-yellow-500/10', text: 'text-yellow-600 dark:text-yellow-400' }}
+          items={[
+            { label: 'Dólar Paralelo', value: formatNumber(convert('VES')), suffix: 'VES', highlight: true },
+            { label: 'Tasa Oficial BCV', value: formatNumber(convert('VES_OFFICIAL')), suffix: 'VES' }
+          ]}
+        />
+
+        <ResultCard 
+          title="Región & Mundo"
+          icon={Globe}
+          color={{ bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400' }}
+          items={[
+            { label: 'Euro Oficial', value: formatNumber(convert('EUR')), prefix: '€' },
+            { label: 'Uruguay (UYU)', value: formatNumber(convert('UYU')), prefix: '$' },
+            { label: 'Chile (CLP)', value: formatNumber(convert('CLP')), prefix: '$' },
+            { label: 'Brasil (BRL)', value: formatNumber(convert('BRL')), prefix: 'R$' }
+          ]}
+        />
+      </div>
+    </div>
+  );
+};
+
+interface RegionChartProps {
+  title: string;
+  data: any[];
+  buyKey: string;
+  sellKey: string;
+  dataKey: string;
+  color: string;
+  icon: any;
+}
+
+const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon, }: RegionChartProps) => {
+  return (
+    <div className="bg-white dark:bg-slate-800/50 p-8 rounded-[40px] border border-slate-100 dark:border-slate-700/50 shadow-sm h-full flex flex-col group">
+      <div className="flex justify-between items-center mb-8">
+        <div className="flex items-center gap-4">
+          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 group-hover:scale-110 transition-transform">
+            <Icon className="w-5 h-5 text-slate-400" />
           </div>
-          <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
-            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase leading-relaxed tracking-widest text-center">
-              Valores basados en la cotización actual del mercado paralelo and oficial.
-            </p>
+          <div>
+            <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">{title}</h3>
+            <p className="text-[10px] font-bold text-slate-300 dark:text-slate-500 uppercase tracking-widest">Histórico 24 Horas</p>
           </div>
+        </div>
+      </div>
+      
+      <div className="flex-1 w-full min-h-[300px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id={`color-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={color} stopOpacity={0.15}/>
+                <stop offset="95%" stopColor={color} stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
+            <XAxis 
+              dataKey="timestamp" 
+              hide={false}
+              axisLine={false}
+              tickLine={false}
+              tick={{fontSize: 9, fontWeight: '900', fill: '#94a3b8'}}
+              tickFormatter={(str: string) => {
+                try {
+                  return new Date(str).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                } catch {
+                  return '';
+                }
+              }}
+              minTickGap={30}
+            />
+            <YAxis hide domain={['auto', 'auto']} />
+            <Tooltip 
+              contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'}}
+              itemStyle={{fontWeight: '900', textTransform: 'uppercase', fontSize: '10px'}}
+              labelStyle={{fontWeight: '900', marginBottom: '8px', color: '#64748b'}}
+              labelFormatter={(label) => {
+                try {
+                  return label ? new Date(label as string).toLocaleString() : '';
+                } catch {
+                  return String(label);
+                }
+              }}
+              formatter={(value) => [
+                formatNumber(value as number),
+                "VALOR"
+              ] as [string, string]}
+            />
+            <Area 
+              type="monotone" 
+              dataKey={dataKey} 
+              stroke={color} 
+              strokeWidth={4}
+              fillOpacity={1} 
+              fill={`url(#color-${dataKey})`} 
+              animationDuration={1500}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="mt-6 flex gap-6">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full" style={{backgroundColor: color}} />
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor Venta</span>
         </div>
       </div>
     </div>
   );
 };
 
-const ToastNotification = ({ note, onDismiss }: { note: any, onDismiss: (id: string) => void }) => {
+const ToastNotification = ({ note, onDismiss }: { note: AppNotification, onDismiss: (id: number) => void }) => {
   useEffect(() => {
     const timer = setTimeout(() => onDismiss(note.id), 5000);
     return () => clearTimeout(timer);
   }, [note.id, onDismiss]);
 
+  const isUp = note.type === 'up';
+
   return (
-    <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-right-full duration-500 pointer-events-auto border border-white/10 dark:border-slate-200">
-      <div className="p-2 bg-indigo-500 rounded-xl">
-        <Bell className="w-4 h-4 text-white" />
+    <div 
+      className={`flex items-center gap-4 p-4 rounded-2xl border shadow-2xl animate-in slide-in-from-right-full duration-500 pointer-events-auto bg-white dark:bg-slate-800 ${isUp ? 'border-emerald-100 dark:border-emerald-500/20 shadow-emerald-500/10' : 'border-red-100 dark:border-red-500/20 shadow-red-500/10'}`}
+    >
+      <div className={`p-2 rounded-xl ${isUp ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10' : 'bg-red-50 text-red-500 dark:bg-red-500/10'}`}>
+        {isUp ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
       </div>
       <div>
-        <div className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-0.5">Notificación</div>
-        <div className="text-sm font-bold">{note.message}</div>
+        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{note.key.replace('_', ' ')}</p>
+        <p className="text-xs font-black text-slate-800 dark:text-white uppercase">{note.message}</p>
       </div>
-      <button onClick={() => onDismiss(note.id)} className="ml-4 p-1 hover:bg-white/10 dark:hover:bg-slate-100 rounded-lg transition-colors">
-        <X className="w-4 h-4" />
+      <button 
+        onClick={() => onDismiss(note.id)}
+        className="ml-4 p-1 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors"
+      >
+        <X className="w-4 h-4 text-slate-300" />
       </button>
     </div>
   );
 };
 
-// --- Main App Component ---
-
 function App() {
   const [data, setData] = useState<MarketData | null>(null);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'Argentina' | 'Venezuela' | 'Conversor' | 'Latam'>('Argentina');
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [activeTab, setActiveTab] = useState<'AR' | 'VE' | 'LATAM' | 'CALC'>('AR');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
-    return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (saved) return saved === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
-  const [notifications, setNotifications] = useState<{id: string, message: string}[]>([]);
+  const [changedKeys, setChangedKeys] = useState<Record<string, 'up' | 'down'>>({});
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
   useEffect(() => {
-    const root = window.document.documentElement;
     if (isDarkMode) {
-      root.classList.add('dark');
+      document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
     } else {
-      root.classList.remove('dark');
+      document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
     }
   }, [isDarkMode]);
 
-  const addNotification = (message: string) => {
-    const id = Math.random().toString(36).substr(2, 9);
-    setNotifications(prev => [...prev, { id, message }]);
+  const addNotification = (key: string, type: 'up' | 'down', message: string) => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, key, type, message }]);
   };
 
-  const dismissNotification = (id: string) => {
+  const dismissNotification = (id: number) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
   const fetchData = async () => {
+    setIsRefreshing(true);
     try {
-      const apiUrl = (import.meta.env.VITE_API_URL || 'https://valores-mercado-api.onrender.com').replace(/\/$/, '');
-      const [marketRes, historyRes] = await Promise.all([
-        axios.get(`${apiUrl}/api/market`),
-        axios.get(`${apiUrl}/api/history`)
+      let baseURL = window._env_?.VITE_API_URL || import.meta.env.VITE_API_URL || '';
+      
+      // Sanitización: si la variable no se expandió correctamente o es el placeholder
+      if (baseURL.includes('${VITE_API_URL}')) {
+        baseURL = 'http://localhost:3001';
+      }
+
+      const [ratesRes, historyRes] = await Promise.all([
+        axios.get(`${baseURL}/api/rates`),
+        axios.get(`${baseURL}/api/history`)
       ]);
-      setData(marketRes.data);
-      setHistory(historyRes.data);
+      
+      const newData = ratesRes.data;
+      const historyData = historyRes.data;
+
+      // Check for significant changes to pulse cards and show notifications
+      if (data) {
+        const keysToTrack = ['usd_blue', 'usd_oficial', 'ves_paralelo', 'btc_usd'];
+        const newChangedKeys: Record<string, 'up' | 'down'> = {};
+        
+        keysToTrack.forEach(key => {
+          const oldVal = (data as any)[key];
+          const newVal = (newData as any)[key];
+          
+          if (oldVal && newVal && oldVal !== newVal) {
+            const type = newVal > oldVal ? 'up' : 'down';
+            newChangedKeys[key] = type;
+            addNotification(key, type, `Nuevo valor: ${formatNumber(newVal)}`);
+          }
+        });
+        
+        setChangedKeys(newChangedKeys);
+        setTimeout(() => setChangedKeys({}), 3000);
+      }
+
+      setData(newData);
+      setLastUpdated(new Date());
+      
+      // Merge current data into history for the charts
+      const currentAsHistory = {
+        timestamp: new Date().toISOString(),
+        usd_blue: newData.usd_blue,
+        usd_oficial: newData.usd_oficial,
+        btc_usd: newData.btc_usd
+      };
+      
+      setHistory([...historyData, currentAsHistory]);
       setError(null);
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      setError('Error al sincronizar con los mercados financieros');
+    } catch {
+      setError('Error de conexión con el servidor.');
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 60000);
+    const interval = setInterval(fetchData, 60000); // Update every minute
     return () => clearInterval(interval);
   }, []);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col items-center justify-center p-8 transition-colors duration-500">
-        <div className="relative w-24 h-24">
-          <div className="absolute inset-0 border-8 border-indigo-500/20 rounded-full"></div>
-          <div className="absolute inset-0 border-8 border-indigo-500 rounded-full border-t-transparent animate-spin"></div>
-          <Activity className="absolute inset-0 m-auto w-8 h-8 text-indigo-500 animate-pulse" />
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+        <div className="relative">
+          <div className="w-24 h-24 border-[6px] border-blue-500/10 border-t-blue-500 rounded-full animate-spin" />
+          <RefreshCw className="absolute inset-0 m-auto w-8 h-8 text-blue-500 animate-pulse" />
         </div>
-        <div className="mt-8 space-y-2 text-center">
-          <h1 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.4em] animate-pulse">MarketDash</h1>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sincronizando Pulso Financiero...</p>
+        <div className="mt-10 space-y-3">
+          <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-widest">Sincronizando Mercados</h2>
+          <p className="text-slate-400 dark:text-slate-500 font-bold uppercase text-[10px] tracking-[0.3em] animate-pulse">Obteniendo tasas en tiempo real...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 transition-colors duration-500 selection:bg-indigo-500 selection:text-white">
-      {/* Dynamic Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-[100px]" />
-        <div className="absolute -bottom-[5%] left-[20%] w-[35%] h-[35%] bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-[110px] animate-pulse" />
-      </div>
-
-      <div className="relative flex flex-col min-h-screen">
-        {/* Navigation Bar */}
-        <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800/50 px-4 lg:px-8 py-4 transition-all duration-300">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-4 group cursor-pointer" onClick={() => fetchData()}>
-              <div className="relative">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl rotate-3 group-hover:rotate-12 transition-transform duration-500 shadow-lg shadow-indigo-500/20 flex items-center justify-center">
-                  <Activity className="w-6 h-6 text-white" />
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full" />
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 font-sans selection:bg-blue-500/30">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8 md:py-12">
+        {/* Header - More Premium and Minimal */}
+        <header className="flex flex-col md:flex-row justify-between items-center gap-8 mb-16">
+          <div className="flex flex-col items-center md:items-start gap-1">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-600 p-2.5 rounded-2xl shadow-xl shadow-blue-600/20 rotate-3">
+                <TrendingUp className="w-6 h-6 text-white" />
               </div>
-              <div className="hidden sm:block">
-                <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tighter">MarketDash</h1>
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                  <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">En Vivo • 1m update</span>
-                </div>
-              </div>
+              <h1 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white flex items-center gap-1">
+                MARKET<span className="text-blue-600">DASH</span>
+              </h1>
             </div>
+            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] ml-1.5">Inteligencia Financiera Real</p>
+          </div>
 
-            <div className="flex items-center gap-2 sm:gap-4">
-              <div className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200/50 dark:border-slate-700/50">
-                <button className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm transition-all">Dashboard</button>
-                <button className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-all">Alertas</button>
-              </div>
-              
-              <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 mx-1 hidden sm:block" />
-              
+          <div className="flex flex-wrap justify-center items-center gap-3">
+            <div className="bg-white dark:bg-slate-900/50 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center shadow-sm">
+              <button 
+                onClick={() => setActiveTab('AR')}
+                className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${activeTab === 'AR' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+              >
+                Argentina
+              </button>
+              <button 
+                onClick={() => setActiveTab('VE')}
+                className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${activeTab === 'VE' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+              >
+                Venezuela
+              </button>
+              <button 
+                onClick={() => setActiveTab('LATAM')}
+                className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${activeTab === 'LATAM' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+              >
+                LATAM
+              </button>
+              <button 
+                onClick={() => setActiveTab('CALC')}
+                className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${activeTab === 'CALC' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+              >
+                Calculadora
+              </button>
+            </div>
+            
+            <div className="flex gap-2">
               <button 
                 onClick={() => setIsDarkMode(!isDarkMode)}
-                className="p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all group"
+                className="p-3.5 bg-white dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-slate-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 shadow-sm transition-all active:scale-95"
               >
-                {isDarkMode ? <Sun className="w-5 h-5 text-amber-400 group-hover:rotate-90 transition-transform duration-500" /> : <Moon className="w-5 h-5 text-indigo-600 group-hover:-rotate-12 transition-transform duration-500" />}
+                {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
-
-              <button className="p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/50 sm:hidden">
-                <Menu className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+              <button 
+                onClick={fetchData} 
+                disabled={isRefreshing}
+                className={`p-3.5 bg-white dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-slate-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 shadow-sm transition-all active:scale-95 ${isRefreshing ? 'animate-spin' : ''}`}
+              >
+                <RefreshCw className="w-5 h-5" />
               </button>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 lg:px-8 py-8 lg:py-12">
-          {/* Dashboard Header */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.3em]">
-                <BarChart3 className="w-3 h-3" /> Financial Overview
-              </div>
-              <h2 className="text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tighter">
-                {activeTab === 'Argentina' && 'Mercado Argentina'}
-                {activeTab === 'Venezuela' && 'Mercado Venezuela'}
-                {activeTab === 'Latam' && 'Mercado Regional'}
-                {activeTab === 'Conversor' && 'Calculadora Global'}
-              </h2>
-              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
-                Cotizaciones en tiempo real actualizadas cada 60 segundos.
-              </p>
+        {error && (
+          <div className="mb-8 p-6 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-[32px] flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="bg-red-500 p-2 rounded-xl">
+              <AlertTriangle className="w-5 h-5 text-white" />
             </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-end">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Última Actualización</span>
-                <div className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
-                  <Clock className="w-4 h-4 text-indigo-500" />
-                  {data?.last_update ? new Date(data.last_update).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
+            <div className="flex-1">
+              <p className="text-[10px] font-black text-red-400 dark:text-red-500 uppercase tracking-widest mb-0.5">Sistema en Alerta</p>
+              <p className="text-sm font-black text-red-600 dark:text-red-400 uppercase">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Tab Content */}
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+          {activeTab === 'AR' && (
+            <div className="space-y-12">
+              <div className="flex items-center gap-4 px-4">
+                <div className="w-1.5 h-6 bg-blue-600 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.3)]" />
+                <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Mercado Argentina</h2>
+                <div className={`ml-auto flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-800 ${isMarketOpen() ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-slate-50 text-slate-400 dark:bg-slate-800'}`}>
+                  <div className={`w-2 h-2 rounded-full ${isMarketOpen() ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+                  <span className="text-[9px] font-black uppercase tracking-widest">{isMarketOpen() ? 'Abierto' : 'Cerrado'}</span>
                 </div>
               </div>
-              <button 
-                onClick={() => {
-                  setLoading(true);
-                  fetchData();
-                  addNotification('Datos de mercado actualizados');
-                }}
-                className="p-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-lg shadow-indigo-600/20 transition-all hover:scale-105 active:scale-95 group"
-              >
-                <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-700" />
-              </button>
-            </div>
-          </div>
 
-          {error && (
-            <div className="mb-8 p-5 bg-red-50 dark:bg-red-900/30 border-2 border-red-100 dark:border-red-800/50 rounded-3xl flex items-center gap-3 text-red-700 dark:text-red-400 animate-pulse max-w-7xl mx-auto">
-              <TrendingDown className="w-6 h-6" />
-              <span className="font-black uppercase text-xs tracking-widest">{error}</span>
-            </div>
-          )}
-
-        {/* Navigation Tabs */}
-        <nav className="flex justify-center mb-16">
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl p-2 rounded-[28px] border border-white dark:border-slate-700/50 shadow-xl flex gap-1">
-            {[
-              { id: 'Argentina', label: 'Argentina' },
-              { id: 'Venezuela', label: 'Venezuela' },
-              { id: 'Latam', label: 'LATAM' },
-              { id: 'Conversor', label: 'Conversor' }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`px-8 py-3 rounded-2xl text-sm font-black transition-all duration-500 relative overflow-hidden group ${
-                  activeTab === tab.id 
-                    ? 'text-white shadow-lg' 
-                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-                }`}
-              >
-                {activeTab === tab.id && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 animate-in fade-in zoom-in duration-500" />
-                )}
-                <span className="relative z-10">{tab.label}</span>
-              </button>
-            ))}
-          </div>
-        </nav>
-
-
-        {/* Main Content Sections */}
-        <div className="max-w-7xl mx-auto">
-          
-          {/* Argentina Section */}
-          {activeTab === 'Argentina' && (
-            <div className="space-y-12 animate-in fade-in duration-700 slide-in-from-bottom-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <StatCard 
                   title="Dólar Blue" 
-                  value={`$ ${formatNumber(data?.blue?.value_sell)}`} 
+                  value={`$${formatNumber(data?.usd_blue)}`} 
+                  subtitle="Valor de Mercado Informal"
                   icon={DollarSign} 
                   color="bg-blue-600"
-                  subtitle="Cotización Informal"
-                  trend={{ value: `${(data?.changes?.usd_blue_percent ?? 0).toFixed(2)}%`, isUp: (data?.changes?.usd_blue_percent ?? 0) >= 0 }}
+                  change={data?.changes?.usd_blue_percent}
+                  pulseType={changedKeys['usd_blue']}
+                />
+                <StatCard 
+                  title="Dólar Oficial" 
+                  value={`$${formatNumber(data?.usd_oficial)}`} 
+                  subtitle="Tasa de Referencia BCRA"
+                  icon={ShieldCheck} 
+                  color="bg-sky-500"
+                  change={data?.changes?.usd_oficial_percent}
+                  pulseType={changedKeys['usd_oficial']}
                 />
                 <StatCard 
                   title="Dólar MEP" 
-                  value={`$ ${formatNumber(data?.mep?.value_sell)}`} 
-                  icon={Activity} 
+                  value={`$${formatNumber(data?.usd_mep)}`} 
+                  subtitle="Bolsa (Dólar Financiero)"
+                  icon={TrendingUp} 
                   color="bg-indigo-500"
-                  subtitle="Bolsa"
+                  change={data?.changes?.usd_mep_percent}
                 />
                 <StatCard 
-                  title="Dólar CCL" 
-                  value={`$ ${formatNumber(data?.ccl?.value_sell)}`} 
+                  title="Dólar Cripto" 
+                  value={`$${formatNumber(data?.usd_cripto)}`} 
+                  subtitle="Promedio USDT / P2P"
+                  icon={Bitcoin} 
+                  color="bg-orange-500"
+                  change={data?.changes?.usd_cripto_percent}
+                />
+                <StatCard 
+                  title="Dólar Tarjeta" 
+                  value={`$${formatNumber(data?.usd_tarjeta)}`} 
+                  subtitle="Oficial + Impuestos"
                   icon={Globe} 
                   color="bg-emerald-500"
-                  subtitle="Contado con Liqui"
+                  change={data?.changes?.usd_tarjeta_percent}
                 />
                 <StatCard 
-                  title="Dólar Oficial" 
-                  value={`$ ${formatNumber(data?.oficial?.value_sell)}`} 
-                  icon={CheckCircle2} 
-                  color="bg-slate-600"
-                  subtitle="Banco Nación"
+                  title="Euro Oficial" 
+                  value={`$${formatNumber(data?.eur_venta)}`} 
+                  subtitle="Referencia BCRA"
+                  icon={Euro} 
+                  color="bg-purple-500"
+                  change={data?.changes?.eur_percent}
                 />
               </div>
 
+              {/* Charts Section */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <RegionChart 
-                  title="Dólar Blue (Tendencia)" 
+                  title="Evolución Dólar Blue" 
                   data={history} 
-                  buyKey="usd_blue_buy"
+                  dataKey="usd_blue"
+                  buyKey="usd_blue"
                   sellKey="usd_blue"
-                  color={{hex: '#2563eb', text: 'text-blue-500', buyHex: '#94a3b8'}}
+                  color="#2563eb" 
                   icon={TrendingUp}
                 />
                 <RegionChart 
-                  title="Brecha Cambiaria %" 
-                  data={history.map(h => ({
-                    ...h,
-                    gap: ((h.usd_blue / h.usd_oficial) - 1) * 100
-                  }))} 
-                  dataKey="gap" 
-                  color={{hex: '#6366f1', text: 'text-indigo-500'}}
-                  icon={ArrowRightLeft}
-                  singleLine={true}
+                  title="Evolución Dólar Oficial" 
+                  data={history} 
+                  dataKey="usd_oficial"
+                  buyKey="usd_oficial"
+                  sellKey="usd_oficial"
+                  color="#0ea5e9" 
+                  icon={ShieldCheck}
                 />
               </div>
             </div>
           )}
 
-          {/* Venezuela Section */}
-          {activeTab === 'Venezuela' && (
-            <div className="space-y-12 animate-in fade-in duration-700 slide-in-from-bottom-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <StatCard 
-                  title="Dólar Paralelo" 
-                  value={`Bs. ${formatNumber(data?.ves_paralelo)}`} 
-                  icon={Zap} 
-                  color="bg-amber-500"
-                  subtitle="EnParaleloVzla"
-                  trend={{ value: `${(data?.changes?.ves_paralelo_percent ?? 0).toFixed(2)}%`, isUp: (data?.changes?.ves_paralelo_percent ?? 0) >= 0 }}
-                />
-                <StatCard 
-                  title="Dólar Oficial" 
-                  value={`Bs. ${formatNumber(data?.ves_oficial)}`} 
-                  icon={Globe} 
-                  color="bg-emerald-600"
-                  subtitle="BCV (Referencia)"
-                />
-                <StatCard 
-                  title="Bitcoin / USD" 
-                  value={`US$ ${formatNumber(data?.btc_usd)}`} 
-                  icon={Coins} 
-                  color="bg-orange-500"
-                  subtitle="Mercado Cripto"
-                />
+          {activeTab === 'VE' && (
+            <div className="space-y-12">
+              <div className="flex items-center gap-4 px-4">
+                <div className="w-1.5 h-6 bg-yellow-500 rounded-full shadow-[0_0_10px_rgba(234,179,8,0.3)]" />
+                <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Mercado Venezuela</h2>
               </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <RegionChart 
-                  title="Tendencia VES/USD" 
-                  data={history} 
-                  buyKey="ves_oficial"
-                  sellKey="ves_paralelo"
-                  color={{hex: '#f59e0b', text: 'text-amber-500', buyHex: '#10b981'}}
-                  icon={Activity}
-                />
-                <div className="flex-1 bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full">
-                  <h3 className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-emerald-500" /> Mercado Euro (VES)
-                  </h3>
-                  <div className="flex-1 space-y-6 flex flex-col justify-center">
-                    <div className="flex justify-between items-center p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-transparent hover:border-slate-100 dark:hover:border-slate-700 transition-all">
-                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Euro Paralelo</span>
-                      <span className="font-black text-slate-800 dark:text-white text-xl">Bs. {formatNumber(data?.ves_eur_paralelo)}</span>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:col-span-1">
+                {/* Oficial Column */}
+                <div className="space-y-8">
+                  <StatCard 
+                    title="Dólar Oficial" 
+                    value={`${formatNumber(data?.ves_oficial)} VES`} 
+                    icon={ShieldCheck} 
+                    color="bg-blue-500"
+                    subtitle="Tasa Oficial BCV"
+                    change={data?.changes?.ves_oficial_percent}
+                    pulseType={changedKeys['ves_oficial']}
+                  />
+                  
+                  <div className="bg-white dark:bg-slate-800/50 p-8 rounded-[40px] border border-slate-100 dark:border-slate-700/50 shadow-sm">
+                    <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                      <Euro className="w-3 h-3" />
+                      Tasas Complementarias Oficiales
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                        <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Euro Oficial</span>
+                        <div className="flex flex-col items-end">
+                          <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">{formatNumber(data?.ves_eur_oficial)} VES</span>
+                          <span className={`text-[10px] font-bold ${(data?.changes?.ves_eur_oficial_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {(data?.changes?.ves_eur_oficial_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.ves_eur_oficial_percent ?? 0).toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-transparent hover:border-slate-100 dark:hover:border-slate-700 transition-all">
-                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Euro BCV</span>
-                      <span className="font-black text-slate-800 dark:text-white text-xl">Bs. {formatNumber(data?.ves_eur_oficial)}</span>
+                  </div>
+                </div>
+
+                {/* Paralelo Column */}
+                <div className="space-y-8">
+                  <StatCard 
+                    title="Dólar Paralelo" 
+                    value={`${formatNumber(data?.ves_paralelo)} VES`} 
+                    icon={DollarSign} 
+                    color="bg-yellow-500"
+                    subtitle="Promedio Dólar Paralelo"
+                    change={data?.changes?.ves_paralelo_percent}
+                    pulseType={changedKeys['ves_paralelo']}
+                  />
+                  
+                  <div className="bg-white dark:bg-slate-800/50 p-8 rounded-[40px] border border-slate-100 dark:border-slate-700/50 shadow-sm">
+                    <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                      <Euro className="w-3 h-3" />
+                      Tasas Complementarias Paralelas
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
+                        <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Euro Paralelo</span>
+                        <div className="flex flex-col items-end">
+                          <span className="font-black text-yellow-700 dark:text-yellow-400 text-lg group-hover:scale-110 transition-transform">{formatNumber(data?.ves_eur_paralelo)} VES</span>
+                          <span className={`text-[10px] font-bold ${(data?.changes?.ves_eur_paralelo_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {(data?.changes?.ves_eur_paralelo_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.ves_eur_paralelo_percent ?? 0).toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -754,166 +828,132 @@ function App() {
             </div>
           )}
 
-          {/* LATAM Section */}
-          {activeTab === 'Latam' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
-              {/* Uruguay Section */}
-              <div className="space-y-8">
-                <div className="flex items-center gap-3 px-1">
-                  <div className="w-1.5 h-6 bg-sky-500 rounded-full shadow-[0_0_10px_rgba(14,165,233,0.3)]" />
-                  <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Uruguay</h2>
-                </div>
-                <StatCard 
-                  title="Peso Uruguayo" 
-                  value={`$U ${formatNumber(data?.uyu_venta)}`} 
-                  icon={Globe} 
-                  color="bg-sky-500"
-                  subtitle="Cotización Interbancaria"
-                />
-                <div className="h-[300px]">
-                  <RegionChart 
-                    title="Tendencia UYU" 
-                    data={history} 
-                    dataKey="uyu_venta" 
-                    color={{hex: '#0ea5e9', text: 'text-sky-500'}}
-                    icon={TrendingUp}
-                    singleLine={true}
-                  />
-                </div>
+          {activeTab === 'LATAM' && (
+            <div className="space-y-12">
+              <div className="flex items-center gap-4 px-4">
+                <div className="w-1.5 h-6 bg-slate-500 rounded-full shadow-[0_0_10px_rgba(100,116,139,0.3)]" />
+                <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Mercado Regional</h2>
               </div>
 
-              {/* Chile Section */}
-              <div className="space-y-8">
-                <div className="flex items-center gap-3 px-1">
-                  <div className="w-1.5 h-6 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.3)]" />
-                  <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Chile</h2>
-                </div>
-                <StatCard 
-                  title="Peso Chileno" 
-                  value={`CLP ${formatNumber(data?.clp_venta)}`} 
-                  icon={Globe} 
-                  color="bg-red-500"
-                  subtitle="Cotización Observado"
-                />
-                <div className="h-[300px]">
-                  <RegionChart 
-                    title="Tendencia CLP" 
-                    data={history} 
-                    dataKey="clp_venta" 
-                    color={{hex: '#ef4444', text: 'text-red-500'}}
-                    icon={TrendingUp}
-                    singleLine={true}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+                <div className="space-y-8">
+                  <div className="flex items-center gap-3 px-4">
+                    <div className="w-1.5 h-6 bg-sky-500 rounded-full shadow-[0_0_10px_rgba(14,165,233,0.3)]" />
+                    <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Uruguay</h2>
+                  </div>
+                  <StatCard 
+                    title="Peso Uruguayo" 
+                    value={`${formatNumber(data?.uyu_venta)}`} 
+                    subtitle="Valor del Dólar Oficial"
+                    icon={Globe} 
+                    color="bg-sky-600"
+                    buy={formatNumber(data?.uyu_compra)}
+                    sell={formatNumber(data?.uyu_venta)}
+                    change={data?.changes?.uyu_percent}
                   />
+                  <div className="h-[440px]">
+                    <RegionChart 
+                      title="Tendencia UYU" 
+                      data={history} 
+                      dataKey="uyu_venta"
+                      buyKey="uyu_venta"
+                      sellKey="uyu_venta"
+                      color="#0ea5e9" 
+                      icon={TrendingUp}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* Brazil Section */}
-              <div className="space-y-8 flex flex-col h-full">
-                  <div className="flex items-center gap-3 px-1">
+                <div className="space-y-8">
+                  <div className="flex items-center gap-3 px-4">
+                    <div className="w-1.5 h-6 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.3)]" />
+                    <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Chile</h2>
+                  </div>
+                  <StatCard 
+                    title="Peso Chileno" 
+                    value={`${formatNumber(data?.clp_venta)}`} 
+                    subtitle="Valor del Dólar Oficial"
+                    icon={Globe} 
+                    color="bg-red-600"
+                    buy={formatNumber(data?.clp_compra)}
+                    sell={formatNumber(data?.clp_venta)}
+                    change={data?.changes?.clp_percent}
+                  />
+                  <div className="h-[440px]">
+                    <RegionChart 
+                      title="Tendencia CLP" 
+                      data={history} 
+                      dataKey="clp_venta"
+                      buyKey="clp_venta"
+                      sellKey="clp_venta"
+                      color="#ef4444" 
+                      icon={TrendingUp}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-8">
+                  <div className="flex items-center gap-3 px-4">
                     <div className="w-1.5 h-6 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]" />
                     <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Brasil</h2>
                   </div>
-                  <div className="flex-1 bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full">
-                    <h3 className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4 text-indigo-500" /> Paridad Argentina (ARS)
-                    </h3>
-                    <div className="flex-1 space-y-4 flex flex-col justify-center">
-                    <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
-                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar AR / USD Blue</span>
-                      <div className="flex flex-col items-end">
-                        <span className="font-black text-indigo-700 dark:text-indigo-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.blue?.value_sell)}</span>
-                        <span className={`text-[10px] font-bold ${(data?.changes?.usd_blue_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                          {(data?.changes?.usd_blue_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.usd_blue_percent ?? 0).toFixed(2)}%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
-                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Real Brasileño</span>
-                      <div className="flex flex-col items-end">
-                        <span className="font-black text-emerald-700 dark:text-emerald-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.brl_ar)}</span>
-                        <span className={`text-[10px] font-bold ${(data?.changes?.brl_ar_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                          {(data?.changes?.brl_ar_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.brl_ar_percent ?? 0).toFixed(2)}%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
-                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Peso Chileno</span>
-                      <div className="flex flex-col items-end">
-                        <span className="font-black text-red-700 dark:text-red-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.clp_ar)}</span>
-                        <span className={`text-[10px] font-bold ${(data?.changes?.clp_ar_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                          {(data?.changes?.clp_ar_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.clp_ar_percent ?? 0).toFixed(2)}%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50 transition-all group">
-                      <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Peso Uruguayo</span>
-                      <div className="flex flex-col items-end">
-                        <span className="font-black text-sky-700 dark:text-sky-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.uyu_ar)}</span>
-                        <span className={`text-[10px] font-bold ${(data?.changes?.uyu_ar_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                          {(data?.changes?.uyu_ar_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.uyu_ar_percent ?? 0).toFixed(2)}%
-                        </span>
-                      </div>
-                    </div>
+                  <StatCard 
+                     title="Real Brasileño" 
+                    value={`${formatNumber(data?.brl_venta)}`} 
+                    subtitle="Valor del Dólar Oficial"
+                    icon={Globe} 
+                    color="bg-emerald-600"
+                    buy={formatNumber(data?.brl_compra)}
+                    sell={formatNumber(data?.brl_venta)}
+                    change={data?.changes?.brl_percent}
+                  />
+                  <div className="h-[440px]">
+                    <RegionChart 
+                      title="Tendencia BRL" 
+                      data={history} 
+                      dataKey="brl_venta"
+                      buyKey="brl_venta"
+                      sellKey="brl_venta"
+                      color="#10b981" 
+                      icon={TrendingUp}
+                    />
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Calculadora Section */}
-          {activeTab === 'Conversor' && (
-            <div className="space-y-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
-              <div className="flex items-center gap-3 px-1">
-                <div className="w-1.5 h-6 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.3)]" />
-                <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Calculadora</h2>
+          {activeTab === 'CALC' && (
+            <div className="space-y-12">
+              <div className="flex items-center gap-4 px-4">
+                <div className="w-1.5 h-6 bg-blue-600 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.3)]" />
+                <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Conversor Rápido</h2>
               </div>
               <Converter data={data} />
             </div>
           )}
-
         </div>
-      </main>
 
-        {/* Global Footer with API Status and Contact */}
-        <footer className="relative lg:fixed lg:bottom-0 lg:left-0 lg:right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 px-4 lg:px-8 py-2 lg:py-3 z-50 transition-colors duration-300">
-          <div className="max-w-7xl mx-auto space-y-2 lg:space-y-3">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-3 lg:gap-4">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 px-4 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl transition-all border border-indigo-100 dark:border-indigo-800/50 shadow-sm">
-                  <div className={`w-2 h-2 rounded-full animate-pulse ${data?.api_status?.dolar_api_ar ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
-                  <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em]">DOLAR API</span>
-                </div>
+        {/* Footer - Premium Styling */}
+        <footer className="mt-24 pt-12 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-12">
+            <div className="flex flex-col items-center md:items-start gap-4">
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-[0.3em]">Market Dash</h3>
+                <div className="w-1 h-1 rounded-full bg-blue-500" />
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">v2.4.0 Stable</span>
               </div>
-              
-              <div className="flex items-center gap-6">
-                <div className="hidden md:flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-50 dark:bg-slate-800/50 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-700/50">
-                  <span className="text-blue-500">Built with</span>
-                  <div className="flex gap-2">
-                    <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded text-[8px]">TypeScript</span>
-                    <span className="px-1.5 py-0.5 bg-cyan-100 dark:bg-cyan-900/40 text-cyan-600 dark:text-cyan-400 rounded text-[8px]">React</span>
-                    <span className="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded text-[8px]">Tailwind</span>
-                    <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded text-[8px]">Fastify</span>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col items-end gap-3">
-                  <div className="flex flex-wrap justify-end gap-2">
-                    {/* Status pill removed from here to be more prominent above */}
-                  </div>
-                  
-                  <a 
-                    href="https://github.com/johannmx/valores-mercado" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="p-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-lg shadow-slate-200 dark:shadow-none"
-                  >
-                    <Github className="w-5 h-5" />
-                  </a>
-                </div>
+              <div className="flex gap-4">
+                <a href="https://github.com/johannmx/valores-mercado" target="_blank" rel="noopener noreferrer" className="p-3 bg-white dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-xl text-slate-400 hover:text-blue-600 transition-colors shadow-sm">
+                  <Github className="w-4 h-4" />
+                </a>
+                <a href="#" className="p-3 bg-white dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-xl text-slate-400 hover:text-blue-600 transition-colors shadow-sm">
+                  <Info className="w-4 h-4" />
+                </a>
               </div>
             </div>
-            
-            <div className="flex flex-col md:flex-row items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800/50">
+
+            <div className="flex flex-col items-center md:items-end gap-2">
               <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                 <Globe className="w-3 h-3 text-blue-500" />
                 Realizado por <span className="text-slate-900 dark:text-white">@johannmx</span>

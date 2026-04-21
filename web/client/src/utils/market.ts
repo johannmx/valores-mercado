@@ -6,3 +6,10 @@ export const isMarketOpen = (now: Date = new Date()) => {
   // Banking hours: Mon-Fri, 10:00-15:00 ART
   return day >= 1 && day <= 5 && argHour >= 10 && argHour < 15;
 };
+
+export const formatNumber = (num: number | string | null | undefined) => {
+  if (num === null || num === undefined || num === '') return '';
+  const parsed = Number(num);
+  if (isNaN(parsed)) return num;
+  return parsed.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};

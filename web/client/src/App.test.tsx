@@ -1,15 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import axios from 'axios';
-import App, { formatNumber } from './App';
+import App from './App';
+import { formatNumber } from './utils/market';
 
 vi.mock('axios');
 const mockedAxios = vi.mocked(axios, true);
 
-// Suppress known Recharts warnings
+// Suppress known Recharts warnings and exact string mismatch errors
 const originalConsoleWarn = console.warn;
 console.warn = (...args) => {
-  if (typeof args[0] === 'string' && (args[0].includes('chart should be greater than 0'))) {
+  if (typeof args[0] === 'string' && args[0].includes('The width(-1) and height(-1) of chart should be greater than 0')) {
+    return;
+  }
+  if (typeof args[0] === 'string' && args[0].includes('The width(0) and height(0) of chart should be greater than 0')) {
     return;
   }
   originalConsoleWarn(...args);
@@ -32,16 +36,14 @@ describe('formatNumber utility', () => {
   });
 
   it('handles regular numbers', () => {
-    const result = formatNumber(1000.5);
-    // Flexible matching for decimal/thousands separators
-    expect(result).toMatch(/1[.,]000[.,]50/);
-    expect(formatNumber(42)).toMatch(/42[.,]00/);
-    expect(formatNumber(0)).toMatch(/0[.,]00/);
+    expect(formatNumber(1000.5)).toBe('1.000,50');
+    expect(formatNumber(42)).toBe('42,00');
+    expect(formatNumber(0)).toBe('0,00');
   });
 
   it('handles string numbers', () => {
-    expect(formatNumber('1234.56')).toMatch(/1[.,]234[.,]56/);
-    expect(formatNumber('0')).toMatch(/0[.,]00/);
+    expect(formatNumber('1234.56')).toBe('1.234,56');
+    expect(formatNumber('0')).toBe('0,00');
   });
 
   it('handles non-numeric strings (NaN cases)', () => {
@@ -50,34 +52,33 @@ describe('formatNumber utility', () => {
   });
 
   it('handles edge case formatting rounding', () => {
-    expect(formatNumber(10.123)).toMatch(/10[.,]12/);
-    expect(formatNumber(10.128)).toMatch(/10[.,]13/);
+    expect(formatNumber(10.123)).toBe('10,12');
+    expect(formatNumber(10.128)).toBe('10,13');
   });
 });
 
 describe('App component', () => {
   const mockMarketData = {
-    last_update: new Date().toISOString(),
-    oficial: { value_buy: 95, value_sell: 100, date: '2024-01-01' },
-    blue: { value_buy: 145, value_sell: 150, date: '2024-01-01' },
-    mep: { value_buy: 135, value_sell: 140, date: '2024-01-01' },
-    ccl: { value_buy: 140, value_sell: 145, date: '2024-01-01' },
+    timestamp: new Date().toISOString(),
+    usd_oficial: 100,
+    usd_blue: 150,
+    usd_mep: 140,
+    usd_ccl: 145,
+    usd_cripto: 148,
+    usd_tarjeta: 160,
     ves_oficial: 35,
     ves_paralelo: 40,
     uyu_venta: 40,
     clp_venta: 900,
-    brl_ar: 200,
-    clp_ar: 1.5,
-    uyu_ar: 25,
-    btc_usd: 65000,
+    brl_venta: 5,
+    eur_venta: 110,
     changes: {
-      usd_blue_percent: -2.5,
-      ves_paralelo_percent: 1.2
+      usd_oficial_percent: 1,
+      usd_blue_percent: -2,
     },
     api_status: {
       dolar_api_ar: true,
-      bcv_ves: true,
-      bluelytics_ar: true
+      dolar_api_ve: true,
     }
   };
 
@@ -89,7 +90,7 @@ describe('App component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedAxios.get.mockImplementation((url) => {
-      if (url.includes('/api/market')) {
+      if (url.includes('/api/rates')) {
         return Promise.resolve({ data: mockMarketData });
       }
       if (url.includes('/api/history')) {
@@ -101,54 +102,68 @@ describe('App component', () => {
 
   it('renders loading state initially', async () => {
     render(<App />);
-    expect(screen.getByText(/Sincronizando/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sincronizando Mercados/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText(/Sincronizando Mercados/i)).not.toBeInTheDocument();
+    });
   });
 
   it('renders main dashboard after data loads', async () => {
     render(<App />);
+
     await waitFor(() => {
-      expect(screen.queryByText(/Sincronizando/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Sincronizando Mercados/i)).not.toBeInTheDocument();
     });
-    expect(screen.getByRole('heading', { name: /MarketDash/i })).toBeInTheDocument();
+
+    expect(screen.getByText('Market')).toBeInTheDocument();
+    expect(screen.getByText('Dash')).toBeInTheDocument();
+
     expect(screen.getByText('Dólar Oficial')).toBeInTheDocument();
+    expect(screen.getByText('$100,00')).toBeInTheDocument();
   });
 
   it('renders API error state', async () => {
     mockedAxios.get.mockImplementation(() => Promise.reject(new Error('Network Error')));
+
     render(<App />);
+
     await waitFor(() => {
-      expect(screen.getByText(/Error al sincronizar/i)).toBeInTheDocument();
+      expect(screen.getByText('Error de conexión con el servidor.')).toBeInTheDocument();
     });
   });
 
   it('renders different tabs and changes views', async () => {
     render(<App />);
+
     await waitFor(() => {
-      expect(screen.queryByText(/Sincronizando/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Sincronizando Mercados/i)).not.toBeInTheDocument();
     });
 
-    // Initial state: Argentina
-    expect(screen.getByText(/Mercado Argentina/i)).toBeInTheDocument();
+    expect(screen.getByText('Mercado Argentina')).toBeInTheDocument();
 
-    // Switch to Venezuela
     const venezuelaTab = screen.getByRole('button', { name: /Venezuela/i });
     fireEvent.click(venezuelaTab);
+
     await waitFor(() => {
-      expect(screen.getByText(/Mercado Venezuela/i)).toBeInTheDocument();
+      expect(screen.getByText('Mercado Venezuela')).toBeInTheDocument();
     });
 
-    // Switch to LATAM (Uruguay & Chile)
+    // Check for VES text but not strict formatting
+    expect(screen.getByText(/35,00/)).toBeInTheDocument();
+    expect(screen.getAllByText(/VES/).length).toBeGreaterThan(0);
+
     const latamTab = screen.getByRole('button', { name: /LATAM/i });
     fireEvent.click(latamTab);
+
     await waitFor(() => {
-      expect(screen.getByText(/^Uruguay$/i)).toBeInTheDocument();
+      expect(screen.getByText('Peso Uruguayo')).toBeInTheDocument();
     });
 
-    // Switch to Conversor
-    const convTab = screen.getByRole('button', { name: /Conversor/i });
-    fireEvent.click(convTab);
+    const calcTab = screen.getByRole('button', { name: /Calculadora/i });
+    fireEvent.click(calcTab);
+
     await waitFor(() => {
-      expect(screen.getByText(/Calculadora Global/i)).toBeInTheDocument();
+      expect(screen.getByText('Conversor Rápido')).toBeInTheDocument();
     });
   });
 });
