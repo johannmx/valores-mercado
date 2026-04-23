@@ -42,11 +42,14 @@ Conjunto de herramientas profesionales para el monitoreo de divisas y criptomone
 
 ## 🚀 Despliegue con Docker
 
-1. **Instalación:**
+1. **Configuración de Variables de Entorno:**
+   Asegúrate de definir la variable `WALLBIT_API_KEY` en tu entorno o en un archivo `.env` si deseas obtener la cotización en tiempo real desde Wallbit.
+
+2. **Instalación:**
    ```bash
    docker-compose up --build -d
    ```
-2. **Acceso:** Navega a `http://localhost`.
+3. **Acceso:** Navega a `http://localhost`.
 
 ---
 
