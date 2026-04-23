@@ -1,4 +1,4 @@
-import Fastify from 'fastify';
+import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
 import axios from 'axios';
 import cors from '@fastify/cors';
 import fs from 'fs';
@@ -114,6 +114,7 @@ const DOLAR_API_VES_EURO_OFFICIAL_URL = 'https://ve.dolarapi.com/v1/euros/oficia
 const DOLAR_API_VES_EURO_PARALELO_URL = 'https://ve.dolarapi.com/v1/euros/paralelo';
 const DOLAR_API_STATUS_URL = 'https://dolarapi.com/v1/estado';
 const BINANCE_API_URL = 'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT';
+const WALLBIT_RATES_URL = 'https://api.wallbit.io/api/public/v1/rates?source_currency=ARS&dest_currency=USD';
 
 interface MarketData {
     timestamp: string;
@@ -140,6 +141,7 @@ interface MarketData {
     clp_ar: number;
     brl_ar: number;
     btc_usd: number;
+    usd_wallbit: number;
     changes: {
         usd_oficial_percent: number;
         usd_blue_percent: number;
@@ -162,6 +164,7 @@ interface MarketData {
         dolar_api_ve: boolean;
         dolar_api_latam: boolean;
         binance_api: boolean;
+        wallbit_api: boolean;
     };
 }
 
@@ -185,6 +188,7 @@ export interface HistoryItem {
     clp_ar: number;
     brl_ar: number;
     btc_usd: number;
+    usd_wallbit: number;
 }
 
 const getVentaByCasa = (data: any[], casa: string): number => {
@@ -223,7 +227,8 @@ export const generateMockHistory = () => {
             uyu_ar: 20 + Math.random() * 2,
             clp_ar: 1.2 + Math.random() * 0.2,
             brl_ar: 200 + Math.random() * 20,
-            btc_usd: 90000 + Math.random() * 500
+            btc_usd: 90000 + Math.random() * 500,
+            usd_wallbit: baseAr + 15
         });
     }
     return history;
@@ -265,7 +270,7 @@ const initializeHistory = async () => {
 
 const saveCurrentToHistory = async () => {
     try {
-        const [arsRes, vesRes, vesOficialRes, uyuRes, clpRes, brlRes, eurRes, uyuArRes, clpArRes, brlArRes, vesEurOficialRes, vesEurParaleloRes, btcRes] = await Promise.all([
+        const [arsRes, vesRes, vesOficialRes, uyuRes, clpRes, brlRes, eurRes, uyuArRes, clpArRes, brlArRes, vesEurOficialRes, vesEurParaleloRes, btcRes, wallbitRes] = await Promise.all([
             axios.get(DOLAR_API_ARS_URL).catch(e => ({ data: [] })),
             axios.get(DOLAR_API_VES_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_VES_OFFICIAL_URL).catch(e => ({ data: {} })),
@@ -278,7 +283,8 @@ const saveCurrentToHistory = async () => {
             axios.get(DOLAR_API_BRL_AR_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_VES_EURO_OFFICIAL_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_VES_EURO_PARALELO_URL).catch(e => ({ data: {} })),
-            axios.get(BINANCE_API_URL).catch(e => ({ data: { price: "0" } }))
+            axios.get(BINANCE_API_URL).catch(e => ({ data: { price: "0" } })),
+            axios.get(WALLBIT_RATES_URL, { headers: { 'X-API-Key': process.env.WALLBIT_API_KEY || '' } }).catch(e => ({ data: { data: { rate: 0 } } }))
         ]);
 
         const historyFileContent = await fs.promises.readFile(HISTORY_FILE, 'utf-8');
@@ -297,6 +303,7 @@ const saveCurrentToHistory = async () => {
         const vesEurOficialData = vesEurOficialRes.data as any;
         const vesEurParaleloData = vesEurParaleloRes.data as any;
         const btcData = btcRes.data as any;
+        const wallbitData = wallbitRes.data as any;
 
         const newItem: HistoryItem = {
             timestamp: new Date().toISOString(),
@@ -317,7 +324,8 @@ const saveCurrentToHistory = async () => {
             brl_ar: brlArData.venta || 0,
             ves_eur_oficial: vesEurOficialData.promedio || vesEurOficialData.venta || 0,
             ves_eur_paralelo: vesEurParaleloData.promedio || vesEurParaleloData.venta || 0,
-            btc_usd: btcData.price ? parseFloat(btcData.price) : 0
+            btc_usd: btcData.price ? parseFloat(btcData.price) : 0,
+            usd_wallbit: wallbitData?.data?.rate || 0
         };
         
         history.push(newItem);
@@ -344,18 +352,19 @@ server.get('/api/rates', {
             timeWindow: '15 minutes'
         }
     }
-}, async (request, reply) => {
+}, async (request: FastifyRequest, reply: FastifyReply) => {
     // Check Cache first
     const cachedData = rateCache.get('market_data');
     if (cachedData) {
         return reply.send(cachedData);
     }
 
-    const apiStatus = {
+    const apiStatus: MarketData['api_status'] & { api_health?: string } = {
         dolar_api_ar: false,
         dolar_api_ve: false,
         dolar_api_latam: false,
         binance_api: false,
+        wallbit_api: false,
         api_health: 'unknown'
     };
 
@@ -374,10 +383,11 @@ server.get('/api/rates', {
             axios.get(DOLAR_API_VES_EURO_OFFICIAL_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_VES_EURO_PARALELO_URL).catch(e => ({ data: {} })),
             axios.get(BINANCE_API_URL).then(r => { apiStatus.binance_api = true; return r; }).catch(e => { return {data: {price: "0"}}; }),
+            axios.get(WALLBIT_RATES_URL, { headers: { 'X-API-Key': process.env.WALLBIT_API_KEY || '' } }).then(r => { apiStatus.wallbit_api = true; return r; }).catch(e => ({ data: { data: { rate: 0 } } })),
             axios.get(DOLAR_API_STATUS_URL).then(r => { apiStatus.api_health = r.data.estado || 'ok'; return r; }).catch(e => { return {data: {estado: 'error'}}; })
         ];
 
-        const [arsRes, vesRes, vesOficialRes, uyuRes, clpRes, brlRes, eurRes, uyuArRes, clpArRes, brlArRes, vesEurOficialRes, vesEurParaleloRes, btcRes, statusRes] = await Promise.all(requests) as any[];
+        const [arsRes, vesRes, vesOficialRes, uyuRes, clpRes, brlRes, eurRes, uyuArRes, clpArRes, brlArRes, vesEurOficialRes, vesEurParaleloRes, btcRes, wallbitRes, statusRes] = await Promise.all(requests) as any[];
 
         const historyFileContent = await fs.promises.readFile(HISTORY_FILE, 'utf-8');
         const history: HistoryItem[] = JSON.parse(historyFileContent);
@@ -395,6 +405,7 @@ server.get('/api/rates', {
         const vesEurOficialData = vesEurOficialRes.data;
         const vesEurParaleloData = vesEurParaleloRes.data;
         const btcData = btcRes.data;
+        const wallbitData = wallbitRes.data;
 
         apiStatus.dolar_api_latam = uyuRes.status === 200 && clpRes.status === 200 && brlRes.status === 200;
 
@@ -422,6 +433,8 @@ server.get('/api/rates', {
         const ves_eur_oficial_venta = vesEurOficialData.promedio || vesEurOficialData.venta || 0;
         const ves_eur_paralelo_venta = vesEurParaleloData.promedio || vesEurParaleloData.venta || 0;
 
+        const usd_wallbit_venta = wallbitData?.data?.rate || 0;
+
         const marketData: MarketData = {
             timestamp: new Date().toISOString(),
             usd_oficial: usd_oficial_venta,
@@ -447,6 +460,7 @@ server.get('/api/rates', {
             ves_eur_oficial: ves_eur_oficial_venta,
             ves_eur_paralelo: ves_eur_paralelo_venta,
             btc_usd: parseFloat(btcData.price) || 0,
+            usd_wallbit: usd_wallbit_venta,
             changes: {
                 usd_oficial_percent: calculateChange(usd_oficial_venta, last24h?.usd_oficial || 0),
                 usd_blue_percent: calculateChange(usd_blue_venta, last24h?.usd_blue || 0),
@@ -464,7 +478,8 @@ server.get('/api/rates', {
                 otros_dolares_percents: {
                     mep: calculateChange(usd_mep_venta, last24h?.usd_mep || 0),
                     ccl: calculateChange(usd_ccl_venta, last24h?.usd_ccl || 0),
-                    tarjeta: calculateChange(usd_tarjeta_venta, last24h?.usd_tarjeta || 0)
+                    tarjeta: calculateChange(usd_tarjeta_venta, last24h?.usd_tarjeta || 0),
+                    wallbit: calculateChange(usd_wallbit_venta, last24h?.usd_wallbit || 0)
                 },
                 bitcoin_percent: calculateChange(parseFloat(btcData.price), last24h?.btc_usd || 0)
             },
@@ -489,7 +504,7 @@ server.get<{ Params: { casa: string } }>('/api/historical/:casa', {
             timeWindow: '15 minutes'
         }
     }
-}, async (request, reply) => {
+}, async (request: FastifyRequest<{ Params: { casa: string } }>, reply: FastifyReply) => {
     try {
         const { casa } = request.params;
         const allowedCasas = ['oficial', 'blue', 'bolsa', 'contadoconliqui', 'cripto', 'tarjeta'];
@@ -524,7 +539,7 @@ server.get('/api/history', {
             timeWindow: '15 minutes'
         }
     }
-}, async (request, reply) => {
+}, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
         // Check Cache first
         const cachedHistory = rateCache.get('history_data');

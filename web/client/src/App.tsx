@@ -77,6 +77,7 @@ interface MarketData {
   clp_ar: number;
   brl_ar: number;
   btc_usd: number;
+  usd_wallbit: number;
   changes: {
     usd_oficial_percent: number;
     usd_blue_percent: number;
@@ -91,7 +92,12 @@ interface MarketData {
     uyu_ar_percent: number;
     clp_ar_percent: number;
     brl_ar_percent: number;
-    otros_dolares_percents: Record<string, number>;
+    otros_dolares_percents: {
+      mep: number;
+      ccl: number;
+      tarjeta: number;
+      wallbit: number;
+    };
     bitcoin_percent: number;
   };
   api_status: {
@@ -673,6 +679,7 @@ function App() {
           checkChange('usd_oficial', 'Dólar Oficial');
           checkChange('usd_blue', 'Dólar Blue');
           checkChange('usd_cripto', 'Dólar Cripto');
+          checkChange('usd_wallbit', 'Dólar Wallbit');
           checkChange('ves_paralelo', 'Bolívar Paralelo', true);
           checkChange('ves_oficial', 'Bolívar Oficial', true);
 
@@ -866,7 +873,7 @@ function App() {
                   <span className="text-[9px] uppercase font-black text-slate-300 dark:text-slate-500 leading-none mb-1 tracking-tighter">
                     {data ? 'Última Sincronización' : isRefreshing ? 'Sincronizando...' : 'Desconectado'}
                   </span>
-                  <span className="text-sm font-black text-slate-600 dark:text-white">
+                  <span className="text-sm font-black text-slate-600 dark:white">
                     {data ? new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                   </span>
                 </div>
@@ -1058,6 +1065,19 @@ function App() {
                           <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_ccl)}</span>
                           <span className={`text-[10px] font-bold ${(data?.changes?.otros_dolares_percents?.ccl ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                             {(data?.changes?.otros_dolares_percents?.ccl ?? 0) >= 0 ? '+' : ''}{(data?.changes?.otros_dolares_percents?.ccl ?? 0).toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className={`flex justify-between items-center p-5 rounded-2xl transition-all duration-500 group ${
+                        changedKeys['usd_wallbit'] === 'up' ? 'bg-emerald-50 dark:bg-emerald-900/40 ring-2 ring-emerald-500 dark:ring-emerald-400' :
+                        changedKeys['usd_wallbit'] === 'down' ? 'bg-red-50 dark:bg-red-900/40 ring-2 ring-red-500 dark:ring-red-400' :
+                        'bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50'
+                      }`}>
+                        <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Wallbit</span>
+                        <div className="flex flex-col items-end">
+                          <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_wallbit)}</span>
+                          <span className={`text-[10px] font-bold ${(data?.changes?.otros_dolares_percents?.wallbit ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {(data?.changes?.otros_dolares_percents?.wallbit ?? 0) >= 0 ? '+' : ''}{(data?.changes?.otros_dolares_percents?.wallbit ?? 0).toFixed(2)}%
                           </span>
                         </div>
                       </div>
