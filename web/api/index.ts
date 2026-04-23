@@ -12,6 +12,8 @@ axios.defaults.timeout = 10000;
 // Security Enhancement: Set maximum response size to 500KB to prevent DoS via memory exhaustion from upstream APIs
 axios.defaults.maxContentLength = 500000;
 axios.defaults.maxBodyLength = 500000;
+// Security Enhancement: Disable HTTP redirects globally to prevent Server-Side Request Forgery (SSRF) via compromised upstream APIs
+axios.defaults.maxRedirects = 0;
 
 const server = Fastify({
     logger: true,
