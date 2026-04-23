@@ -270,13 +270,14 @@ const ResultCard = ({ title, items, icon: Icon, color }: ResultCardProps) => (
 
 const Converter = ({ data }: { data: MarketData | null }) => {
   const [amount, setAmount] = useState<number>(1);
-  const [from, setFrom] = useState<'USD' | 'ARS_BLUE' | 'ARS_OFFICIAL' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL' | 'EUR'>('USD');
+  const [from, setFrom] = useState<'USD' | 'ARS_BLUE' | 'ARS_OFFICIAL' | 'CRYPTO' | 'WALLBIT' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL' | 'EUR'>('USD');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const OPTIONS = [
     { value: 'USD', label: 'USD - Dólar USA' },
     { value: 'ARS_OFFICIAL', label: 'ARS - Dólar Oficial' },
     { value: 'CRYPTO', label: 'ARS - Dólar Crypto' },
+    { value: 'WALLBIT', label: 'ARS - Dólar Wallbit' },
     { value: 'VES', label: 'VES - Bolívar Paralelo' },
     { value: 'VES_OFFICIAL', label: 'VES - Bolívar Oficial' },
     { value: 'UYU', label: 'UYU - Peso Uruguayo' },
@@ -291,6 +292,7 @@ const Converter = ({ data }: { data: MarketData | null }) => {
     ARS_BLUE: data.usd_blue,
     ARS_OFFICIAL: data.usd_oficial,
     CRYPTO: data.usd_cripto,
+    WALLBIT: data.usd_wallbit,
     VES: data.ves_paralelo,
     VES_OFFICIAL: data.ves_oficial,
     UYU: data.uyu_venta,
@@ -299,11 +301,11 @@ const Converter = ({ data }: { data: MarketData | null }) => {
     EUR: data.eur_venta
   };
 
-  const convert = (to: 'USD' | 'ARS_BLUE' | 'ARS_OFFICIAL' | 'CRYPTO' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL' | 'EUR') => {
+  const convert = (to: 'USD' | 'ARS_BLUE' | 'ARS_OFFICIAL' | 'CRYPTO' | 'WALLBIT' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL' | 'EUR') => {
     const usdAmount = amount / rates[from];
     const result = usdAmount * rates[to];
     
-    if (to === 'ARS_BLUE' || to === 'ARS_OFFICIAL' || to === 'CRYPTO' || to === 'VES' || to === 'VES_OFFICIAL') {
+    if (to === 'ARS_BLUE' || to === 'ARS_OFFICIAL' || to === 'CRYPTO' || to === 'WALLBIT' || to === 'VES' || to === 'VES_OFFICIAL') {
       return result.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
     return result.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -400,7 +402,8 @@ const Converter = ({ data }: { data: MarketData | null }) => {
           color={{bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400'}}
           items={[
             ...(from !== 'ARS_OFFICIAL' ? [{ label: 'ARS (Oficial)', value: convert('ARS_OFFICIAL'), prefix: '$' }] : []),
-            ...(from !== 'CRYPTO' ? [{ label: 'ARS (Crypto)', value: convert('CRYPTO'), prefix: '$' }] : [])
+            ...(from !== 'CRYPTO' ? [{ label: 'ARS (Crypto)', value: convert('CRYPTO'), prefix: '$' }] : []),
+            ...(from !== 'WALLBIT' ? [{ label: 'ARS (Wallbit)', value: convert('WALLBIT'), prefix: '$' }] : [])
           ]}
         />
 
