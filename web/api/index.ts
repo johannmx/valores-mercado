@@ -13,6 +13,9 @@ axios.defaults.timeout = 10000;
 axios.defaults.maxContentLength = 500000;
 axios.defaults.maxBodyLength = 500000;
 
+// Security Enhancement: Prevent Server-Side Request Forgery (SSRF) by disabling HTTP redirects
+axios.defaults.maxRedirects = 0;
+
 const server = Fastify({
     logger: true,
     // Security Enhancement: Only trust proxies from local network to prevent IP spoofing rate-limit bypass
