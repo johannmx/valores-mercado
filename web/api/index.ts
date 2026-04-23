@@ -1,4 +1,5 @@
-import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
+import Fastify from 'fastify';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import axios from 'axios';
 import cors from '@fastify/cors';
 import fs from 'fs';
