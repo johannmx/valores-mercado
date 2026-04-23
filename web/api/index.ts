@@ -541,7 +541,6 @@ server.get<{ Params: { casa: string } }>('/api/historical/:casa', {
     }
 });
 
-// lgtm [js/missing-rate-limiting]
 server.get('/api/history', {
     config: {
         rateLimit: {
