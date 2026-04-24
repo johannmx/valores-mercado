@@ -542,6 +542,10 @@ server.get<{ Params: { casa: string } }>('/api/historical/:casa', {
 });
 
 server.get('/api/history', {
+    preHandler: server.rateLimit({
+        max: 100,
+        timeWindow: '15 minutes'
+    }),
     config: {
         rateLimit: {
             max: 100,
