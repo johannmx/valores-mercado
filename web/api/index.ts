@@ -55,11 +55,13 @@ server.addHook('onRequest', async (request, reply) => {
 
 // Security Enhancement: Use a validated array of domains for CORS instead of blindly parsing environment variables
 const getStricterCorsOrigins = (): string[] => {
-    const defaultOrigins = [
-        'http://localhost:5173',
-        'http://localhost:4173',
-        'http://localhost:3000'
-    ];
+    const defaultOrigins = process.env.NODE_ENV === 'production'
+        ? []
+        : [
+            'http://localhost:5173',
+            'http://localhost:4173',
+            'http://localhost:3000'
+        ];
 
     if (!process.env.ALLOWED_ORIGINS) {
         return defaultOrigins;

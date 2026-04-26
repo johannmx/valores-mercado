@@ -42,3 +42,8 @@
 **Vulnerability:** The Fastify backend utilizes Axios to fetch external API data (e.g., currency rates from `dolarapi.com`). Axios automatically follows HTTP redirects (up to 5 by default). If an upstream API is hijacked or maliciously returns a 3xx redirect to an internal IP address (like `http://169.254.169.254` on AWS) or loopback interface, the backend would blindly execute the request.
 **Learning:** Default HTTP client configurations often prioritize convenience (following redirects) over security. When a backend acts as a proxy or aggregator for external data, it must explicitly limit its trust in upstream responses to prevent SSRF and internal network scanning.
 **Prevention:** Always configure `maxRedirects = 0` (or rigidly validate redirect destinations) on the HTTP client (e.g., `axios.defaults.maxRedirects = 0;`) when consuming external APIs that are expected to return data directly.
+
+## 2026-04-26 - [HIGH] Overly Permissive CORS Configuration in Production
+**Vulnerability:** The Fastify backend included localhost origins (`http://localhost:5173`, `http://localhost:4173`, `http://localhost:3000`) in the default CORS array, which were active even in production environments.
+**Learning:** Permitting localhost origins in a production CORS configuration is an anti-pattern. It exposes the API to attacks from malicious scripts running on local development servers, or allows attackers to exploit local applications running on a user's machine to make cross-origin requests to the production API.
+**Prevention:** Always restrict localhost and local development CORS origins strictly to development environments (e.g., `NODE_ENV !== 'production'`) and never mix them with production domains.
