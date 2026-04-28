@@ -20,7 +20,8 @@ import {
   AlertTriangle,
   Github,
   Euro,
-  X
+  X,
+  Maximize
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -141,6 +142,9 @@ interface RegionChartProps {
   };
   icon: React.ElementType;
   singleLine?: boolean;
+  onExpand?: () => void;
+  subtitle?: string;
+  hideHeader?: boolean;
 }
 
 interface HistoryItem {
@@ -436,15 +440,28 @@ const Converter = ({ data }: { data: MarketData | null }) => {
 
 
 
-const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon, singleLine }: RegionChartProps) => (
-  <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full min-h-[440px]">
-    <div className="flex items-center justify-between mb-8">
-      <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter flex items-center gap-2">
-        <Icon className={`w-6 h-6 ${color.text}`} />
-        {title}
-      </h2>
-      <div className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-widest">Tendencia 24h</div>
-    </div>
+const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon, singleLine, onExpand, subtitle = "Tendencia 24h", hideHeader }: RegionChartProps) => (
+  <div className={`bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full min-h-[440px] ${hideHeader ? 'p-0 border-none shadow-none bg-transparent dark:bg-transparent' : 'p-6'}`}>
+    {!hideHeader && (
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter flex items-center gap-2">
+          <Icon className={`w-6 h-6 ${color.text}`} />
+          {title}
+        </h2>
+        <div className="flex items-center gap-3">
+          <div className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-widest">{subtitle}</div>
+          {onExpand && (
+            <button 
+              onClick={onExpand}
+              className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors group"
+              title="Ver Historial"
+            >
+              <Maximize className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            </button>
+          )}
+        </div>
+      </div>
+    )}
     
     <div className="flex-1 w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -608,6 +625,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<'Argentina' | 'Venezuela' | 'Conversor' | 'Latam'>('Argentina');
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [changedKeys, setChangedKeys] = useState<Record<string, 'up' | 'down'>>({});
+  const [modalChart, setModalChart] = useState<{ title: string; dataKey: string; color: { hex?: string; text: string; buyHex?: string; sellHex?: string }; icon: React.ElementType; singleLine?: boolean; } | null>(null);
 
   const dismissNotification = (id: number, key: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
@@ -994,6 +1012,7 @@ function App() {
                         color={{hex: '#64748b', text: 'text-slate-600'}}
                         icon={TrendingUp}
                         singleLine={true}
+                        onExpand={() => setModalChart({ title: 'Tendencia AR (Oficial)', dataKey: 'usd_oficial', color: {hex: '#64748b', text: 'text-slate-600'}, icon: TrendingUp, singleLine: true })}
                       />
                     </div>
                   </div>
@@ -1019,6 +1038,7 @@ function App() {
                         color={{hex: '#9333ea', text: 'text-purple-600'}}
                         icon={Bitcoin}
                         singleLine={true}
+                        onExpand={() => setModalChart({ title: 'Tendencia AR (Cripto)', dataKey: 'usd_cripto', color: {hex: '#9333ea', text: 'text-purple-600'}, icon: Bitcoin, singleLine: true })}
                       />
                     </div>
                   </div>
@@ -1165,6 +1185,7 @@ function App() {
                         color={{hex: '#3b82f6', text: 'text-blue-500'}}
                         icon={ShieldCheck}
                         singleLine={true}
+                        onExpand={() => setModalChart({ title: 'Tendencia VE (Oficial)', dataKey: 'ves_oficial', color: {hex: '#3b82f6', text: 'text-blue-500'}, icon: ShieldCheck, singleLine: true })}
                       />
                     </div>
                   </div>
@@ -1188,6 +1209,7 @@ function App() {
                         color={{hex: '#eab308', text: 'text-yellow-500'}}
                         icon={TrendingUp}
                         singleLine={true}
+                        onExpand={() => setModalChart({ title: 'Tendencia VE (Paralelo)', dataKey: 'ves_paralelo', color: {hex: '#eab308', text: 'text-yellow-500'}, icon: TrendingUp, singleLine: true })}
                       />
                     </div>
                   </div>
@@ -1389,6 +1411,52 @@ function App() {
           />
         ))}
       </div>
+
+      {/* Full History Modal */}
+      {modalChart && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
+            onClick={() => setModalChart(null)} 
+          />
+          <div className="relative w-full max-w-5xl h-[80vh] flex flex-col bg-slate-50 dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="flex items-center justify-between p-6 sm:p-8 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className={`p-3 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700`}>
+                  <modalChart.icon className={`w-6 h-6 ${modalChart.color.text}`} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">
+                    {modalChart.title}
+                  </h2>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">
+                    Historial Completo (Hasta 7 Días)
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setModalChart(null)}
+                className="p-2 sm:p-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-1 p-6 sm:p-8 min-h-0 w-full">
+              <RegionChart 
+                title={modalChart.title}
+                subtitle="Evolución Histórica (7 Días)"
+                data={history} 
+                dataKey={modalChart.dataKey} 
+                color={modalChart.color}
+                icon={modalChart.icon}
+                singleLine={modalChart.singleLine}
+                hideHeader={true}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
