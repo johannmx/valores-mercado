@@ -335,7 +335,7 @@ const saveCurrentToHistory = async () => {
         };
         
         history.push(newItem);
-        if (history.length > 500) history.shift();
+        if (history.length > 2016) history.shift();
         try {
             await fs.promises.writeFile(HISTORY_FILE, JSON.stringify(history, null, 2));
             // Invalidate history cache after successful write
