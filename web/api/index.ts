@@ -543,11 +543,13 @@ server.get<{ Params: { casa: string } }>('/api/historical/:casa', {
     }
 });
 
+const historyRateLimiter = server.rateLimit({
+    max: 100,
+    timeWindow: '15 minutes'
+});
+
 server.get('/api/history', {
-    preHandler: server.rateLimit({
-        max: 100,
-        timeWindow: '15 minutes'
-    }),
+    preHandler: historyRateLimiter,
     config: {
         rateLimit: {
             max: 100,
