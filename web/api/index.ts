@@ -20,7 +20,9 @@ axios.defaults.maxRedirects = 0;
 const server = Fastify({
     logger: true,
     // Security Enhancement: Only trust proxies from local network to prevent IP spoofing rate-limit bypass
-    trustProxy: ['127.0.0.1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16']
+    trustProxy: ['127.0.0.1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16'],
+    // Security Enhancement: Limit request body size to 10KB to prevent DoS via payload memory exhaustion
+    bodyLimit: 10485
 });
 
 const PORT = (process.env.PORT && parseInt(process.env.PORT)) || 3001;
