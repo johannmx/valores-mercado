@@ -47,3 +47,8 @@
 **Vulnerability:** The Fastify backend included localhost origins (`http://localhost:5173`, `http://localhost:4173`, `http://localhost:3000`) in the default CORS array, which were active even in production environments.
 **Learning:** Permitting localhost origins in a production CORS configuration is an anti-pattern. It exposes the API to attacks from malicious scripts running on local development servers, or allows attackers to exploit local applications running on a user's machine to make cross-origin requests to the production API.
 **Prevention:** Always restrict localhost and local development CORS origins strictly to development environments (e.g., `NODE_ENV !== 'production'`) and never mix them with production domains.
+
+## 2026-05-02 - [HIGH] HTTP Parameter Injection via curl
+**Vulnerability:** A bash script (`dolar_telegram_notification.sh`) used `curl` with the `-d` flag to send dynamic data (variables) in a POST request. If those variables contained special characters like `&` or `=`, they could be misinterpreted as new parameters, leading to HTTP Parameter Injection.
+**Learning:** Default options like `-d` in `curl` do not automatically URL-encode the payload. When sending dynamic strings constructed in bash, this omission can allow attackers or unexpected user input to break out of the intended parameter and inject additional fields, potentially altering the request logic.
+**Prevention:** Always use `--data-urlencode` instead of `-d` when sending dynamic variables via `curl` to ensure they are safely URL-encoded and cannot manipulate the request structure.
