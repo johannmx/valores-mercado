@@ -128,7 +128,7 @@ log "Sending notification to Telegram..."
 
 RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
     -d "chat_id=${CHAT_ID}" \
-    -d "text=${MSG}" \
+    --data-urlencode "text=${MSG}" \
     -d "parse_mode=HTML")
 
 if echo "$RESPONSE" | grep -q '"ok":true'; then
