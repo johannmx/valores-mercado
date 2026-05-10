@@ -12,6 +12,9 @@ RUN npm run build
 # Stage 2: Serve
 FROM nginx:alpine
 
+# Install jq for safe environment variable JSON encoding
+RUN apk add --no-cache jq
+
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY env.sh /docker-entrypoint.d/40-env.sh
