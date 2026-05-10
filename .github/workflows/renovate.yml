@@ -4,6 +4,9 @@ on:
     - cron: '0 3 * * *' # Every day at 3 AM
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   renovate:
     runs-on: ubuntu-latest
