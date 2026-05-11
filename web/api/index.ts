@@ -353,12 +353,6 @@ const saveCurrentToHistory = async () => {
 await initializeHistory();
 setInterval(saveCurrentToHistory, 300000); // 5 minutes
 
-await server.register(rateLimit, {
-    global: false,
-    max: 100,
-    timeWindow: '15 minutes'
-});
-
 server.get('/api/rates', {
     config: {
         rateLimit: {
@@ -545,13 +539,7 @@ server.get<{ Params: { casa: string } }>('/api/historical/:casa', {
     }
 });
 
-const historyRateLimiter = server.rateLimit({
-    max: 100,
-    timeWindow: '15 minutes'
-});
-
 server.get('/api/history', {
-    preHandler: historyRateLimiter,
     config: {
         rateLimit: {
             max: 100,
