@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -33,7 +32,9 @@ import {
   ResponsiveContainer,
   Legend
 } from 'recharts';
-import { isMarketOpen, formatNumber } from './utils/market';
+import { isMarketOpen, formatNumber, downsampleData } from './utils/market';
+import { useMarketData } from './hooks/useMarketData';
+import type { MarketData, HistoryItem, AppNotification } from './hooks/useMarketData';
 
 declare global {
   interface Window {
@@ -46,69 +47,7 @@ declare global {
   }
 }
 
-interface AppNotification {
-  id: number;
-  message: string;
-  type: 'up' | 'down';
-  key: string;
-}
 
-interface MarketData {
-  timestamp: string;
-  usd_oficial: number;
-  usd_blue: number;
-  usd_mep: number;
-  usd_ccl: number;
-  usd_cripto: number;
-  usd_tarjeta: number;
-  ves_oficial: number;
-  ves_paralelo: number;
-  ves_eur_oficial: number;
-  ves_eur_paralelo: number;
-  ves_compra: number;
-  uyu_venta: number;
-  uyu_compra: number;
-  clp_venta: number;
-  clp_compra: number;
-  brl_venta: number;
-  brl_compra: number;
-  eur_venta: number;
-  eur_compra: number;
-  uyu_ar: number;
-  clp_ar: number;
-  brl_ar: number;
-  btc_usd: number;
-  usd_wallbit: number;
-  changes: {
-    usd_oficial_percent: number;
-    usd_blue_percent: number;
-    ves_oficial_percent: number;
-    ves_paralelo_percent: number;
-    ves_eur_oficial_percent: number;
-    ves_eur_paralelo_percent: number;
-    uyu_percent: number;
-    clp_percent: number;
-    brl_percent: number;
-    eur_percent: number;
-    uyu_ar_percent: number;
-    clp_ar_percent: number;
-    brl_ar_percent: number;
-    otros_dolares_percents: {
-      mep: number;
-      ccl: number;
-      tarjeta: number;
-      wallbit: number;
-    };
-    bitcoin_percent: number;
-  };
-  api_status: {
-    dolar_api_ar: boolean;
-    dolar_api_ve: boolean;
-    dolar_api_latam: boolean;
-    binance_api: boolean;
-    api_health?: string;
-  };
-}
 
 interface ResultCardItem {
   label: string;
@@ -147,22 +86,6 @@ interface RegionChartProps {
   hideHeader?: boolean;
 }
 
-interface HistoryItem {
-  timestamp: string;
-  usd_blue: number;
-  usd_oficial: number;
-  usd_mep: number;
-  usd_ccl: number;
-  usd_cripto: number;
-  usd_tarjeta: number;
-  ves_oficial: number;
-  ves_paralelo: number;
-  uyu_venta: number;
-  clp_venta: number;
-  brl_venta: number;
-  eur_venta: number;
-  btc_usd: number;
-}
 
 
 
@@ -465,7 +388,7 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
     
     <div className="flex-1 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data}>
+        <AreaChart data={downsampleData(data, 350)}>
           <defs>
             {singleLine ? (
               <linearGradient id={`color-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
@@ -528,7 +451,7 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
               strokeWidth={4}
               fillOpacity={1} 
               fill={`url(#color-${dataKey || 'value'})`}
-              animationDuration={1500}
+              isAnimationActive={false}
             />
           ) : (
             <>
@@ -540,7 +463,7 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
                 fillOpacity={1} 
                 fill="url(#colorUsd)" 
                 name="Dólar Blue"
-                animationDuration={1500}
+                isAnimationActive={false}
               />
               <Area 
                 type="monotone" 
@@ -550,7 +473,7 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
                 strokeDasharray="5 5"
                 fillOpacity={0}
                 name="Dólar Oficial"
-                animationDuration={1500}
+                isAnimationActive={false}
               />
             </>
           )}
@@ -611,11 +534,7 @@ const ToastNotification = ({ note, onDismiss }: { note: AppNotification, onDismi
 };
 
 function App() {
-  const [data, setData] = useState<MarketData | null>(null);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { data, history, loading, error, isRefreshing, fetchData, notifications, changedKeys, dismissNotification } = useMarketData();
   const [progress, setProgress] = useState(0);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [targetTime, setTargetTime] = useState(() => Date.now() + 300000);
@@ -623,112 +542,18 @@ function App() {
     () => (localStorage.getItem('theme') as 'light' | 'dark' | 'system') || 'system'
   );
   const [activeTab, setActiveTab] = useState<'Argentina' | 'Venezuela' | 'Conversor' | 'Latam'>('Argentina');
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [changedKeys, setChangedKeys] = useState<Record<string, 'up' | 'down'>>({});
+  const handleRefresh = async () => {
+    await fetchData();
+    setTargetTime(Date.now() + 300000);
+    setTimeLeft(300);
+    setProgress(0);
+  };
+
   const [modalChart, setModalChart] = useState<{ title: string; dataKey: string; color: { hex?: string; text: string; buyHex?: string; sellHex?: string }; icon: React.ElementType; singleLine?: boolean; } | null>(null);
 
-  const dismissNotification = (id: number, key: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-    setChangedKeys(prev => {
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
-  };
-
-  const fetchData = async () => {
-    setIsRefreshing(true);
-    try {
-      let baseURL = window._env_?.VITE_API_URL || import.meta.env.VITE_API_URL || '';
-      
-      // Sanitización: si la variable no se expandió correctamente o es el placeholder
-      if (baseURL.includes('${VITE_API_URL}')) {
-        baseURL = '';
-      }
-      
-      // Limpiar slash final si existe
-      if (baseURL.endsWith('/')) {
-        baseURL = baseURL.slice(0, -1);
-      }
-
-      const [ratesRes, historyRes] = await Promise.all([
-        axios.get(`${baseURL}/api/rates`),
-        axios.get(`${baseURL}/api/history`)
-      ]);
-      const ratesData = ratesRes.data;
-      const historyData = historyRes.data;
-
-      // Append current data to history for the charts
-      const currentAsHistory: HistoryItem = {
-        timestamp: ratesData.timestamp,
-        usd_blue: ratesData.usd_blue,
-        usd_oficial: ratesData.usd_oficial,
-        usd_mep: ratesData.usd_mep,
-        usd_ccl: ratesData.usd_ccl,
-        usd_cripto: ratesData.usd_cripto,
-        usd_tarjeta: ratesData.usd_tarjeta,
-        ves_oficial: ratesData.ves_oficial,
-        ves_paralelo: ratesData.ves_paralelo,
-        uyu_venta: ratesData.uyu_venta,
-        clp_venta: ratesData.clp_venta,
-        brl_venta: ratesData.brl_venta,
-        eur_venta: ratesData.eur_venta,
-        btc_usd: ratesData.btc_usd
-      };
-
-      setData(prevData => {
-        if (prevData) {
-          const newNotifications: AppNotification[] = [];
-          const newChangedKeys: Record<string, 'up' | 'down'> = {};
-
-          const checkChange = (key: keyof MarketData, label: string, isVes = false) => {
-            const oldVal = prevData[key] as number;
-            const newVal = ratesData[key] as number;
-            if (oldVal && newVal && oldVal !== newVal) {
-              const type = newVal > oldVal ? 'up' : 'down';
-              newChangedKeys[key as string] = type;
-              const prefix = isVes ? 'Bs. ' : '$';
-              newNotifications.push({
-                id: Date.now() + Math.random(),
-                message: `${label} ${type === 'up' ? 'subió a' : 'bajó a'} ${prefix}${formatNumber(newVal)}`,
-                type,
-                key: key as string,
-              });
-            }
-          };
-
-          checkChange('usd_oficial', 'Dólar Oficial');
-          checkChange('usd_blue', 'Dólar Blue');
-          checkChange('usd_cripto', 'Dólar Cripto');
-          checkChange('usd_wallbit', 'Dólar Wallbit');
-          checkChange('ves_paralelo', 'Bolívar Paralelo', true);
-          checkChange('ves_oficial', 'Bolívar Oficial', true);
-
-          if (newNotifications.length > 0) {
-            setNotifications(prev => [...prev, ...newNotifications]);
-            setChangedKeys(prev => ({ ...prev, ...newChangedKeys }));
-          }
-        }
-        return ratesData;
-      });
-      
-      setHistory([...historyData, currentAsHistory]);
-      setError(null);
-    } catch {
-      setError('Error de conexión con el servidor.');
-    } finally {
-      setLoading(false);
-      setIsRefreshing(false);
-      setTargetTime(Date.now() + 300000);
-      setTimeLeft(300);
-      setProgress(0);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
+  
+  
+  
   useEffect(() => {
     const root = window.document.documentElement;
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -786,7 +611,7 @@ function App() {
         // Solo actualizamos de fondo si la pestaña está activa, 
         // de otra forma los toast y animaciones suceden sin que el usuario los vea
         if (document.visibilityState === 'visible') {
-          fetchData();
+          handleRefresh();
         } else {
           setTimeLeft(0); // Dejamos listo para que cargue en el momento que vuelvan
         }
@@ -899,7 +724,7 @@ function App() {
                   </span>
                 </div>
                 <button 
-                  onClick={fetchData}
+                  onClick={handleRefresh}
                   disabled={isRefreshing}
                   className={`p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all ${isRefreshing ? 'animate-spin' : 'hover:rotate-180'}`}
                 >
