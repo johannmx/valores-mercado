@@ -506,6 +506,18 @@ server.get('/api/rates', {
 
 // lgtm [js/missing-rate-limiting]
 server.get<{ Params: { casa: string } }>('/api/historical/:casa', {
+    schema: {
+        params: {
+            type: 'object',
+            properties: {
+                casa: {
+                    type: 'string',
+                    enum: ['oficial', 'blue', 'bolsa', 'contadoconliqui', 'cripto', 'tarjeta']
+                }
+            },
+            required: ['casa']
+        }
+    },
     config: {
         rateLimit: {
             max: 100,
@@ -515,11 +527,6 @@ server.get<{ Params: { casa: string } }>('/api/historical/:casa', {
 }, async (request: FastifyRequest<{ Params: { casa: string } }>, reply: FastifyReply) => {
     try {
         const { casa } = request.params;
-        const allowedCasas = ['oficial', 'blue', 'bolsa', 'contadoconliqui', 'cripto', 'tarjeta'];
-        
-        if (!allowedCasas.includes(casa)) {
-            return reply.status(400).send({ error: 'Invalid casa parameter' });
-        }
 
         const cacheKey = `historical_${casa}`;
         const cachedData = rateCache.get(cacheKey);
