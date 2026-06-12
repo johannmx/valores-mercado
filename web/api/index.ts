@@ -32,6 +32,9 @@ const HISTORY_FILE = `${DATA_DIR}/history.json`;
 // Cache configuration: 60 seconds standard TTL
 const rateCache = new NodeCache({ stdTTL: 60, checkperiod: 60 });
 
+// In-memory cache for historical data to avoid constant disk I/O and JSON parsing
+let inMemoryHistory: HistoryItem[] = [];
+
 // Security Middleware
 server.register(helmet, {
     contentSecurityPolicy: {
@@ -258,6 +261,12 @@ const initializeHistory = async () => {
                 const data = JSON.parse(await fs.promises.readFile(HISTORY_FILE, 'utf-8'));
                 if (data.length > 0 && !data[0].usd_oficial) { // Check for new field
                     shouldReset = true;
+                } else {
+                    // Backfill ves_paralelo for legacy data at startup so we don't do it on every request
+                    inMemoryHistory = data.map((item: any) => ({
+                        ...item,
+                        ves_paralelo: item.ves_paralelo ?? item.ves_oficial
+                    }));
                 }
             } catch (e) {
                 shouldReset = true;
@@ -267,7 +276,8 @@ const initializeHistory = async () => {
         }
 
         if (shouldReset) {
-            await fs.promises.writeFile(HISTORY_FILE, JSON.stringify(generateMockHistory(), null, 2));
+            inMemoryHistory = generateMockHistory();
+            await fs.promises.writeFile(HISTORY_FILE, JSON.stringify(inMemoryHistory, null, 2));
         }
     } catch (error) {
         console.error('CRITICAL: Failed to initialize history file due to permission errors.');
@@ -295,9 +305,6 @@ const saveCurrentToHistory = async () => {
             axios.get(WALLBIT_RATES_URL, { headers: { 'X-API-Key': process.env.WALLBIT_API_KEY || '' } }).catch(e => ({ data: { data: { rate: 0 } } }))
         ]);
 
-        const historyFileContent = await fs.promises.readFile(HISTORY_FILE, 'utf-8');
-        const history: HistoryItem[] = JSON.parse(historyFileContent);
-        
         const arsData = arsRes.data as any[];
         const vesData = vesRes.data as any;
         const vesOficialData = vesOficialRes.data as any;
@@ -336,10 +343,10 @@ const saveCurrentToHistory = async () => {
             usd_wallbit: wallbitData?.data?.rate || 0
         };
         
-        history.push(newItem);
-        if (history.length > 2016) history.shift();
+        inMemoryHistory.push(newItem);
+        if (inMemoryHistory.length > 2016) inMemoryHistory.shift();
         try {
-            await fs.promises.writeFile(HISTORY_FILE, JSON.stringify(history, null, 2));
+            await fs.promises.writeFile(HISTORY_FILE, JSON.stringify(inMemoryHistory, null, 2));
             // Invalidate history cache after successful write
             rateCache.del('history_data');
         } catch (writeError) {
@@ -397,8 +404,7 @@ server.get('/api/rates', {
 
         const [arsRes, vesRes, vesOficialRes, uyuRes, clpRes, brlRes, eurRes, uyuArRes, clpArRes, brlArRes, vesEurOficialRes, vesEurParaleloRes, btcRes, wallbitRes, statusRes] = await Promise.all(requests) as any[];
 
-        const historyFileContent = await fs.promises.readFile(HISTORY_FILE, 'utf-8');
-        const history: HistoryItem[] = JSON.parse(historyFileContent);
+        const history = inMemoryHistory;
         
         const arsData = arsRes.data;
         const vesData = vesRes.data;
@@ -418,8 +424,8 @@ server.get('/api/rates', {
         apiStatus.dolar_api_latam = uyuRes.status === 200 && clpRes.status === 200 && brlRes.status === 200;
 
         const now = new Date();
-        const targetTime = now.getTime() - (24 * 60 * 60 * 1000);
-        const last24h = history.length > 0 ? (history.find(h => new Date(h.timestamp).getTime() >= targetTime) || history[0]) : null;
+        const targetTimeString = new Date(now.getTime() - (24 * 60 * 60 * 1000)).toISOString();
+        const last24h = history.length > 0 ? (history.find(h => h.timestamp >= targetTimeString) || history[0]) : null;
 
         const uyuChange = calculateChange(uyuData.venta, last24h?.uyu_venta || uyuData.compra);
         const clpChange = clpData.ultimoCierre ? calculateChange(clpData.venta, clpData.ultimoCierre) : calculateChange(clpData.venta, last24h?.clp_venta || clpData.compra);
@@ -506,18 +512,6 @@ server.get('/api/rates', {
 
 // lgtm [js/missing-rate-limiting]
 server.get<{ Params: { casa: string } }>('/api/historical/:casa', {
-    schema: {
-        params: {
-            type: 'object',
-            properties: {
-                casa: {
-                    type: 'string',
-                    enum: ['oficial', 'blue', 'bolsa', 'contadoconliqui', 'cripto', 'tarjeta']
-                }
-            },
-            required: ['casa']
-        }
-    },
     config: {
         rateLimit: {
             max: 100,
@@ -527,6 +521,11 @@ server.get<{ Params: { casa: string } }>('/api/historical/:casa', {
 }, async (request: FastifyRequest<{ Params: { casa: string } }>, reply: FastifyReply) => {
     try {
         const { casa } = request.params;
+        const allowedCasas = ['oficial', 'blue', 'bolsa', 'contadoconliqui', 'cripto', 'tarjeta'];
+        
+        if (!allowedCasas.includes(casa)) {
+            return reply.status(400).send({ error: 'Invalid casa parameter' });
+        }
 
         const cacheKey = `historical_${casa}`;
         const cachedData = rateCache.get(cacheKey);
@@ -561,14 +560,8 @@ server.get('/api/history', {
             return reply.send(cachedHistory);
         }
 
-        const fileContent = await fs.promises.readFile(HISTORY_FILE, 'utf-8');
-        const history = JSON.parse(fileContent);
-        
-        // Backfill ves_paralelo for legacy data if needed
-        const processedHistory = history.map((item: any) => ({
-            ...item,
-            ves_paralelo: item.ves_paralelo ?? item.ves_oficial
-        }));
+        // Served directly from pre-processed inMemoryHistory! No disk read, no JSON parse, no map!
+        const processedHistory = inMemoryHistory;
         
         // Cache the processed history
         rateCache.set('history_data', processedHistory);
