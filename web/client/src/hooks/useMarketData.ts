@@ -108,7 +108,7 @@ export const useMarketData = () => {
       if (baseURL.endsWith('/')) baseURL = baseURL.slice(0, -1);
 
       // Only fetch history on the first load to save bandwidth and memory
-      const fetchPromises: Promise<any>[] = [
+      const fetchPromises: Promise<unknown>[] = [
         axios.get(`${baseURL}/api/rates`, { signal: abortSignal })
       ];
 
@@ -117,7 +117,7 @@ export const useMarketData = () => {
       }
 
       const results = await Promise.all(fetchPromises);
-      const ratesData = results[0].data as MarketData;
+      const ratesData = (results[0] as { data: MarketData }).data;
 
       const currentAsHistory: HistoryItem = {
         timestamp: ratesData.timestamp,
@@ -173,7 +173,7 @@ export const useMarketData = () => {
       });
 
       if (!hasFetchedHistory.current) {
-        const historyData = results[1].data as HistoryItem[];
+        const historyData = (results[1] as { data: HistoryItem[] }).data;
         setHistory([...historyData, currentAsHistory].slice(-MAX_HISTORY_POINTS));
         hasFetchedHistory.current = true;
       } else {

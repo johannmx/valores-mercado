@@ -1,0 +1,14 @@
+## 2026-06-12 - [HIGH] Disk I/O & JSON Parsing Overhead in Historical Data Routes
+**Performance Bottleneck:** The backend API endpoint `/api/rates` and `/api/history` read `history.json` from disk and parsed it to JSON on every single request or cache miss. As the history grows (up to 2016 items), this blocks the single-threaded Node.js event loop with synchronous-like I/O and CPU-intensive parsing overhead.
+**Learning:** Reading files and parsing JSON repeatedly inside HTTP request handlers is highly inefficient. Keeping a clean, pre-processed copy of the dataset in memory (`inMemoryHistory`) bounds performance, reduces resource contention, and simplifies writes.
+**Optimization:** Stored the pre-processed history array in an in-memory variable `inMemoryHistory` during startup (`initializeHistory`). On subsequent background updates, the in-memory array is updated in memory and safely flushed to disk, eliminating all read-side disk I/O and JSON parsing.
+
+## 2026-06-12 - [MEDIUM] Event Loop Blocking via Date Parsing in Search Loops
+**Performance Bottleneck:** The API determined the currency rates for the last 24 hours by instantiating new `Date` objects inside a search loop: `history.find(h => new Date(h.timestamp).getTime() >= targetTime)`.
+**Learning:** Instantiating `Date` objects repeatedly for hundreds or thousands of array elements inside a search loop blocks the event loop and wastes CPU cycles.
+**Optimization:** Formatted the target time threshold once as an ISO 8601 string (`new Date(now.getTime() - (24 * 60 * 60 * 1000)).toISOString()`) and performed a direct lexicographical string comparison (`h.timestamp >= targetTimeString`) on each item. Lexicographical comparisons are extremely fast in V8 and completely avoid object creation.
+
+## 2026-06-12 - [MEDIUM] React Client Re-render Calculations & GC Pressure
+**Performance Bottleneck:** The React frontend re-rendered the dashboard every second to update a countdown timer. On every render tick, each of the 8 chart instances called `downsampleData(data, 350)` on the history dataset, running thousands of loop iterations and allocating new arrays. This created constant GC (Garbage Collection) pressure and blocked the main thread.
+**Learning:** Timer ticks should only update the timer state. They should never trigger expensive recalculations of static or slowly-changing datasets like chart values.
+**Optimization:** Wrapped the `downsampleData` invocation inside a `useMemo` hook, ensuring that it only re-evaluates when the underlying market dataset changes, reducing the render-time CPU usage to zero on timer ticks.

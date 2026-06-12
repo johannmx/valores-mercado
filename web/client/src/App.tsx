@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -363,128 +363,132 @@ const Converter = ({ data }: { data: MarketData | null }) => {
 
 
 
-const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon, singleLine, onExpand, subtitle = "Tendencia 24h", hideHeader }: RegionChartProps) => (
-  <div className={`bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full min-h-[440px] ${hideHeader ? 'p-0 border-none shadow-none bg-transparent dark:bg-transparent' : 'p-6'}`}>
-    {!hideHeader && (
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter flex items-center gap-2">
-          <Icon className={`w-6 h-6 ${color.text}`} />
-          {title}
-        </h2>
-        <div className="flex items-center gap-3">
-          <div className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-widest">{subtitle}</div>
-          {onExpand && (
-            <button 
-              onClick={onExpand}
-              className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors group"
-              title="Ver Historial"
-            >
-              <Maximize className="w-4 h-4 group-hover:scale-110 transition-transform" />
-            </button>
-          )}
-        </div>
-      </div>
-    )}
-    
-    <div className="flex-1 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={downsampleData(data, 350)}>
-          <defs>
-            {singleLine ? (
-              <linearGradient id={`color-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={color.hex} stopOpacity={0.2}/>
-                <stop offset="95%" stopColor={color.hex} stopOpacity={0}/>
-              </linearGradient>
-            ) : (
-              <>
-                <linearGradient id={`color-buy-${buyKey}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={color.buyHex} stopOpacity={0.2}/>
-                  <stop offset="95%" stopColor={color.buyHex} stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id={`color-sell-${sellKey}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={color.sellHex} stopOpacity={0.2}/>
-                  <stop offset="95%" stopColor={color.sellHex} stopOpacity={0}/>
-                </linearGradient>
-              </>
+const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon, singleLine, onExpand, subtitle = "Tendencia 24h", hideHeader }: RegionChartProps) => {
+  const downsampledData = useMemo(() => downsampleData(data, 350), [data]);
+
+  return (
+    <div className={`bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full min-h-[440px] ${hideHeader ? 'p-0 border-none shadow-none bg-transparent dark:bg-transparent' : 'p-6'}`}>
+      {!hideHeader && (
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter flex items-center gap-2">
+            <Icon className={`w-6 h-6 ${color.text}`} />
+            {title}
+          </h2>
+          <div className="flex items-center gap-3">
+            <div className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-widest">{subtitle}</div>
+            {onExpand && (
+              <button 
+                onClick={onExpand}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors group"
+                title="Ver Historial"
+              >
+                <Maximize className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              </button>
             )}
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-          <XAxis 
-            dataKey="timestamp" 
-            axisLine={false} 
-            tickLine={false} 
-            tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'bold'}}
-            dy={10}
-            tickFormatter={(str: string) => {
-              try {
-                return new Date(str).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-              } catch {
-                return '';
-              }
-            }}
-          />
-          <YAxis domain={['auto', 'auto']} hide />
-          <Tooltip 
-            contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'}}
-            itemStyle={{fontWeight: '900', textTransform: 'uppercase', fontSize: '10px'}}
-            labelStyle={{fontWeight: '900', marginBottom: '8px', color: '#64748b'}}
-            labelFormatter={(label) => {
-              try {
-                return label ? new Date(label as string).toLocaleString() : '';
-              } catch {
-                return String(label);
-              }
-            }}
-            formatter={(value) => [
-              formatNumber(value as number),
-              "VALOR"
-            ] as [string, string]}
-          />
-          {!singleLine && <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase'}} />}
-          
-          {singleLine ? (
-            <Area 
-              name="Valor"
-              type="monotone" 
-              dataKey={dataKey || 'value'} 
-              stroke={color.hex} 
-              strokeWidth={4}
-              fillOpacity={1} 
-              fill={`url(#color-${dataKey || 'value'})`}
-              isAnimationActive={false}
+          </div>
+        </div>
+      )}
+      
+      <div className="flex-1 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={downsampledData}>
+            <defs>
+              {singleLine ? (
+                <linearGradient id={`color-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={color.hex} stopOpacity={0.2}/>
+                  <stop offset="95%" stopColor={color.hex} stopOpacity={0}/>
+                </linearGradient>
+              ) : (
+                <>
+                  <linearGradient id={`color-buy-${buyKey}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={color.buyHex} stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor={color.buyHex} stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id={`color-sell-${sellKey}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={color.sellHex} stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor={color.sellHex} stopOpacity={0}/>
+                  </linearGradient>
+                </>
+              )}
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+            <XAxis 
+              dataKey="timestamp" 
+              axisLine={false} 
+              tickLine={false} 
+              tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'bold'}}
+              dy={10}
+              tickFormatter={(str: string) => {
+                try {
+                  return new Date(str).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                } catch {
+                  return '';
+                }
+              }}
             />
-          ) : (
-            <>
+            <YAxis domain={['auto', 'auto']} hide />
+            <Tooltip 
+              contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'}}
+              itemStyle={{fontWeight: '900', textTransform: 'uppercase', fontSize: '10px'}}
+              labelStyle={{fontWeight: '900', marginBottom: '8px', color: '#64748b'}}
+              labelFormatter={(label) => {
+                try {
+                  return label ? new Date(label as string).toLocaleString() : '';
+                } catch {
+                  return String(label);
+                }
+              }}
+              formatter={(value) => [
+                formatNumber(value as number),
+                "VALOR"
+              ] as [string, string]}
+            />
+            {!singleLine && <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase'}} />}
+            
+            {singleLine ? (
               <Area 
+                name="Valor"
                 type="monotone" 
-                dataKey="usd_blue" 
-                stroke="#3b82f6" 
+                dataKey={dataKey || 'value'} 
+                stroke={color.hex} 
                 strokeWidth={4}
                 fillOpacity={1} 
-                fill="url(#colorUsd)" 
-                name="Dólar Blue"
+                fill={`url(#color-${dataKey || 'value'})`}
                 isAnimationActive={false}
               />
-              <Area 
-                type="monotone" 
-                dataKey="usd_oficial" 
-                stroke="#64748b" 
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                fillOpacity={0}
-                name="Dólar Oficial"
-                isAnimationActive={false}
-              />
-            </>
-          )}
-        </AreaChart>
-      </ResponsiveContainer>
+            ) : (
+              <>
+                <Area 
+                  type="monotone" 
+                  dataKey="usd_blue" 
+                  stroke="#3b82f6" 
+                  strokeWidth={4}
+                  fillOpacity={1} 
+                  fill="url(#colorUsd)" 
+                  name="Dólar Blue"
+                  isAnimationActive={false}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="usd_oficial" 
+                  stroke="#64748b" 
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  fillOpacity={0}
+                  name="Dólar Oficial"
+                  isAnimationActive={false}
+                />
+              </>
+            )}
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="mt-6 pt-4 border-t border-slate-50 dark:border-slate-700/50 text-[9px] text-slate-300 dark:text-slate-500 font-black uppercase tracking-widest text-center">
+        {singleLine ? 'Evolución del valor de mercado' : 'Evolución tasas de compra y venta'}
+      </div>
     </div>
-    <div className="mt-6 pt-4 border-t border-slate-50 dark:border-slate-700/50 text-[9px] text-slate-300 dark:text-slate-500 font-black uppercase tracking-widest text-center">
-      {singleLine ? 'Evolución del valor de mercado' : 'Evolución tasas de compra y venta'}
-    </div>
-  </div>
-);
+  );
+};
 
 const ToastNotification = ({ note, onDismiss }: { note: AppNotification, onDismiss: (id: number, key: string) => void }) => {
   const [isClosing, setIsClosing] = useState(false);
@@ -542,12 +546,12 @@ function App() {
     () => (localStorage.getItem('theme') as 'light' | 'dark' | 'system') || 'system'
   );
   const [activeTab, setActiveTab] = useState<'Argentina' | 'Venezuela' | 'Conversor' | 'Latam'>('Argentina');
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     await fetchData();
     setTargetTime(Date.now() + 300000);
     setTimeLeft(300);
     setProgress(0);
-  };
+  }, [fetchData]);
 
   const [modalChart, setModalChart] = useState<{ title: string; dataKey: string; color: { hex?: string; text: string; buyHex?: string; sellHex?: string }; icon: React.ElementType; singleLine?: boolean; } | null>(null);
 
@@ -634,7 +638,7 @@ function App() {
       clearInterval(timer);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [loading, targetTime]);
+  }, [loading, targetTime, handleRefresh]);
 
   // Update progress bar
   useEffect(() => {
