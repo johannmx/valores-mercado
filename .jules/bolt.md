@@ -12,3 +12,8 @@
 **Performance Bottleneck:** The React frontend re-rendered the dashboard every second to update a countdown timer. On every render tick, each of the 8 chart instances called `downsampleData(data, 350)` on the history dataset, running thousands of loop iterations and allocating new arrays. This created constant GC (Garbage Collection) pressure and blocked the main thread.
 **Learning:** Timer ticks should only update the timer state. They should never trigger expensive recalculations of static or slowly-changing datasets like chart values.
 **Optimization:** Wrapped the `downsampleData` invocation inside a `useMemo` hook, ensuring that it only re-evaluates when the underlying market dataset changes, reducing the render-time CPU usage to zero on timer ticks.
+
+## 2026-06-18 - [HIGH] Cascade Dashboard Re-renders & ICU Date Formatting CPU Overhead
+**Performance Bottleneck:** High-frequency timer state (1-second countdown) kept in the main `App` component forced cascading re-renders of the entire dashboard (8 charts, stat cards, converters, layout) every second. Additionally, executing `toLocaleTimeString` and `toLocaleString` repeatedly inside Recharts' axis and tooltip formatters during hover/redraw triggered expensive ICU translation parsing.
+**Learning:** High-frequency timers must be isolated in self-contained components to avoid rendering cascade. ICU-dependent functions like `.toLocaleString()` should be cached when formatting stable inputs (like ISO timestamps) to avoid CPU bottlenecks in rendering loops.
+**Action:** Decoupled the countdown timer state into a local `<SyncTimer />` component, and introduced a memory-efficient `Map`-based cache for date/time formatting.
