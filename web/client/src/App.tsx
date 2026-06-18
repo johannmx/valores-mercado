@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -363,7 +363,40 @@ const Converter = ({ data }: { data: MarketData | null }) => {
 
 
 
-const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon, singleLine, onExpand, subtitle = "Tendencia 24h", hideHeader }: RegionChartProps) => {
+const timeCache = new Map<string, string>();
+const dateTimeCache = new Map<string, string>();
+
+const formatTime = (label: unknown) => {
+  if (!label) return '';
+  const str = String(label);
+  let cached = timeCache.get(str);
+  if (!cached) {
+    try {
+      cached = new Date(str).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      timeCache.set(str, cached);
+    } catch {
+      cached = '';
+    }
+  }
+  return cached;
+};
+
+const formatDateTime = (label: unknown) => {
+  if (!label) return '';
+  const str = String(label);
+  let cached = dateTimeCache.get(str);
+  if (!cached) {
+    try {
+      cached = new Date(str).toLocaleString();
+      dateTimeCache.set(str, cached);
+    } catch {
+      cached = str;
+    }
+  }
+  return cached;
+};
+
+const RegionChart = memo(({ title, data, buyKey, sellKey, dataKey, color, icon: Icon, singleLine, onExpand, subtitle = "Tendencia 24h", hideHeader }: RegionChartProps) => {
   const downsampledData = useMemo(() => downsampleData(data, 350), [data]);
 
   return (
@@ -418,26 +451,14 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
               tickLine={false} 
               tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'bold'}}
               dy={10}
-              tickFormatter={(str: string) => {
-                try {
-                  return new Date(str).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                } catch {
-                  return '';
-                }
-              }}
+              tickFormatter={formatTime}
             />
             <YAxis domain={['auto', 'auto']} hide />
             <Tooltip 
               contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'}}
               itemStyle={{fontWeight: '900', textTransform: 'uppercase', fontSize: '10px'}}
               labelStyle={{fontWeight: '900', marginBottom: '8px', color: '#64748b'}}
-              labelFormatter={(label) => {
-                try {
-                  return label ? new Date(label as string).toLocaleString() : '';
-                } catch {
-                  return String(label);
-                }
-              }}
+              labelFormatter={formatDateTime}
               formatter={(value) => [
                 formatNumber(value as number),
                 "VALOR"
@@ -488,7 +509,21 @@ const RegionChart = ({ title, data, buyKey, sellKey, dataKey, color, icon: Icon,
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  return prevProps.title === nextProps.title &&
+         prevProps.data === nextProps.data &&
+         prevProps.buyKey === nextProps.buyKey &&
+         prevProps.sellKey === nextProps.sellKey &&
+         prevProps.dataKey === nextProps.dataKey &&
+         prevProps.color?.hex === nextProps.color?.hex &&
+         prevProps.color?.text === nextProps.color?.text &&
+         prevProps.color?.buyHex === nextProps.color?.buyHex &&
+         prevProps.color?.sellHex === nextProps.color?.sellHex &&
+         prevProps.icon === nextProps.icon &&
+         prevProps.singleLine === nextProps.singleLine &&
+         prevProps.subtitle === nextProps.subtitle &&
+         prevProps.hideHeader === nextProps.hideHeader;
+});
 
 const ToastNotification = ({ note, onDismiss }: { note: AppNotification, onDismiss: (id: number, key: string) => void }) => {
   const [isClosing, setIsClosing] = useState(false);
@@ -537,21 +572,115 @@ const ToastNotification = ({ note, onDismiss }: { note: AppNotification, onDismi
   );
 };
 
-function App() {
-  const { data, history, loading, error, isRefreshing, fetchData, notifications, changedKeys, dismissNotification } = useMarketData();
-  const [progress, setProgress] = useState(0);
+interface SyncTimerProps {
+  lastSyncTime?: string;
+  isRefreshing: boolean;
+  onRefresh: () => Promise<void>;
+  loading: boolean;
+}
+
+const SyncTimer = ({ lastSyncTime, isRefreshing, onRefresh, loading }: SyncTimerProps) => {
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [targetTime, setTargetTime] = useState(() => Date.now() + 300000);
+  const [progress, setProgress] = useState(0);
+
+  const handleRefresh = useCallback(async () => {
+    await onRefresh();
+    setTargetTime(Date.now() + 300000);
+    setTimeLeft(300);
+    setProgress(0);
+  }, [onRefresh]);
+
+  useEffect(() => {
+    setTargetTime(Date.now() + 300000);
+    setTimeLeft(300);
+    setProgress(0);
+  }, [lastSyncTime]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const tick = () => {
+      const remainingSeconds = Math.max(0, Math.floor((targetTime - Date.now()) / 1000));
+      if (remainingSeconds <= 0) {
+        if (document.visibilityState === 'visible') {
+          handleRefresh();
+        } else {
+          setTimeLeft(0);
+        }
+      } else {
+        setTimeLeft(remainingSeconds);
+      }
+    };
+
+    const timer = setInterval(tick, 1000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        tick();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loading, targetTime, handleRefresh]);
+
+  useEffect(() => {
+    setProgress(((300 - timeLeft) / 300) * 100);
+  }, [timeLeft]);
+
+  const formatTimeLeft = () => {
+    const mins = Math.floor(timeLeft / 60);
+    const secs = timeLeft % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-4 px-6 py-3 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-100 dark:border-slate-700">
+        <div className="flex flex-col items-end">
+          <span className="text-[9px] uppercase font-black text-slate-300 dark:text-slate-500 leading-none mb-1 tracking-tighter">
+            {lastSyncTime ? 'Última Sincronización' : isRefreshing ? 'Sincronizando...' : 'Desconectado'}
+          </span>
+          <span className="text-sm font-black text-slate-600 dark:text-white">
+            {lastSyncTime ? new Date(lastSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+          </span>
+        </div>
+        <button 
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className={`p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all ${isRefreshing ? 'animate-spin' : 'hover:rotate-180'}`}
+        >
+          <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'text-blue-400' : 'text-blue-500'}`} />
+        </button>
+      </div>
+      
+      <div className="px-2">
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Próxima Sincronización</span>
+          <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">{formatTimeLeft()}</span>
+        </div>
+        <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-blue-500 transition-all duration-1000 ease-linear rounded-full"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+function App() {
+  const { data, history, loading, error, isRefreshing, fetchData, notifications, changedKeys, dismissNotification } = useMarketData();
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(
     () => (localStorage.getItem('theme') as 'light' | 'dark' | 'system') || 'system'
   );
   const [activeTab, setActiveTab] = useState<'Argentina' | 'Venezuela' | 'Conversor' | 'Latam'>('Argentina');
-  const handleRefresh = useCallback(async () => {
-    await fetchData();
-    setTargetTime(Date.now() + 300000);
-    setTimeLeft(300);
-    setProgress(0);
-  }, [fetchData]);
 
   const [modalChart, setModalChart] = useState<{ title: string; dataKey: string; color: { hex?: string; text: string; buyHex?: string; sellHex?: string }; icon: React.ElementType; singleLine?: boolean; } | null>(null);
 
@@ -605,45 +734,7 @@ function App() {
     };
   }, [theme]);
 
-  // Timer effect
-  useEffect(() => {
-    if (loading) return;
 
-    const tick = () => {
-      const remainingSeconds = Math.max(0, Math.floor((targetTime - Date.now()) / 1000));
-      if (remainingSeconds <= 0) {
-        // Solo actualizamos de fondo si la pestaña está activa, 
-        // de otra forma los toast y animaciones suceden sin que el usuario los vea
-        if (document.visibilityState === 'visible') {
-          handleRefresh();
-        } else {
-          setTimeLeft(0); // Dejamos listo para que cargue en el momento que vuelvan
-        }
-      } else {
-        setTimeLeft(remainingSeconds);
-      }
-    };
-
-    const timer = setInterval(tick, 1000);
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        tick();
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [loading, targetTime, handleRefresh]);
-
-  // Update progress bar
-  useEffect(() => {
-    setProgress(((300 - timeLeft) / 300) * 100);
-  }, [timeLeft]);
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -654,11 +745,7 @@ function App() {
     </div>
   );
 
-  const formatTimeLeft = () => {
-    const mins = Math.floor(timeLeft / 60);
-    const secs = timeLeft % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300 py-10 px-4 sm:px-6 lg:px-8 font-sans text-slate-900 pb-10 lg:pb-48 overflow-x-hidden w-full">
@@ -717,38 +804,12 @@ function App() {
               </button>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-4 px-6 py-3 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-100 dark:border-slate-700">
-                <div className="flex flex-col items-end">
-                  <span className="text-[9px] uppercase font-black text-slate-300 dark:text-slate-500 leading-none mb-1 tracking-tighter">
-                    {data ? 'Última Sincronización' : isRefreshing ? 'Sincronizando...' : 'Desconectado'}
-                  </span>
-                  <span className="text-sm font-black text-slate-600 dark:white">
-                    {data ? new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-                  </span>
-                </div>
-                <button 
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className={`p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all ${isRefreshing ? 'animate-spin' : 'hover:rotate-180'}`}
-                >
-                  <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'text-blue-400' : 'text-blue-500'}`} />
-                </button>
-              </div>
-              
-              <div className="px-2">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Próxima Sincronización</span>
-                  <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">{formatTimeLeft()}</span>
-                </div>
-                <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 transition-all duration-1000 ease-linear rounded-full"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
-            </div>
+            <SyncTimer
+              lastSyncTime={data?.timestamp}
+              isRefreshing={isRefreshing}
+              onRefresh={fetchData}
+              loading={loading}
+            />
           </div>
         </header>
 
