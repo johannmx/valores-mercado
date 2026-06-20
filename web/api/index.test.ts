@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateMockHistory, HistoryItem } from './index';
+import { generateMockHistory, HistoryItem, getVentaByCasa } from './index';
 
 describe('generateMockHistory', () => {
     it('should generate an array of 25 history items', () => {
@@ -58,5 +58,39 @@ describe('generateMockHistory', () => {
             expect(item.ves_eur_oficial).toBeGreaterThan(item.ves_paralelo);
             expect(item.ves_eur_paralelo).toBeGreaterThan(item.ves_eur_oficial);
         });
+    });
+});
+
+describe('getVentaByCasa', () => {
+    it('should return the correct venta value when casa matches', () => {
+        const mockData = [
+            { casa: 'oficial', venta: 100 },
+            { casa: 'blue', venta: 120 }
+        ];
+        expect(getVentaByCasa(mockData, 'blue')).toBe(120);
+        expect(getVentaByCasa(mockData, 'oficial')).toBe(100);
+    });
+
+    it('should return 0 when casa does not match', () => {
+        const mockData = [
+            { casa: 'oficial', venta: 100 }
+        ];
+        expect(getVentaByCasa(mockData, 'blue')).toBe(0);
+    });
+
+    it('should return 0 when data is not an array (defensive checks)', () => {
+        expect(getVentaByCasa(null, 'blue')).toBe(0);
+        expect(getVentaByCasa(undefined, 'blue')).toBe(0);
+        expect(getVentaByCasa({}, 'blue')).toBe(0);
+        expect(getVentaByCasa('not-an-array', 'blue')).toBe(0);
+    });
+
+    it('should handle elements that are null or do not contain casa property', () => {
+        const mockData = [
+            null,
+            { otherProperty: 'val' },
+            { casa: 'blue', venta: 130 }
+        ];
+        expect(getVentaByCasa(mockData, 'blue')).toBe(130);
     });
 });
