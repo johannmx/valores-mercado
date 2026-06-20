@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { generateMockHistory, HistoryItem } from './index';
+import { generateMockHistory } from './index.js';
+import type { HistoryItem } from './index.js';
 
 describe('generateMockHistory', () => {
     it('should generate an array of 25 history items', () => {
@@ -11,7 +12,7 @@ describe('generateMockHistory', () => {
     it('should have the correct properties on each item with valid data types', () => {
         const history = generateMockHistory();
 
-        history.forEach(item => {
+        history.forEach((item: HistoryItem) => {
             expect(item).toHaveProperty('timestamp');
             expect(typeof item.timestamp).toBe('string');
             expect(!isNaN(Date.parse(item.timestamp))).toBe(true);
@@ -35,8 +36,11 @@ describe('generateMockHistory', () => {
         const history = generateMockHistory();
 
         for (let i = 0; i < history.length - 1; i++) {
-            const currentItemTime = new Date(history[i].timestamp).getTime();
-            const nextItemTime = new Date(history[i+1].timestamp).getTime();
+            const currentItem = history[i];
+            const nextItem = history[i+1];
+            if (!currentItem || !nextItem) continue;
+            const currentItemTime = new Date(currentItem.timestamp).getTime();
+            const nextItemTime = new Date(nextItem.timestamp).getTime();
 
             // Next item should be 1 hour newer than current item
             expect(nextItemTime - currentItemTime).toBe(60 * 60 * 1000);
@@ -46,7 +50,7 @@ describe('generateMockHistory', () => {
     it('should generate deterministic relations between values', () => {
         const history = generateMockHistory();
 
-        history.forEach(item => {
+        history.forEach((item: HistoryItem) => {
             // Check the deterministic relations defined in generateMockHistory
             expect(item.usd_blue).toBeGreaterThan(item.usd_oficial);
             expect(item.usd_mep).toBeGreaterThan(item.usd_blue);
