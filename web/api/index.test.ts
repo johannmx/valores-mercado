@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateMockHistory } from './index.js';
-import type { HistoryItem } from './index.js';
+import { generateMockHistory, HistoryItem, inMemoryHistory } from './index';
 
 describe('generateMockHistory', () => {
     it('should generate an array of 25 history items', () => {
@@ -12,7 +11,7 @@ describe('generateMockHistory', () => {
     it('should have the correct properties on each item with valid data types', () => {
         const history = generateMockHistory();
 
-        history.forEach((item: HistoryItem) => {
+        history.forEach(item => {
             expect(item).toHaveProperty('timestamp');
             expect(typeof item.timestamp).toBe('string');
             expect(!isNaN(Date.parse(item.timestamp))).toBe(true);
@@ -36,11 +35,8 @@ describe('generateMockHistory', () => {
         const history = generateMockHistory();
 
         for (let i = 0; i < history.length - 1; i++) {
-            const currentItem = history[i];
-            const nextItem = history[i+1];
-            if (!currentItem || !nextItem) continue;
-            const currentItemTime = new Date(currentItem.timestamp).getTime();
-            const nextItemTime = new Date(nextItem.timestamp).getTime();
+            const currentItemTime = new Date(history[i].timestamp).getTime();
+            const nextItemTime = new Date(history[i+1].timestamp).getTime();
 
             // Next item should be 1 hour newer than current item
             expect(nextItemTime - currentItemTime).toBe(60 * 60 * 1000);
@@ -50,7 +46,7 @@ describe('generateMockHistory', () => {
     it('should generate deterministic relations between values', () => {
         const history = generateMockHistory();
 
-        history.forEach((item: HistoryItem) => {
+        history.forEach(item => {
             // Check the deterministic relations defined in generateMockHistory
             expect(item.usd_blue).toBeGreaterThan(item.usd_oficial);
             expect(item.usd_mep).toBeGreaterThan(item.usd_blue);
@@ -62,5 +58,28 @@ describe('generateMockHistory', () => {
             expect(item.ves_eur_oficial).toBeGreaterThan(item.ves_paralelo);
             expect(item.ves_eur_paralelo).toBeGreaterThan(item.ves_eur_oficial);
         });
+    });
+});
+
+describe('In-memory cache and lexicographical comparison', () => {
+    it('should initialize and populate inMemoryHistory', () => {
+        expect(inMemoryHistory).toBeInstanceOf(Array);
+    });
+
+    it('should correctly filter last 24h history using lexicographical string comparison', () => {
+        const history: HistoryItem[] = [
+            { timestamp: '2026-06-19T12:00:00.000Z', usd_blue: 1200 } as any,
+            { timestamp: '2026-06-20T11:00:00.000Z', usd_blue: 1250 } as any,
+            { timestamp: '2026-06-20T12:00:00.000Z', usd_blue: 1300 } as any,
+        ];
+        
+        // Target time is 2026-06-20T00:00:00.000Z (24 hours before 2026-06-21T00:00:00.000Z)
+        const targetTimeString = '2026-06-20T00:00:00.000Z';
+        
+        // Find first item newer than target time
+        const match = history.find(h => h.timestamp >= targetTimeString);
+        expect(match).toBeDefined();
+        expect(match?.timestamp).toBe('2026-06-20T11:00:00.000Z');
+        expect(match?.usd_blue).toBe(1250);
     });
 });

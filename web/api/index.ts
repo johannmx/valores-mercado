@@ -32,8 +32,8 @@ const HISTORY_FILE = `${DATA_DIR}/history.json`;
 // Cache configuration: 60 seconds standard TTL
 const rateCache = new NodeCache({ stdTTL: 60, checkperiod: 60 });
 
-// In-memory cache for historical data to avoid constant disk I/O and JSON parsing
-let inMemoryHistory: HistoryItem[] = [];
+// In-memory cache for historical data to avoid repeated disk I/O and JSON parsing overhead
+export let inMemoryHistory: HistoryItem[] = [];
 
 // Security Middleware
 server.register(helmet, {
@@ -202,16 +202,13 @@ export interface HistoryItem {
     usd_wallbit: number;
 }
 
-const getVentaByCasa = (data: any, casa: string): number => {
-    if (!Array.isArray(data)) return 0;
+const getVentaByCasa = (data: any[], casa: string): number => {
     return data.find((d: any) => d.casa === casa)?.venta || 0;
 };
 
-const calculateChange = (current: number | undefined | null, last: number | undefined | null): number => {
-    const curr = current || 0;
-    const lst = last || 0;
-    if (!lst || lst === 0) return 0;
-    return ((curr - lst) / lst) * 100;
+const calculateChange = (current: number, last: number): number => {
+    if (!last || last === 0) return 0;
+    return ((current - last) / last) * 100;
 };
 
 export const generateMockHistory = () => {
@@ -258,18 +255,14 @@ const initializeHistory = async () => {
         }
 
         let shouldReset = false;
+        let loadedHistory: HistoryItem[] = [];
         try {
             await fs.promises.access(HISTORY_FILE);
             try {
-                const data = JSON.parse(await fs.promises.readFile(HISTORY_FILE, 'utf-8'));
-                if (data.length > 0 && !data[0].usd_oficial) { // Check for new field
+                const fileContent = await fs.promises.readFile(HISTORY_FILE, 'utf-8');
+                loadedHistory = JSON.parse(fileContent);
+                if (loadedHistory.length > 0 && !loadedHistory[0].usd_oficial) { // Check for new field
                     shouldReset = true;
-                } else {
-                    // Backfill ves_paralelo for legacy data at startup so we don't do it on every request
-                    inMemoryHistory = data.map((item: any) => ({
-                        ...item,
-                        ves_paralelo: item.ves_paralelo ?? item.ves_oficial
-                    }));
                 }
             } catch (e) {
                 shouldReset = true;
@@ -281,6 +274,12 @@ const initializeHistory = async () => {
         if (shouldReset) {
             inMemoryHistory = generateMockHistory();
             await fs.promises.writeFile(HISTORY_FILE, JSON.stringify(inMemoryHistory, null, 2));
+        } else {
+            // Map legacy history items to backfill ves_paralelo if needed
+            inMemoryHistory = loadedHistory.map((item: any) => ({
+                ...item,
+                ves_paralelo: item.ves_paralelo ?? item.ves_oficial
+            }));
         }
     } catch (error) {
         console.error('CRITICAL: Failed to initialize history file due to permission errors.');
@@ -331,18 +330,18 @@ const saveCurrentToHistory = async () => {
             usd_ccl: getVentaByCasa(arsData, 'contadoconliqui'),
             usd_cripto: getVentaByCasa(arsData, 'cripto'),
             usd_tarjeta: getVentaByCasa(arsData, 'tarjeta'),
-            ves_oficial: vesOficialData?.promedio || vesOficialData?.venta || 0,
-            ves_paralelo: vesData?.promedio || vesData?.venta || 0,
-            uyu_venta: uyuData?.venta || 0,
-            clp_venta: clpData?.venta || 0,
-            brl_venta: brlData?.venda || 0,
-            eur_venta: eurData?.venta || 0,
-            uyu_ar: uyuArData?.venta || 0,
-            clp_ar: clpArData?.venta || 0,
-            brl_ar: brlArData?.venta || 0,
-            ves_eur_oficial: vesEurOficialData?.promedio || vesEurOficialData?.venta || 0,
-            ves_eur_paralelo: vesEurParaleloData?.promedio || vesEurParaleloData?.venta || 0,
-            btc_usd: btcData?.price ? parseFloat(btcData.price) : 0,
+            ves_oficial: vesOficialData.promedio || vesOficialData.venta || 0,
+            ves_paralelo: vesData.promedio || vesData.venta || 0,
+            uyu_venta: uyuData.venta || 0,
+            clp_venta: clpData.venta || 0,
+            brl_venta: brlData.venda || 0,
+            eur_venta: eurData.venta || 0,
+            uyu_ar: uyuArData.venta || 0,
+            clp_ar: clpArData.venta || 0,
+            brl_ar: brlArData.venta || 0,
+            ves_eur_oficial: vesEurOficialData.promedio || vesEurOficialData.venta || 0,
+            ves_eur_paralelo: vesEurParaleloData.promedio || vesEurParaleloData.venta || 0,
+            btc_usd: btcData.price ? parseFloat(btcData.price) : 0,
             usd_wallbit: wallbitData?.data?.rate || 0
         };
         
@@ -426,17 +425,16 @@ server.get('/api/rates', {
 
         apiStatus.dolar_api_latam = uyuRes.status === 200 && clpRes.status === 200 && brlRes.status === 200;
 
-        const now = new Date();
-        const targetTimeString = new Date(now.getTime() - (24 * 60 * 60 * 1000)).toISOString();
+        const targetTimeString = new Date(Date.now() - (24 * 60 * 60 * 1000)).toISOString();
         const last24h = history.length > 0 ? (history.find(h => h.timestamp >= targetTimeString) || history[0]) : null;
 
-        const uyuChange = calculateChange(uyuData?.venta, last24h?.uyu_venta || uyuData?.compra);
-        const clpChange = clpData?.ultimoCierre ? calculateChange(clpData.venta, clpData.ultimoCierre) : calculateChange(clpData?.venta, last24h?.clp_venta || clpData?.compra);
-        const brlChange = brlData?.fechoAnterior ? calculateChange(brlData.venda, brlData.fechoAnterior) : calculateChange(brlData?.venda, last24h?.brl_venta || brlData?.compra);
-        const eurChange = calculateChange(eurData?.venta, last24h?.eur_venta || eurData?.compra);
-        const uyuArChange = calculateChange(uyuArData?.venta, last24h?.uyu_ar || uyuArData?.compra);
-        const clpArChange = calculateChange(clpArData?.venta, last24h?.clp_ar || clpArData?.compra);
-        const brlArChange = calculateChange(brlArData?.venta, last24h?.brl_ar || brlArData?.compra);
+        const uyuChange = calculateChange(uyuData.venta, last24h?.uyu_venta || uyuData.compra);
+        const clpChange = clpData.ultimoCierre ? calculateChange(clpData.venta, clpData.ultimoCierre) : calculateChange(clpData.venta, last24h?.clp_venta || clpData.compra);
+        const brlChange = brlData.fechoAnterior ? calculateChange(brlData.venda, brlData.fechoAnterior) : calculateChange(brlData.venda, last24h?.brl_venta || brlData.compra);
+        const eurChange = calculateChange(eurData.venta, last24h?.eur_venta || eurData.compra);
+        const uyuArChange = calculateChange(uyuArData.venta, last24h?.uyu_ar || uyuArData.compra);
+        const clpArChange = calculateChange(clpArData.venta, last24h?.clp_ar || clpArData.compra);
+        const brlArChange = calculateChange(brlArData.venta, last24h?.brl_ar || brlArData.compra);
 
         const usd_oficial_venta = getVentaByCasa(arsData, 'oficial');
         const usd_blue_venta = getVentaByCasa(arsData, 'blue');
@@ -445,10 +443,10 @@ server.get('/api/rates', {
         const usd_cripto_venta = getVentaByCasa(arsData, 'cripto');
         const usd_tarjeta_venta = getVentaByCasa(arsData, 'tarjeta');
 
-        const ves_oficial_venta = vesOficialData?.promedio || vesOficialData?.venta || 0;
-        const ves_paralelo_venta = vesData?.promedio || vesData?.venta || 0;
-        const ves_eur_oficial_venta = vesEurOficialData?.promedio || vesEurOficialData?.venta || 0;
-        const ves_eur_paralelo_venta = vesEurParaleloData?.promedio || vesEurParaleloData?.venta || 0;
+        const ves_oficial_venta = vesOficialData.promedio || vesOficialData.venta || 0;
+        const ves_paralelo_venta = vesData.promedio || vesData.venta || 0;
+        const ves_eur_oficial_venta = vesEurOficialData.promedio || vesEurOficialData.venta || 0;
+        const ves_eur_paralelo_venta = vesEurParaleloData.promedio || vesEurParaleloData.venta || 0;
 
         const usd_wallbit_venta = wallbitData?.data?.rate || 0;
 
@@ -463,20 +461,20 @@ server.get('/api/rates', {
             ves_oficial: ves_oficial_venta,
             ves_paralelo: ves_paralelo_venta,
             ves_compra: ves_oficial_venta,
-            uyu_venta: uyuData?.venta || 0,
-            uyu_compra: uyuData?.compra || 0,
-            clp_venta: clpData?.venta || 0,
-            clp_compra: clpData?.compra || 0,
-            brl_venta: brlData?.venda || 0,
-            brl_compra: brlData?.compra || 0,
-            eur_venta: eurData?.venta || 0,
-            eur_compra: eurData?.compra || 0,
-            uyu_ar: uyuArData?.venta || 0,
-            clp_ar: clpArData?.venta || 0,
-            brl_ar: brlArData?.venta || 0,
+            uyu_venta: uyuData.venta || 0,
+            uyu_compra: uyuData.compra || 0,
+            clp_venta: clpData.venta || 0,
+            clp_compra: clpData.compra || 0,
+            brl_venta: brlData.venda || 0,
+            brl_compra: brlData.compra || 0,
+            eur_venta: eurData.venta || 0,
+            eur_compra: eurData.compra || 0,
+            uyu_ar: uyuArData.venta || 0,
+            clp_ar: clpArData.venta || 0,
+            brl_ar: brlArData.venta || 0,
             ves_eur_oficial: ves_eur_oficial_venta,
             ves_eur_paralelo: ves_eur_paralelo_venta,
-            btc_usd: parseFloat(btcData?.price) || 0,
+            btc_usd: parseFloat(btcData.price) || 0,
             usd_wallbit: usd_wallbit_venta,
             changes: {
                 usd_oficial_percent: calculateChange(usd_oficial_venta, last24h?.usd_oficial || 0),
@@ -508,25 +506,13 @@ server.get('/api/rates', {
 
         return reply.send(marketData);
     } catch (error) {
-        server.log.error({ err: error }, 'API Error');
+        server.log.error('API Error:', error);
         return reply.status(500).send({ error: 'Failed to fetch market data' });
     }
 });
 
 // lgtm [js/missing-rate-limiting]
 server.get<{ Params: { casa: string } }>('/api/historical/:casa', {
-    schema: {
-        params: {
-            type: 'object',
-            properties: {
-                casa: {
-                    type: 'string',
-                    enum: ['oficial', 'blue', 'bolsa', 'contadoconliqui', 'cripto', 'tarjeta']
-                }
-            },
-            required: ['casa']
-        }
-    },
     config: {
         rateLimit: {
             max: 100,
@@ -555,7 +541,7 @@ server.get<{ Params: { casa: string } }>('/api/historical/:casa', {
 
         return reply.send(response.data);
     } catch (error) {
-        server.log.error({ err: error }, 'Historical Fetch Error');
+        server.log.error('Historical Fetch Error:', error instanceof Error ? error.message : error);
         return reply.status(500).send({ error: 'Failed to fetch historical data' });
     }
 });
@@ -575,13 +561,10 @@ server.get('/api/history', {
             return reply.send(cachedHistory);
         }
 
-        // Served directly from pre-processed inMemoryHistory! No disk read, no JSON parse, no map!
-        const processedHistory = inMemoryHistory;
-        
         // Cache the processed history
-        rateCache.set('history_data', processedHistory);
+        rateCache.set('history_data', inMemoryHistory);
 
-        return reply.send(processedHistory);
+        return reply.send(inMemoryHistory);
     } catch (error) {
         return reply.status(500).send({ error: 'Failed to read history' });
     }
