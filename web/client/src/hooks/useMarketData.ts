@@ -177,7 +177,7 @@ export const useMarketData = () => {
         setHistory([...historyData, currentAsHistory].slice(-MAX_HISTORY_POINTS));
         hasFetchedHistory.current = true;
       } else {
-        // Circular buffer buffer behavior
+        // Circular buffer behavior
         setHistory(prev => [...prev.slice(-(MAX_HISTORY_POINTS - 1)), currentAsHistory]);
       }
 

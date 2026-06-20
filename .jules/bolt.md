@@ -17,3 +17,11 @@
 **Performance Bottleneck:** High-frequency timer state (1-second countdown) kept in the main `App` component forced cascading re-renders of the entire dashboard (8 charts, stat cards, converters, layout) every second. Additionally, executing `toLocaleTimeString` and `toLocaleString` repeatedly inside Recharts' axis and tooltip formatters during hover/redraw triggered expensive ICU translation parsing.
 **Learning:** High-frequency timers must be isolated in self-contained components to avoid rendering cascade. ICU-dependent functions like `.toLocaleString()` should be cached when formatting stable inputs (like ISO timestamps) to avoid CPU bottlenecks in rendering loops.
 **Action:** Decoupled the countdown timer state into a local `<SyncTimer />` component, and introduced a memory-efficient `Map`-based cache for date/time formatting.
+
+## 2026-06-19 - [HIGH] React Client Render & Date/Time Formatting Optimization
+**Performance Bottleneck:** The main React `App` component re-rendered every second due to the countdown timer. This triggered a `new Date().toLocaleTimeString(...)` call for the header synchronization time every second. Additionally, hovering over Recharts charts triggered repeated calls to `toLocaleTimeString` and `toLocaleString` without caching, leading to severe layout thrashing and CPU spikes due to ICU translation parsing.
+**Learning:** React memoization must be applied strategically to components that do not change between timer ticks, and expensive locale-dependent string formatting (like `toLocaleTimeString` and `toLocaleString`) must be cached when processing stable ISO 8601 timestamps.
+**Optimization:** 
+1. Memoized the header last sync time string using `useMemo` so it only parses and formats the Date when the synchronization timestamp changes (every 5 minutes, representing a 99.6% reduction in header formatting calls).
+2. Introduced global `Map`-based caches (`timeCache`, `dateTimeCache`) for Recharts formatters to reuse formatted string values instead of creating fresh `Date` objects and parsing ICU formats on every redraw.
+3. Wrapped `RegionChart` in `React.memo` with a custom props comparison function, completely eliminating all chart re-renders and downsampling calculations during timer ticks.
