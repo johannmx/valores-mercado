@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateMockHistory } from './index.js';
-import type { HistoryItem } from './index.js';
+import { generateMockHistory, HistoryItem, getVentaByCasa } from './index';
 
 describe('generateMockHistory', () => {
     it('should generate an array of 25 history items', () => {
@@ -12,7 +11,7 @@ describe('generateMockHistory', () => {
     it('should have the correct properties on each item with valid data types', () => {
         const history = generateMockHistory();
 
-        history.forEach((item: HistoryItem) => {
+        history.forEach(item => {
             expect(item).toHaveProperty('timestamp');
             expect(typeof item.timestamp).toBe('string');
             expect(!isNaN(Date.parse(item.timestamp))).toBe(true);
@@ -36,11 +35,8 @@ describe('generateMockHistory', () => {
         const history = generateMockHistory();
 
         for (let i = 0; i < history.length - 1; i++) {
-            const currentItem = history[i];
-            const nextItem = history[i+1];
-            if (!currentItem || !nextItem) continue;
-            const currentItemTime = new Date(currentItem.timestamp).getTime();
-            const nextItemTime = new Date(nextItem.timestamp).getTime();
+            const currentItemTime = new Date(history[i].timestamp).getTime();
+            const nextItemTime = new Date(history[i+1].timestamp).getTime();
 
             // Next item should be 1 hour newer than current item
             expect(nextItemTime - currentItemTime).toBe(60 * 60 * 1000);
@@ -50,7 +46,7 @@ describe('generateMockHistory', () => {
     it('should generate deterministic relations between values', () => {
         const history = generateMockHistory();
 
-        history.forEach((item: HistoryItem) => {
+        history.forEach(item => {
             // Check the deterministic relations defined in generateMockHistory
             expect(item.usd_blue).toBeGreaterThan(item.usd_oficial);
             expect(item.usd_mep).toBeGreaterThan(item.usd_blue);
@@ -62,5 +58,39 @@ describe('generateMockHistory', () => {
             expect(item.ves_eur_oficial).toBeGreaterThan(item.ves_paralelo);
             expect(item.ves_eur_paralelo).toBeGreaterThan(item.ves_eur_oficial);
         });
+    });
+});
+
+describe('getVentaByCasa', () => {
+    it('should return the correct venta value when casa matches', () => {
+        const mockData = [
+            { casa: 'oficial', venta: 100 },
+            { casa: 'blue', venta: 120 }
+        ];
+        expect(getVentaByCasa(mockData, 'blue')).toBe(120);
+        expect(getVentaByCasa(mockData, 'oficial')).toBe(100);
+    });
+
+    it('should return 0 when casa does not match', () => {
+        const mockData = [
+            { casa: 'oficial', venta: 100 }
+        ];
+        expect(getVentaByCasa(mockData, 'blue')).toBe(0);
+    });
+
+    it('should return 0 when data is not an array (defensive checks)', () => {
+        expect(getVentaByCasa(null, 'blue')).toBe(0);
+        expect(getVentaByCasa(undefined, 'blue')).toBe(0);
+        expect(getVentaByCasa({}, 'blue')).toBe(0);
+        expect(getVentaByCasa('not-an-array', 'blue')).toBe(0);
+    });
+
+    it('should handle elements that are null or do not contain casa property', () => {
+        const mockData = [
+            null,
+            { otherProperty: 'val' },
+            { casa: 'blue', venta: 130 }
+        ];
+        expect(getVentaByCasa(mockData, 'blue')).toBe(130);
     });
 });
