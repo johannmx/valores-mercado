@@ -36,7 +36,6 @@ const rateCache = new NodeCache({ stdTTL: 60, checkperiod: 60 });
 export let inMemoryHistory: HistoryItem[] = [];
 
 // Security Middleware
-send_message
 server.register(helmet, {
     contentSecurityPolicy: {
         directives: {
@@ -203,8 +202,9 @@ export interface HistoryItem {
     usd_wallbit: number;
 }
 
-const getVentaByCasa = (data: any[], casa: string): number => {
-    return data.find((d: any) => d.casa === casa)?.venta || 0;
+export const getVentaByCasa = (data: any, casa: string): number => {
+    if (!Array.isArray(data)) return 0;
+    return data.find((d: any) => d?.casa === casa)?.venta || 0;
 };
 
 const calculateChange = (current: number, last: number): number => {
@@ -429,13 +429,13 @@ server.get('/api/rates', {
         const targetTimeString = new Date(Date.now() - (24 * 60 * 60 * 1000)).toISOString();
         const last24h = history.length > 0 ? (history.find(h => h.timestamp >= targetTimeString) || history[0]) : null;
 
-        const uyuChange = calculateChange(uyuData.venta, last24h?.uyu_venta || uyuData.compra);
-        const clpChange = clpData.ultimoCierre ? calculateChange(clpData.venta, clpData.ultimoCierre) : calculateChange(clpData.venta, last24h?.clp_venta || clpData.compra);
-        const brlChange = brlData.fechoAnterior ? calculateChange(brlData.venda, brlData.fechoAnterior) : calculateChange(brlData.venda, last24h?.brl_venta || brlData.compra);
-        const eurChange = calculateChange(eurData.venta, last24h?.eur_venta || eurData.compra);
-        const uyuArChange = calculateChange(uyuArData.venta, last24h?.uyu_ar || uyuArData.compra);
-        const clpArChange = calculateChange(clpArData.venta, last24h?.clp_ar || clpArData.compra);
-        const brlArChange = calculateChange(brlArData.venta, last24h?.brl_ar || brlArData.compra);
+        const uyuChange = calculateChange(uyuData?.venta || 0, last24h?.uyu_venta || uyuData?.compra || 0);
+        const clpChange = clpData?.ultimoCierre ? calculateChange(clpData.venta, clpData.ultimoCierre) : calculateChange(clpData?.venta || 0, last24h?.clp_venta || clpData?.compra || 0);
+        const brlChange = brlData?.fechoAnterior ? calculateChange(brlData.venda, brlData.fechoAnterior) : calculateChange(brlData?.venda || 0, last24h?.brl_venta || brlData?.compra || 0);
+        const eurChange = calculateChange(eurData?.venta || 0, last24h?.eur_venta || eurData?.compra || 0);
+        const uyuArChange = calculateChange(uyuArData?.venta || 0, last24h?.uyu_ar || uyuArData?.compra || 0);
+        const clpArChange = calculateChange(clpArData?.venta || 0, last24h?.clp_ar || clpArData?.compra || 0);
+        const brlArChange = calculateChange(brlArData?.venta || 0, last24h?.brl_ar || brlArData?.compra || 0);
 
         const usd_oficial_venta = getVentaByCasa(arsData, 'oficial');
         const usd_blue_venta = getVentaByCasa(arsData, 'blue');
@@ -475,7 +475,7 @@ server.get('/api/rates', {
             brl_ar: brlArData.venta || 0,
             ves_eur_oficial: ves_eur_oficial_venta,
             ves_eur_paralelo: ves_eur_paralelo_venta,
-            btc_usd: parseFloat(btcData.price) || 0,
+            btc_usd: btcData?.price ? parseFloat(btcData.price) : 0,
             usd_wallbit: usd_wallbit_venta,
             changes: {
                 usd_oficial_percent: calculateChange(usd_oficial_venta, last24h?.usd_oficial || 0),
@@ -497,7 +497,7 @@ server.get('/api/rates', {
                     tarjeta: calculateChange(usd_tarjeta_venta, last24h?.usd_tarjeta || 0),
                     wallbit: calculateChange(usd_wallbit_venta, last24h?.usd_wallbit || 0)
                 },
-                bitcoin_percent: calculateChange(parseFloat(btcData.price), last24h?.btc_usd || 0)
+                bitcoin_percent: calculateChange(btcData?.price ? parseFloat(btcData.price) : 0, last24h?.btc_usd || 0)
             },
             api_status: apiStatus
         };
