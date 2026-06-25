@@ -32,6 +32,9 @@ const HISTORY_FILE = `${DATA_DIR}/history.json`;
 // Cache configuration: 60 seconds standard TTL
 const rateCache = new NodeCache({ stdTTL: 60, checkperiod: 60 });
 
+// In-memory cache for historical data to avoid repeated disk I/O and JSON parsing overhead
+export let inMemoryHistory: HistoryItem[] = [];
+
 // Security Middleware
 server.register(helmet, {
     contentSecurityPolicy: {
@@ -253,11 +256,13 @@ const initializeHistory = async () => {
         }
 
         let shouldReset = false;
+        let loadedHistory: HistoryItem[] = [];
         try {
             await fs.promises.access(HISTORY_FILE);
             try {
-                const data = JSON.parse(await fs.promises.readFile(HISTORY_FILE, 'utf-8'));
-                if (data.length > 0 && !data[0].usd_oficial) { // Check for new field
+                const fileContent = await fs.promises.readFile(HISTORY_FILE, 'utf-8');
+                loadedHistory = JSON.parse(fileContent);
+                if (loadedHistory.length > 0 && !loadedHistory[0].usd_oficial) { // Check for new field
                     shouldReset = true;
                 }
             } catch (e) {
@@ -268,7 +273,14 @@ const initializeHistory = async () => {
         }
 
         if (shouldReset) {
-            await fs.promises.writeFile(HISTORY_FILE, JSON.stringify(generateMockHistory(), null, 2));
+            inMemoryHistory = generateMockHistory();
+            await fs.promises.writeFile(HISTORY_FILE, JSON.stringify(inMemoryHistory, null, 2));
+        } else {
+            // Map legacy history items to backfill ves_paralelo if needed
+            inMemoryHistory = loadedHistory.map((item: any) => ({
+                ...item,
+                ves_paralelo: item.ves_paralelo ?? item.ves_oficial
+            }));
         }
     } catch (error) {
         console.error('CRITICAL: Failed to initialize history file due to permission errors.');
@@ -432,10 +444,10 @@ server.get('/api/rates', {
         const usd_cripto_venta = getVentaByCasa(arsData, 'cripto');
         const usd_tarjeta_venta = getVentaByCasa(arsData, 'tarjeta');
 
-        const ves_oficial_venta = vesOficialData?.promedio || vesOficialData?.venta || 0;
-        const ves_paralelo_venta = vesData?.promedio || vesData?.venta || 0;
-        const ves_eur_oficial_venta = vesEurOficialData?.promedio || vesEurOficialData?.venta || 0;
-        const ves_eur_paralelo_venta = vesEurParaleloData?.promedio || vesEurParaleloData?.venta || 0;
+        const ves_oficial_venta = vesOficialData.promedio || vesOficialData.venta || 0;
+        const ves_paralelo_venta = vesData.promedio || vesData.venta || 0;
+        const ves_eur_oficial_venta = vesEurOficialData.promedio || vesEurOficialData.venta || 0;
+        const ves_eur_paralelo_venta = vesEurParaleloData.promedio || vesEurParaleloData.venta || 0;
 
         const usd_wallbit_venta = wallbitData?.data?.rate || 0;
 

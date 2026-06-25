@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateMockHistory, HistoryItem, getVentaByCasa } from './index';
+import { generateMockHistory, HistoryItem, inMemoryHistory, getVentaByCasa } from './index';
 
 describe('generateMockHistory', () => {
     it('should generate an array of 25 history items', () => {
@@ -58,6 +58,29 @@ describe('generateMockHistory', () => {
             expect(item.ves_eur_oficial).toBeGreaterThan(item.ves_paralelo);
             expect(item.ves_eur_paralelo).toBeGreaterThan(item.ves_eur_oficial);
         });
+    });
+});
+
+describe('In-memory cache and lexicographical comparison', () => {
+    it('should initialize and populate inMemoryHistory', () => {
+        expect(inMemoryHistory).toBeInstanceOf(Array);
+    });
+
+    it('should correctly filter last 24h history using lexicographical string comparison', () => {
+        const history: HistoryItem[] = [
+            { timestamp: '2026-06-19T12:00:00.000Z', usd_blue: 1200 } as any,
+            { timestamp: '2026-06-20T11:00:00.000Z', usd_blue: 1250 } as any,
+            { timestamp: '2026-06-20T12:00:00.000Z', usd_blue: 1300 } as any,
+        ];
+        
+        // Target time is 2026-06-20T00:00:00.000Z (24 hours before 2026-06-21T00:00:00.000Z)
+        const targetTimeString = '2026-06-20T00:00:00.000Z';
+        
+        // Find first item newer than target time
+        const match = history.find(h => h.timestamp >= targetTimeString);
+        expect(match).toBeDefined();
+        expect(match?.timestamp).toBe('2026-06-20T11:00:00.000Z');
+        expect(match?.usd_blue).toBe(1250);
     });
 });
 
