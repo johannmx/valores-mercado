@@ -25,3 +25,11 @@
 1. Memoized the header last sync time string using `useMemo` so it only parses and formats the Date when the synchronization timestamp changes (every 5 minutes, representing a 99.6% reduction in header formatting calls).
 2. Introduced global `Map`-based caches (`timeCache`, `dateTimeCache`) for Recharts formatters to reuse formatted string values instead of creating fresh `Date` objects and parsing ICU formats on every redraw.
 3. Wrapped `RegionChart` in `React.memo` with a custom props comparison function, completely eliminating all chart re-renders and downsampling calculations during timer ticks.
+
+## 2026-06-29 - [HIGH] Complete Decoupling of Countdown Timer State to Isolate Rendering Cascade
+**Performance Bottleneck:** Even with React.memo on charts, the main `App` component's state (`timeLeft` and `progress` updated via setInterval every second) triggered full-component updates of `App` every second. This forced React to run its reconciliation/diffing algorithm across the entire dashboard component tree, including converters, layout elements, stat cards, and modals, on every single clock tick.
+**Learning:** High-frequency rendering states (like active countdowns and progress bars) should never live in global state container components. They must be completely decoupled and isolated into dedicated leaves of the React component tree so that their interval triggers only re-evaluate the local DOM node.
+**Optimization:** 
+1. Decoupled the countdown logic and interval state completely from `App.tsx` into a memoized `<SyncTimer />` component.
+2. Wrapped the root-level `handleRefresh` callback in `useCallback` to ensure its reference remains stable.
+3. Cleaned up unused state/functions in `App.tsx` and modified hook dependencies to comply with React Compiler rules, dropping root re-renders during idle periods to zero.

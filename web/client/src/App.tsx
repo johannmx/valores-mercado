@@ -546,9 +546,9 @@ const ToastNotification = ({ note, onDismiss }: { note: AppNotification, onDismi
       onMouseEnter={() => setIsHovered(true)} 
       onMouseLeave={() => setIsHovered(false)}
       className={`pointer-events-auto flex items-center gap-3 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 max-w-sm group transition-all duration-500 transform
-        ${isClosing ? 'opacity-0 translate-x-12 scale-95 duration-300' : 'opacity-100 translate-x-0 scale-100 animate-in slide-in-from-right-8 fade-in'}`}
+        \${isClosing ? 'opacity-0 translate-x-12 scale-95 duration-300' : 'opacity-100 translate-x-0 scale-100 animate-in slide-in-from-right-8 fade-in'}`}
     >
-      <div className={`p-2 rounded-full flex-shrink-0 ${note.type === 'up' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400'}`}>
+      <div className={`p-2 rounded-full flex-shrink-0 \${note.type === 'up' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400'}`}>
         {note.type === 'up' ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
       </div>
       <div className="flex-1 min-w-0 pr-2">
@@ -566,6 +566,77 @@ const ToastNotification = ({ note, onDismiss }: { note: AppNotification, onDismi
   );
 };
 
+interface SyncTimerProps {
+  loading: boolean;
+  targetTime: number;
+  onRefresh: () => void;
+}
+
+const SyncTimer = memo(({ loading, targetTime, onRefresh }: SyncTimerProps) => {
+  const [timeLeft, setTimeLeft] = useState(300);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const tick = () => {
+      const remainingSeconds = Math.max(0, Math.floor((targetTime - Date.now()) / 1000));
+      if (remainingSeconds <= 0) {
+        if (document.visibilityState === 'visible') {
+          onRefresh();
+        } else {
+          setTimeLeft(0);
+        }
+      } else {
+        setTimeLeft(remainingSeconds);
+      }
+    };
+
+    const timer = setInterval(tick, 1000);
+    
+    // Sync with targetTime immediately on mount/update
+    tick();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        tick();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loading, targetTime, onRefresh]);
+
+  useEffect(() => {
+    setProgress(((300 - timeLeft) / 300) * 100);
+  }, [timeLeft]);
+
+  const formatTimeLeft = () => {
+    const mins = Math.floor(timeLeft / 60);
+    const secs = timeLeft % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="px-2">
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Próxima Sincronización</span>
+        <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">{formatTimeLeft()}</span>
+      </div>
+      <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+        <div 
+          className="h-full bg-blue-500 transition-all duration-1000 ease-linear rounded-full"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+    </div>
+  );
+});
+
 function App() {
   const { data, history, loading, error, isRefreshing, fetchData, notifications, changedKeys, dismissNotification } = useMarketData();
 
@@ -573,27 +644,24 @@ function App() {
   // This avoids invoking `toLocaleTimeString` and constructing `Date` objects on every
   // timer tick (which re-renders `App` every second).
   const formattedLastSyncTime = useMemo(() => {
-    if (!data?.timestamp) return '--:--';
+    if (!data) return '--:--';
     try {
       return new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } catch {
       return '--:--';
     }
-  }, [data?.timestamp]);
+  }, [data]);
 
-  const [progress, setProgress] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [targetTime, setTargetTime] = useState(() => Date.now() + 300000);
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(
     () => (localStorage.getItem('theme') as 'light' | 'dark' | 'system') || 'system'
   );
   const [activeTab, setActiveTab] = useState<'Argentina' | 'Venezuela' | 'Conversor' | 'Latam'>('Argentina');
-  const handleRefresh = async () => {
+  
+  const handleRefresh = useCallback(async () => {
     await fetchData();
     setTargetTime(Date.now() + 300000);
-    setTimeLeft(300);
-    setProgress(0);
-  };
+  }, [fetchData]);
 
   const [modalChart, setModalChart] = useState<{ title: string; dataKey: string; color: { hex?: string; text: string; buyHex?: string; sellHex?: string }; icon: React.ElementType; singleLine?: boolean; } | null>(null);
 
@@ -647,46 +715,6 @@ function App() {
     };
   }, [theme]);
 
-  // Timer effect
-  useEffect(() => {
-    if (loading) return;
-
-    const tick = () => {
-      const remainingSeconds = Math.max(0, Math.floor((targetTime - Date.now()) / 1000));
-      if (remainingSeconds <= 0) {
-        // Solo actualizamos de fondo si la pestaña está activa, 
-        // de otra forma los toast y animaciones suceden sin que el usuario los vea
-        if (document.visibilityState === 'visible') {
-          handleRefresh();
-        } else {
-          setTimeLeft(0); // Dejamos listo para que cargue en el momento que vuelvan
-        }
-      } else {
-        setTimeLeft(remainingSeconds);
-      }
-    };
-
-    const timer = setInterval(tick, 1000);
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        tick();
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [loading, targetTime]);
-
-  // Update progress bar
-  useEffect(() => {
-    setProgress(((300 - timeLeft) / 300) * 100);
-  }, [timeLeft]);
-
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="flex flex-col items-center gap-4">
@@ -695,12 +723,6 @@ function App() {
       </div>
     </div>
   );
-
-  const formatTimeLeft = () => {
-    const mins = Math.floor(timeLeft / 60);
-    const secs = timeLeft % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300 py-10 px-4 sm:px-6 lg:px-8 font-sans text-slate-900 pb-10 lg:pb-48 overflow-x-hidden w-full">
@@ -722,9 +744,9 @@ function App() {
             {(() => {
               const open = isMarketOpen();
               return (
-                <div className={`mt-4 flex items-center gap-2 ${open ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800/50' : 'bg-amber-50 dark:bg-amber-900/30 border-amber-100 dark:border-amber-800/50'} border px-3 py-1.5 rounded-full w-fit`}>
-                  <div className={`w-2 h-2 rounded-full ${open ? 'bg-emerald-500' : 'bg-amber-500'} animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite] ${open ? 'shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'shadow-[0_0_8px_rgba(245,158,11,0.5)]'}`}></div>
-                  <span className={`text-[10px] uppercase font-black ${open ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'} tracking-widest flex items-center gap-1`}>
+                <div className={`mt-4 flex items-center gap-2 \${open ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800/50' : 'bg-amber-50 dark:bg-amber-900/30 border-amber-100 dark:border-amber-800/50'} border px-3 py-1.5 rounded-full w-fit`}>
+                  <div className={`w-2 h-2 rounded-full \${open ? 'bg-emerald-500' : 'bg-amber-500'} animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite] \${open ? 'shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'shadow-[0_0_8px_rgba(245,158,11,0.5)]'}`}></div>
+                  <span className={`text-[10px] uppercase font-black \${open ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'} tracking-widest flex items-center gap-1`}>
                     {open ? <CheckCircle2 className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
                     {open ? 'Mercados Operando OK' : 'Mercados Cerrados'}
                   </span>
@@ -738,21 +760,21 @@ function App() {
             <div className="flex bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-100 dark:border-slate-700 p-1">
               <button 
                 onClick={() => setTheme('light')}
-                className={`p-2 rounded-full transition-all ${theme === 'light' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                className={`p-2 rounded-full transition-all \${theme === 'light' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
                 title="Claro"
               >
                 <Sun className="w-4 h-4" />
               </button>
               <button 
                 onClick={() => setTheme('system')}
-                className={`p-2 rounded-full transition-all ${theme === 'system' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                className={`p-2 rounded-full transition-all \${theme === 'system' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
                 title="Sistema"
               >
                 <Monitor className="w-4 h-4" />
               </button>
               <button 
                 onClick={() => setTheme('dark')}
-                className={`p-2 rounded-full transition-all ${theme === 'dark' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                className={`p-2 rounded-full transition-all \${theme === 'dark' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
                 title="Oscuro"
               >
                 <Moon className="w-4 h-4" />
@@ -772,24 +794,16 @@ function App() {
                 <button 
                   onClick={handleRefresh}
                   disabled={isRefreshing}
-                  className={`p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all ${isRefreshing ? 'animate-spin' : 'hover:rotate-180'}`}
+                  className={`p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all \${isRefreshing ? 'animate-spin' : 'hover:rotate-180'}`}
                 >
-                  <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'text-blue-400' : 'text-blue-500'}`} />
+                  <RefreshCw className={`w-5 h-5 \${isRefreshing ? 'text-blue-400' : 'text-blue-500'}`} />
                 </button>
               </div>
-              
-              <div className="px-2">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Próxima Sincronización</span>
-                  <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">{formatTimeLeft()}</span>
-                </div>
-                <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 transition-all duration-1000 ease-linear rounded-full"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
+              <SyncTimer 
+                loading={loading}
+                targetTime={targetTime}
+                onRefresh={handleRefresh}
+              />
             </div>
           </div>
         </header>
@@ -806,7 +820,7 @@ function App() {
           <button 
             onClick={() => setActiveTab('Argentina')}
             data-umami-event="Tab - Argentina"
-            className={`flex-1 px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${
+            className={`flex-1 px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 \${
               activeTab === 'Argentina' 
                 ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
                 : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
@@ -817,7 +831,7 @@ function App() {
           <button 
             onClick={() => setActiveTab('Venezuela')}
             data-umami-event="Tab - Venezuela"
-            className={`flex-1 px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${
+            className={`flex-1 px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 \${
               activeTab === 'Venezuela' 
                 ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
                 : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
@@ -828,7 +842,7 @@ function App() {
           <button 
             onClick={() => setActiveTab('Latam')}
             data-umami-event="Tab - Latam"
-            className={`flex-1 px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${
+            className={`flex-1 px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 \${
               activeTab === 'Latam' 
                 ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
                 : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
@@ -839,7 +853,7 @@ function App() {
           <button 
             onClick={() => setActiveTab('Conversor')}
             data-umami-event="Tab - Calculadora"
-            className={`flex-1 px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${
+            className={`flex-1 px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 \${
               activeTab === 'Conversor' 
                 ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
                 : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
@@ -867,7 +881,7 @@ function App() {
                   <div className="space-y-8">
                     <StatCard 
                       title="Dólar Oficial" 
-                      value={`$${formatNumber(data?.usd_oficial)}`} 
+                      value={`$ \${formatNumber(data?.usd_oficial)}`} 
                       icon={ShieldCheck} 
                       color="bg-slate-600"
                       buy={formatNumber(data?.usd_oficial ? data.usd_oficial - 20 : 0)}
@@ -892,7 +906,7 @@ function App() {
                   <div className="space-y-8">
                     <StatCard 
                       title="Dólar Cripto" 
-                      value={`$${formatNumber(data?.usd_cripto)}`} 
+                      value={`$ \${formatNumber(data?.usd_cripto)}`} 
                       icon={Bitcoin} 
                       color="bg-purple-600"
                       buy={formatNumber(data?.usd_cripto ? data.usd_cripto - 10 : 0)}
@@ -922,7 +936,7 @@ function App() {
                       <Info className="w-4 h-4 text-slate-300 dark:text-slate-500" /> Otros Dólares AR
                     </h3>
                     <div className="grid grid-cols-1 gap-4">
-                      <div className={`flex justify-between items-center p-5 rounded-2xl transition-all duration-500 group ${
+                      <div className={`flex justify-between items-center p-5 rounded-2xl transition-all duration-500 group \${
                         changedKeys['usd_blue'] === 'up' ? 'bg-emerald-50 dark:bg-emerald-900/40 ring-2 ring-emerald-500 dark:ring-emerald-400' :
                         changedKeys['usd_blue'] === 'down' ? 'bg-red-50 dark:bg-red-900/40 ring-2 ring-red-500 dark:ring-red-400' :
                         'bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50'
@@ -930,7 +944,7 @@ function App() {
                         <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Blue</span>
                         <div className="flex flex-col items-end">
                           <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_blue)}</span>
-                          <span className={`text-[10px] font-bold ${(data?.changes?.usd_blue_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          <span className={`text-[10px] font-bold \${(data?.changes?.usd_blue_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                             {(data?.changes?.usd_blue_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.usd_blue_percent ?? 0).toFixed(2)}%
                           </span>
                         </div>
@@ -939,7 +953,7 @@ function App() {
                         <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Tarjeta</span>
                         <div className="flex flex-col items-end">
                           <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_tarjeta)}</span>
-                          <span className={`text-[10px] font-bold ${(data?.changes?.otros_dolares_percents?.tarjeta ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          <span className={`text-[10px] font-bold \${(data?.changes?.otros_dolares_percents?.tarjeta ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                             {(data?.changes?.otros_dolares_percents?.tarjeta ?? 0) >= 0 ? '+' : ''}{(data?.changes?.otros_dolares_percents?.tarjeta ?? 0).toFixed(2)}%
                           </span>
                         </div>
@@ -948,7 +962,7 @@ function App() {
                         <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar MEP (Bolsa)</span>
                         <div className="flex flex-col items-end">
                           <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_mep)}</span>
-                          <span className={`text-[10px] font-bold ${(data?.changes?.otros_dolares_percents?.mep ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          <span className={`text-[10px] font-bold \${(data?.changes?.otros_dolares_percents?.mep ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                             {(data?.changes?.otros_dolares_percents?.mep ?? 0) >= 0 ? '+' : ''}{(data?.changes?.otros_dolares_percents?.mep ?? 0).toFixed(2)}%
                           </span>
                         </div>
@@ -957,12 +971,12 @@ function App() {
                         <span className="font-black text-slate-500 uppercase text-xs tracking-tight">CCL</span>
                         <div className="flex flex-col items-end">
                           <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_ccl)}</span>
-                          <span className={`text-[10px] font-bold ${(data?.changes?.otros_dolares_percents?.ccl ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          <span className={`text-[10px] font-bold \${(data?.changes?.otros_dolares_percents?.ccl ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                             {(data?.changes?.otros_dolares_percents?.ccl ?? 0) >= 0 ? '+' : ''}{(data?.changes?.otros_dolares_percents?.ccl ?? 0).toFixed(2)}%
                           </span>
                         </div>
                       </div>
-                      <div className={`flex justify-between items-center p-5 rounded-2xl transition-all duration-500 group ${
+                      <div className={`flex justify-between items-center p-5 rounded-2xl transition-all duration-500 group \${
                         changedKeys['usd_wallbit'] === 'up' ? 'bg-emerald-50 dark:bg-emerald-900/40 ring-2 ring-emerald-500 dark:ring-emerald-400' :
                         changedKeys['usd_wallbit'] === 'down' ? 'bg-red-50 dark:bg-red-900/40 ring-2 ring-red-500 dark:ring-red-400' :
                         'bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-transparent dark:border-slate-700/50'
@@ -970,7 +984,7 @@ function App() {
                         <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Dólar Wallbit</span>
                         <div className="flex flex-col items-end">
                           <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.usd_wallbit)}</span>
-                          <span className={`text-[10px] font-bold ${(data?.changes?.otros_dolares_percents?.wallbit ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          <span className={`text-[10px] font-bold \${(data?.changes?.otros_dolares_percents?.wallbit ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                             {(data?.changes?.otros_dolares_percents?.wallbit ?? 0) >= 0 ? '+' : ''}{(data?.changes?.otros_dolares_percents?.wallbit ?? 0).toFixed(2)}%
                           </span>
                         </div>
@@ -988,7 +1002,7 @@ function App() {
                         <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Euro Oficial</span>
                         <div className="flex flex-col items-end">
                           <span className="font-black text-indigo-700 dark:text-indigo-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.eur_venta)}</span>
-                          <span className={`text-[10px] font-bold ${(data?.changes?.eur_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          <span className={`text-[10px] font-bold \${(data?.changes?.eur_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                             {(data?.changes?.eur_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.eur_percent ?? 0).toFixed(2)}%
                           </span>
                         </div>
@@ -997,7 +1011,7 @@ function App() {
                         <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Real Brasileño</span>
                         <div className="flex flex-col items-end">
                           <span className="font-black text-emerald-700 dark:text-emerald-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.brl_ar)}</span>
-                          <span className={`text-[10px] font-bold ${(data?.changes?.brl_ar_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          <span className={`text-[10px] font-bold \${(data?.changes?.brl_ar_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                             {(data?.changes?.brl_ar_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.brl_ar_percent ?? 0).toFixed(2)}%
                           </span>
                         </div>
@@ -1006,7 +1020,7 @@ function App() {
                         <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Peso Chileno</span>
                         <div className="flex flex-col items-end">
                           <span className="font-black text-red-700 dark:text-red-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.clp_ar)}</span>
-                          <span className={`text-[10px] font-bold ${(data?.changes?.clp_ar_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          <span className={`text-[10px] font-bold \${(data?.changes?.clp_ar_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                             {(data?.changes?.clp_ar_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.clp_ar_percent ?? 0).toFixed(2)}%
                           </span>
                         </div>
@@ -1015,7 +1029,7 @@ function App() {
                         <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Peso Uruguayo</span>
                         <div className="flex flex-col items-end">
                           <span className="font-black text-sky-700 dark:text-sky-400 text-lg group-hover:scale-110 transition-transform">$ {formatNumber(data?.uyu_ar)}</span>
-                          <span className={`text-[10px] font-bold ${(data?.changes?.uyu_ar_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          <span className={`text-[10px] font-bold \${(data?.changes?.uyu_ar_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                             {(data?.changes?.uyu_ar_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.uyu_ar_percent ?? 0).toFixed(2)}%
                           </span>
                         </div>
@@ -1041,7 +1055,7 @@ function App() {
                   <div className="space-y-8">
                     <StatCard 
                       title="Dólar Oficial" 
-                      value={`${formatNumber(data?.ves_oficial)} VES`} 
+                      value={`\${formatNumber(data?.ves_oficial)} VES`} 
                       icon={ShieldCheck} 
                       color="bg-blue-500"
                       subtitle="Tasa Oficial BCV"
@@ -1065,7 +1079,7 @@ function App() {
                   <div className="space-y-8">
                     <StatCard 
                       title="Dólar Paralelo" 
-                      value={`${formatNumber(data?.ves_paralelo)} VES`} 
+                      value={`\${formatNumber(data?.ves_paralelo)} VES`} 
                       icon={DollarSign} 
                       color="bg-yellow-500"
                       subtitle="Promedio Dólar Paralelo"
@@ -1097,7 +1111,7 @@ function App() {
                         <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Euro Oficial</span>
                         <div className="flex flex-col items-end">
                           <span className="font-black text-blue-700 dark:text-blue-400 text-lg group-hover:scale-110 transition-transform">{formatNumber(data?.ves_eur_oficial)} VES</span>
-                          <span className={`text-[10px] font-bold ${(data?.changes?.ves_eur_oficial_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          <span className={`text-[10px] font-bold \${(data?.changes?.ves_eur_oficial_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                             {(data?.changes?.ves_eur_oficial_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.ves_eur_oficial_percent ?? 0).toFixed(2)}%
                           </span>
                         </div>
@@ -1106,7 +1120,7 @@ function App() {
                         <span className="font-black text-slate-500 uppercase text-xs tracking-tight">Euro Paralelo</span>
                         <div className="flex flex-col items-end">
                           <span className="font-black text-yellow-700 dark:text-yellow-400 text-lg group-hover:scale-110 transition-transform">{formatNumber(data?.ves_eur_paralelo)} VES</span>
-                          <span className={`text-[10px] font-bold ${(data?.changes?.ves_eur_paralelo_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          <span className={`text-[10px] font-bold \${(data?.changes?.ves_eur_paralelo_percent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                             {(data?.changes?.ves_eur_paralelo_percent ?? 0) >= 0 ? '+' : ''}{(data?.changes?.ves_eur_paralelo_percent ?? 0).toFixed(2)}%
                           </span>
                         </div>
@@ -1129,7 +1143,7 @@ function App() {
                 </div>
                 <StatCard 
                   title="Peso Uruguayo" 
-                  value={`${formatNumber(data?.uyu_venta)}`} 
+                  value={`\${formatNumber(data?.uyu_venta)}`} 
                   subtitle="Valor del Dólar Oficial"
                   icon={Globe} 
                   color="bg-sky-600"
@@ -1157,7 +1171,7 @@ function App() {
                 </div>
                 <StatCard 
                   title="Peso Chileno" 
-                  value={`${formatNumber(data?.clp_venta)}`} 
+                  value={`\${formatNumber(data?.clp_venta)}`} 
                   subtitle="Valor del Dólar Oficial"
                   icon={Globe} 
                   color="bg-red-600"
@@ -1185,7 +1199,7 @@ function App() {
                 </div>
                 <StatCard 
                    title="Real Brasileño" 
-                  value={`${formatNumber(data?.brl_venta)}`} 
+                  value={`\${formatNumber(data?.brl_venta)}`} 
                   subtitle="Valor del Dólar Oficial"
                   icon={Globe} 
                   color="bg-emerald-600"
@@ -1226,7 +1240,7 @@ function App() {
             <div className="flex flex-col md:flex-row items-center justify-between gap-3 lg:gap-4">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 px-4 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl transition-all border border-indigo-100 dark:border-indigo-800/50 shadow-sm">
-                  <div className={`w-2 h-2 rounded-full animate-pulse ${data?.api_status?.dolar_api_ar ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
+                  <div className={`w-2 h-2 rounded-full animate-pulse \${data?.api_status?.dolar_api_ar ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
                   <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em]">DOLAR API</span>
                 </div>
               </div>
@@ -1294,7 +1308,7 @@ function App() {
             <div className="flex items-center justify-between p-6 sm:p-8 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-3">
                 <div className={`p-3 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700`}>
-                  <modalChart.icon className={`w-6 h-6 ${modalChart.color.text}`} />
+                  <modalChart.icon className={`w-6 h-6 \${modalChart.color.text}`} />
                 </div>
                 <div>
                   <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">
