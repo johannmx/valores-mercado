@@ -305,7 +305,9 @@ const saveCurrentToHistory = async () => {
             axios.get(DOLAR_API_VES_EURO_OFFICIAL_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_VES_EURO_PARALELO_URL).catch(e => ({ data: {} })),
             axios.get(BINANCE_API_URL).catch(e => ({ data: { price: "0" } })),
-            axios.get(WALLBIT_RATES_URL, { headers: { 'X-API-Key': process.env.WALLBIT_API_KEY || '' } }).catch(e => ({ data: { data: { rate: 0 } } }))
+            process.env.WALLBIT_API_KEY
+                ? axios.get(WALLBIT_RATES_URL, { headers: { 'X-API-Key': process.env.WALLBIT_API_KEY } }).catch(e => ({ data: { data: { rate: 0 } } }))
+                : Promise.resolve({ data: { data: { rate: 0 } } })
         ]);
 
         const arsData = arsRes.data as any[];
@@ -401,7 +403,9 @@ server.get('/api/rates', {
             axios.get(DOLAR_API_VES_EURO_OFFICIAL_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_VES_EURO_PARALELO_URL).catch(e => ({ data: {} })),
             axios.get(BINANCE_API_URL).then(r => { apiStatus.binance_api = true; return r; }).catch(e => { return {data: {price: "0"}}; }),
-            axios.get(WALLBIT_RATES_URL, { headers: { 'X-API-Key': process.env.WALLBIT_API_KEY || '' } }).then(r => { apiStatus.wallbit_api = true; return r; }).catch(e => ({ data: { data: { rate: 0 } } })),
+            process.env.WALLBIT_API_KEY
+                ? axios.get(WALLBIT_RATES_URL, { headers: { 'X-API-Key': process.env.WALLBIT_API_KEY } }).then(r => { apiStatus.wallbit_api = true; return r; }).catch(e => ({ data: { data: { rate: 0 } } }))
+                : Promise.resolve({ data: { data: { rate: 0 } } }),
             axios.get(DOLAR_API_STATUS_URL).then(r => { apiStatus.api_health = r.data.estado || 'ok'; return r; }).catch(e => { return {data: {estado: 'error'}}; })
         ];
 
