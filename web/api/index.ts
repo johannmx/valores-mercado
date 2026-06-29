@@ -331,18 +331,18 @@ const saveCurrentToHistory = async () => {
             usd_ccl: getVentaByCasa(arsData, 'contadoconliqui'),
             usd_cripto: getVentaByCasa(arsData, 'cripto'),
             usd_tarjeta: getVentaByCasa(arsData, 'tarjeta'),
-            ves_oficial: vesOficialData.promedio || vesOficialData.venta || 0,
-            ves_paralelo: vesData.promedio || vesData.venta || 0,
-            uyu_venta: uyuData.venta || 0,
-            clp_venta: clpData.venta || 0,
-            brl_venta: brlData.venda || 0,
-            eur_venta: eurData.venta || 0,
-            uyu_ar: uyuArData.venta || 0,
-            clp_ar: clpArData.venta || 0,
-            brl_ar: brlArData.venta || 0,
-            ves_eur_oficial: vesEurOficialData.promedio || vesEurOficialData.venta || 0,
-            ves_eur_paralelo: vesEurParaleloData.promedio || vesEurParaleloData.venta || 0,
-            btc_usd: btcData.price ? parseFloat(btcData.price) : 0,
+            ves_oficial: vesOficialData?.promedio || vesOficialData?.venta || 0,
+            ves_paralelo: vesData?.promedio || vesData?.venta || 0,
+            uyu_venta: uyuData?.venta || 0,
+            clp_venta: clpData?.venta || 0,
+            brl_venta: brlData?.venda || 0,
+            eur_venta: eurData?.venta || 0,
+            uyu_ar: uyuArData?.venta || 0,
+            clp_ar: clpArData?.venta || 0,
+            brl_ar: brlArData?.venta || 0,
+            ves_eur_oficial: vesEurOficialData?.promedio || vesEurOficialData?.venta || 0,
+            ves_eur_paralelo: vesEurParaleloData?.promedio || vesEurParaleloData?.venta || 0,
+            btc_usd: btcData?.price ? parseFloat(btcData.price) : 0,
             usd_wallbit: wallbitData?.data?.rate || 0
         };
         
@@ -430,8 +430,8 @@ server.get('/api/rates', {
         const last24h = history.length > 0 ? (history.find(h => h.timestamp >= targetTimeString) || history[0]) : null;
 
         const uyuChange = calculateChange(uyuData?.venta || 0, last24h?.uyu_venta || uyuData?.compra || 0);
-        const clpChange = clpData?.ultimoCierre ? calculateChange(clpData.venta, clpData.ultimoCierre) : calculateChange(clpData?.venta || 0, last24h?.clp_venta || clpData?.compra || 0);
-        const brlChange = brlData?.fechoAnterior ? calculateChange(brlData.venda, brlData.fechoAnterior) : calculateChange(brlData?.venda || 0, last24h?.brl_venta || brlData?.compra || 0);
+        const clpChange = clpData?.ultimoCierre ? calculateChange(clpData?.venta || 0, clpData.ultimoCierre) : calculateChange(clpData?.venta || 0, last24h?.clp_venta || clpData?.compra || 0);
+        const brlChange = brlData?.fechoAnterior ? calculateChange(brlData?.venda || 0, brlData.fechoAnterior) : calculateChange(brlData?.venda || 0, last24h?.brl_venta || brlData?.compra || 0);
         const eurChange = calculateChange(eurData?.venta || 0, last24h?.eur_venta || eurData?.compra || 0);
         const uyuArChange = calculateChange(uyuArData?.venta || 0, last24h?.uyu_ar || uyuArData?.compra || 0);
         const clpArChange = calculateChange(clpArData?.venta || 0, last24h?.clp_ar || clpArData?.compra || 0);
@@ -444,10 +444,10 @@ server.get('/api/rates', {
         const usd_cripto_venta = getVentaByCasa(arsData, 'cripto');
         const usd_tarjeta_venta = getVentaByCasa(arsData, 'tarjeta');
 
-        const ves_oficial_venta = vesOficialData.promedio || vesOficialData.venta || 0;
-        const ves_paralelo_venta = vesData.promedio || vesData.venta || 0;
-        const ves_eur_oficial_venta = vesEurOficialData.promedio || vesEurOficialData.venta || 0;
-        const ves_eur_paralelo_venta = vesEurParaleloData.promedio || vesEurParaleloData.venta || 0;
+        const ves_oficial_venta = vesOficialData?.promedio || vesOficialData?.venta || 0;
+        const ves_paralelo_venta = vesData?.promedio || vesData?.venta || 0;
+        const ves_eur_oficial_venta = vesEurOficialData?.promedio || vesEurOficialData?.venta || 0;
+        const ves_eur_paralelo_venta = vesEurParaleloData?.promedio || vesEurParaleloData?.venta || 0;
 
         const usd_wallbit_venta = wallbitData?.data?.rate || 0;
 
@@ -462,17 +462,17 @@ server.get('/api/rates', {
             ves_oficial: ves_oficial_venta,
             ves_paralelo: ves_paralelo_venta,
             ves_compra: ves_oficial_venta,
-            uyu_venta: uyuData.venta || 0,
-            uyu_compra: uyuData.compra || 0,
-            clp_venta: clpData.venta || 0,
-            clp_compra: clpData.compra || 0,
-            brl_venta: brlData.venda || 0,
-            brl_compra: brlData.compra || 0,
-            eur_venta: eurData.venta || 0,
-            eur_compra: eurData.compra || 0,
-            uyu_ar: uyuArData.venta || 0,
-            clp_ar: clpArData.venta || 0,
-            brl_ar: brlArData.venta || 0,
+            uyu_venta: uyuData?.venta || 0,
+            uyu_compra: uyuData?.compra || 0,
+            clp_venta: clpData?.venta || 0,
+            clp_compra: clpData?.compra || 0,
+            brl_venta: brlData?.venda || 0,
+            brl_compra: brlData?.compra || 0,
+            eur_venta: eurData?.venta || 0,
+            eur_compra: eurData?.compra || 0,
+            uyu_ar: uyuArData?.venta || 0,
+            clp_ar: clpArData?.venta || 0,
+            brl_ar: brlArData?.venta || 0,
             ves_eur_oficial: ves_eur_oficial_venta,
             ves_eur_paralelo: ves_eur_paralelo_venta,
             btc_usd: btcData?.price ? parseFloat(btcData.price) : 0,
