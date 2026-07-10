@@ -406,7 +406,7 @@ server.get('/api/rates', {
             process.env.WALLBIT_API_KEY
                 ? axios.get(WALLBIT_RATES_URL, { headers: { 'X-API-Key': process.env.WALLBIT_API_KEY } }).then(r => { apiStatus.wallbit_api = true; return r; }).catch(e => ({ data: { data: { rate: 0 } } }))
                 : Promise.resolve({ data: { data: { rate: 0 } } }),
-            axios.get(DOLAR_API_STATUS_URL).then(r => { apiStatus.api_health = r.data.estado || 'ok'; return r; }).catch(e => { return {data: {estado: 'error'}}; })
+            axios.get(DOLAR_API_STATUS_URL).then(r => { apiStatus.api_health = r.data?.estado || 'error'; return r; }).catch(e => { apiStatus.api_health = 'error'; return {data: {estado: 'error'}}; })
         ];
 
         const [arsRes, vesRes, vesOficialRes, uyuRes, clpRes, brlRes, eurRes, uyuArRes, clpArRes, brlArRes, vesEurOficialRes, vesEurParaleloRes, btcRes, wallbitRes, statusRes] = await Promise.all(requests) as any[];
@@ -434,8 +434,8 @@ server.get('/api/rates', {
         const last24h = history.length > 0 ? (history.find(h => h.timestamp >= targetTimeString) || history[0]) : null;
 
         const uyuChange = calculateChange(uyuData?.venta || 0, last24h?.uyu_venta || uyuData?.compra || 0);
-        const clpChange = clpData?.ultimoCierre ? calculateChange(clpData?.venta || 0, clpData.ultimoCierre) : calculateChange(clpData?.venta || 0, last24h?.clp_venta || clpData?.compra || 0);
-        const brlChange = brlData?.fechoAnterior ? calculateChange(brlData?.venda || 0, brlData.fechoAnterior) : calculateChange(brlData?.venda || 0, last24h?.brl_venta || brlData?.compra || 0);
+        const clpChange = clpData?.ultimoCierre ? calculateChange(clpData?.venta || 0, clpData?.ultimoCierre) : calculateChange(clpData?.venta || 0, last24h?.clp_venta || clpData?.compra || 0);
+        const brlChange = brlData?.fechoAnterior ? calculateChange(brlData?.venda || 0, brlData?.fechoAnterior) : calculateChange(brlData?.venda || 0, last24h?.brl_venta || brlData?.compra || 0);
         const eurChange = calculateChange(eurData?.venta || 0, last24h?.eur_venta || eurData?.compra || 0);
         const uyuArChange = calculateChange(uyuArData?.venta || 0, last24h?.uyu_ar || uyuArData?.compra || 0);
         const clpArChange = calculateChange(clpArData?.venta || 0, last24h?.clp_ar || clpArData?.compra || 0);
