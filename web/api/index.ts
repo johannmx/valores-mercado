@@ -39,14 +39,8 @@ export let inMemoryHistory: HistoryItem[] = [];
 server.register(helmet, {
     contentSecurityPolicy: {
         directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://umami.johatech.ar"],
-            connectSrc: ["'self'", "https://umami.johatech.ar"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", "data:"],
-            fontSrc: ["'self'", "data:"],
+            defaultSrc: ["'none'"],
             frameAncestors: ["'none'"],
-            objectSrc: ["'none'"],
         },
     },
     referrerPolicy: { policy: 'no-referrer-when-downgrade' },
