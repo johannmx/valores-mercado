@@ -52,6 +52,8 @@ server.register(helmet, {
     referrerPolicy: { policy: 'no-referrer-when-downgrade' },
     hsts: { maxAge: 31536000, includeSubDomains: true },
     xContentTypeOptions: true,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginOpenerPolicy: { policy: 'same-origin' },
 });
 
 server.addHook('onRequest', async (request, reply) => {
