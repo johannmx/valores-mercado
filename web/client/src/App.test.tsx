@@ -165,5 +165,16 @@ describe('App component', () => {
     await waitFor(() => {
       expect(screen.getByText('Conversor Rápido')).toBeInTheDocument();
     });
+
+    const selectButton = screen.getByText('USD - Dólar USA');
+    fireEvent.click(selectButton);
+
+    const arsOption = screen.getByText('ARS - Peso Argentino');
+    fireEvent.click(arsOption);
+
+    await waitFor(() => {
+      expect(screen.getByText('Cotización base para ARS:')).toBeInTheDocument();
+      expect(screen.getByText('Dólar USA (USD)')).toBeInTheDocument();
+    });
   });
 });
