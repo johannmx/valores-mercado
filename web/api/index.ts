@@ -548,7 +548,21 @@ server.get<{ Params: { casa: string } }>('/api/historical/:casa', {
             return reply.send(cachedData);
         }
 
-        const response = await axios.get(`https://api.argentinadatos.com/v1/cotizaciones/dolares/${casa}`);
+        const CASA_ALLOWLIST: Record<string, string> = {
+            oficial: 'oficial',
+            blue: 'blue',
+            bolsa: 'bolsa',
+            contadoconliqui: 'contadoconliqui',
+            cripto: 'cripto',
+            tarjeta: 'tarjeta'
+        };
+
+        const upstreamCasa = CASA_ALLOWLIST[casa];
+        if (!upstreamCasa) {
+            return reply.status(400).send({ error: 'Invalid casa value' });
+        }
+
+        const response = await axios.get(`https://api.argentinadatos.com/v1/cotizaciones/dolares/${upstreamCasa}`);
 
         // Security Enhancement: Cache external API response to prevent upstream DoS
         rateCache.set(cacheKey, response.data);
