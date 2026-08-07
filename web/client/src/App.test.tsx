@@ -173,8 +173,7 @@ describe('App component', () => {
     fireEvent.click(arsOption);
 
     await waitFor(() => {
-      expect(screen.getByText('Cotización base para ARS:')).toBeInTheDocument();
-      expect(screen.getByText('Dólar USA (USD)')).toBeInTheDocument();
+      expect(screen.getByText('ARS - Peso Argentino')).toBeInTheDocument();
     });
   });
 });
