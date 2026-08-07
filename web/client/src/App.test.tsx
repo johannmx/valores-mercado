@@ -145,7 +145,7 @@ describe('App component', () => {
     fireEvent.click(venezuelaTab);
 
     await waitFor(() => {
-      expect(screen.getByText('VES Paralelo')).toBeInTheDocument();
+      expect(screen.getByText('Dólar Paralelo')).toBeInTheDocument();
     });
 
     // Check for VES text but not strict formatting
