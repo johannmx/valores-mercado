@@ -156,7 +156,7 @@ describe('App component', () => {
     fireEvent.click(latamTab);
 
     await waitFor(() => {
-      expect(screen.getByText('Peso Uruguayo (UYU)')).toBeInTheDocument();
+      expect(screen.getByText('Peso Uruguayo')).toBeInTheDocument();
     });
 
     const calcTab = screen.getByRole('button', { name: /Conversor/i });
