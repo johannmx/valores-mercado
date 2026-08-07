@@ -6,7 +6,6 @@ import {
   Bitcoin, 
   RefreshCw,
   TrendingDown,
-  Info,
   ArrowUpRight,
   ArrowDownRight,
   Globe,
