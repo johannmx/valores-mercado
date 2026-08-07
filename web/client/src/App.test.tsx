@@ -148,7 +148,6 @@ describe('App component', () => {
       expect(screen.getByText('Dólar Paralelo')).toBeInTheDocument();
     });
 
-    // Check for VES text but not strict formatting
     expect(screen.getByText(/35,00/)).toBeInTheDocument();
     expect(screen.getAllByText(/VES/).length).toBeGreaterThan(0);
 
@@ -159,7 +158,7 @@ describe('App component', () => {
       expect(screen.getByText('Peso Uruguayo')).toBeInTheDocument();
     });
 
-    const calcTab = screen.getByRole('button', { name: /Conversor/i });
+    const calcTab = screen.getByRole('button', { name: /Calculadora/i });
     fireEvent.click(calcTab);
 
     await waitFor(() => {
@@ -169,11 +168,11 @@ describe('App component', () => {
     const selectButton = screen.getByText('USD - Dólar USA');
     fireEvent.click(selectButton);
 
-    const arsOption = screen.getByText('ARS - Peso Argentino');
+    const arsOption = screen.getByText('ARS - Dólar Oficial');
     fireEvent.click(arsOption);
 
     await waitFor(() => {
-      expect(screen.getByText('ARS - Peso Argentino')).toBeInTheDocument();
+      expect(screen.getByText('ARS - Dólar Oficial')).toBeInTheDocument();
     });
   });
 });
