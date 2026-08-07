@@ -620,14 +620,14 @@ export default function App() {
           </button>
           <button 
             onClick={() => setActiveTab('Conversor')}
-            data-umami-event="Tab - Calculadora"
+            data-umami-event="Tab - Conversor"
             className={`flex-1 px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${
               activeTab === 'Conversor' 
                 ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
                 : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
-            Calculadora
+            Conversor
           </button>
         </div>
 
