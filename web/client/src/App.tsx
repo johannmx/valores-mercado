@@ -10,11 +10,7 @@ import {
   ArrowDownRight,
   Globe,
   ShieldCheck,
-  CheckCircle2,
-  Sun,
-  Moon,
   ChevronDown,
-  AlertTriangle,
   Github,
   Euro,
   X,
@@ -44,24 +40,6 @@ declare global {
   }
 }
 
-interface ResultCardItem {
-  label: string;
-  value: string | number;
-  highlight?: boolean;
-  prefix?: string;
-  suffix?: string;
-}
-
-interface ResultCardProps {
-  title: string;
-  items: ResultCardItem[];
-  icon: React.ElementType;
-  color: {
-    bg: string;
-    text: string;
-  };
-}
-
 interface RegionChartProps {
   title: string;
   data: HistoryItem[];
@@ -86,16 +64,11 @@ interface StatCardProps {
   value: string | number;
   icon: React.ElementType;
   color: string;
-  subtitle?: string;
-  buy?: string | number;
-  sell?: string | number;
   change?: number;
-  badge?: string;
-  spread?: number | string;
   pulseType?: 'up' | 'down';
 }
 
-const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change, badge, spread, pulseType }: StatCardProps) => {
+const StatCard = ({ title, value, icon: Icon, color, change, pulseType }: StatCardProps) => {
   const isPositive = change !== undefined && change > 0;
   const isNeutral = change === 0;
   const displayValue = value || '---';
@@ -310,8 +283,6 @@ const RegionChart = memo(({ title, data, buyKey, sellKey, dataKey, color, icon: 
 const Converter = ({ data }: { data: MarketData | null }) => {
   const [amount, setAmount] = useState<number>(1);
   const [from, setFrom] = useState<'USD' | 'ARS' | 'VES' | 'UYU' | 'CLP' | 'BRL' | 'EUR'>('USD');
-  const [arsRateType, setArsRateType] = useState<'CRYPTO' | 'WALLBIT' | 'ARS_OFFICIAL'>('CRYPTO');
-  const [vesRateType, setVesRateType] = useState<'VES' | 'VES_OFFICIAL'>('VES');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const OPTIONS = [
@@ -342,16 +313,8 @@ const Converter = ({ data }: { data: MarketData | null }) => {
 
   const getUsdAmount = () => {
     if (from === 'USD') return amount;
-    if (from === 'ARS') {
-      const selectedRateKey = arsRateType === 'ARS_OFFICIAL' ? 'ARS_OFFICIAL' : arsRateType === 'WALLBIT' ? 'WALLBIT' : 'CRYPTO';
-      const rate = rates[selectedRateKey] || 1;
-      return amount / rate;
-    }
-    if (from === 'VES') {
-      const selectedRateKey = vesRateType === 'VES_OFFICIAL' ? 'VES_OFFICIAL' : 'VES';
-      const rate = rates[selectedRateKey] || 1;
-      return amount / rate;
-    }
+    if (from === 'ARS') return amount / (rates['CRYPTO'] || 1);
+    if (from === 'VES') return amount / (rates['VES'] || 1);
     const rate = rates[from] || 1;
     return amount / rate;
   };
@@ -442,19 +405,10 @@ const ToastNotification = ({ note, onDismiss }: { note: AppNotification, onDismi
 export default function App() {
   const { data, history, loading, error, isRefreshing, fetchData, notifications, changedKeys, dismissNotification } = useMarketData();
 
-  const formattedLastSyncTime = useMemo(() => {
-    if (!data?.timestamp) return '--:--';
-    try {
-      return new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return '--:--';
-    }
-  }, [data?.timestamp]);
-
   const [progress, setProgress] = useState(0);
   const [timeLeft, setTimeLeft] = useState(300);
   const [targetTime, setTargetTime] = useState(() => Date.now() + 300000);
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => (localStorage.getItem('theme') as any) || 'system');
+  const [theme] = useState<'light' | 'dark' | 'system'>(() => (localStorage.getItem('theme') as any) || 'system');
   const [activeTab, setActiveTab] = useState<'Argentina' | 'Venezuela' | 'Latam' | 'Conversor'>('Argentina');
 
   const handleRefresh = async () => {
@@ -652,8 +606,6 @@ export default function App() {
                       value={`$${formatNumber(data?.usd_oficial)}`} 
                       icon={ShieldCheck} 
                       color="bg-slate-600"
-                      buy={formatNumber(data?.usd_oficial ? data.usd_oficial - 20 : 0)}
-                      sell={formatNumber(data?.usd_oficial)}
                       change={data?.changes?.usd_oficial_percent}
                       pulseType={changedKeys['usd_oficial']}
                     />
@@ -677,10 +629,7 @@ export default function App() {
                       value={`$${formatNumber(data?.usd_cripto)}`} 
                       icon={Bitcoin} 
                       color="bg-purple-600"
-                      buy={formatNumber(data?.usd_cripto ? data.usd_cripto - 10 : 0)}
-                      sell={formatNumber(data?.usd_cripto)}
                       change={data?.changes?.bitcoin_percent}
-                      badge="24/7"
                       pulseType={changedKeys['usd_cripto']}
                     />
                     <div className="h-[440px]">
@@ -826,7 +775,6 @@ export default function App() {
                       value={`${formatNumber(data?.ves_oficial)} VES`} 
                       icon={ShieldCheck} 
                       color="bg-blue-500"
-                      subtitle="Tasa Oficial BCV"
                       change={data?.changes?.ves_oficial_percent}
                       pulseType={changedKeys['ves_oficial']}
                     />
@@ -850,7 +798,6 @@ export default function App() {
                       value={`${formatNumber(data?.ves_paralelo)} VES`} 
                       icon={DollarSign} 
                       color="bg-yellow-500"
-                      subtitle="Promedio Dólar Paralelo"
                       change={data?.changes?.ves_paralelo_percent}
                       pulseType={changedKeys['ves_paralelo']}
                     />
@@ -912,11 +859,8 @@ export default function App() {
                 <StatCard 
                   title="Peso Uruguayo" 
                   value={`${formatNumber(data?.uyu_venta)}`} 
-                  subtitle="Valor del Dólar Oficial"
                   icon={Globe} 
                   color="bg-sky-600"
-                  buy={formatNumber(data?.uyu_compra)}
-                  sell={formatNumber(data?.uyu_venta)}
                   change={data?.changes?.uyu_percent}
                 />
                 <div className="h-[440px]">
@@ -940,11 +884,8 @@ export default function App() {
                 <StatCard 
                   title="Peso Chileno" 
                   value={`${formatNumber(data?.clp_venta)}`} 
-                  subtitle="Valor del Dólar Oficial"
                   icon={Globe} 
                   color="bg-red-600"
-                  buy={formatNumber(data?.clp_compra)}
-                  sell={formatNumber(data?.clp_venta)}
                   change={data?.changes?.clp_percent}
                 />
                 <div className="h-[440px]">
@@ -968,11 +909,8 @@ export default function App() {
                 <StatCard 
                    title="Real Brasileño" 
                   value={`${formatNumber(data?.brl_venta)}`} 
-                  subtitle="Valor del Dólar Oficial"
                   icon={Globe} 
                   color="bg-emerald-600"
-                  buy={formatNumber(data?.brl_compra)}
-                  sell={formatNumber(data?.brl_venta)}
                   change={data?.changes?.brl_percent}
                 />
                 <div className="h-[440px]">
