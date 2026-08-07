@@ -159,7 +159,7 @@ describe('App component', () => {
       expect(screen.getByText('Peso Uruguayo (UYU)')).toBeInTheDocument();
     });
 
-    const calcTab = screen.getByRole('button', { name: /Calculadora/i });
+    const calcTab = screen.getByRole('button', { name: /Conversor/i });
     fireEvent.click(calcTab);
 
     await waitFor(() => {
