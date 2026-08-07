@@ -10,7 +10,12 @@ import {
   ArrowDownRight,
   Globe,
   ShieldCheck,
+  Monitor,
+  CheckCircle2,
+  Sun,
+  Moon,
   ChevronDown,
+  AlertTriangle,
   Github,
   Euro,
   X,
@@ -405,10 +410,19 @@ const ToastNotification = ({ note, onDismiss }: { note: AppNotification, onDismi
 export default function App() {
   const { data, history, loading, error, isRefreshing, fetchData, notifications, changedKeys, dismissNotification } = useMarketData();
 
+  const formattedLastSyncTime = useMemo(() => {
+    if (!data?.timestamp) return '--:--';
+    try {
+      return new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return '--:--';
+    }
+  }, [data?.timestamp]);
+
   const [progress, setProgress] = useState(0);
   const [timeLeft, setTimeLeft] = useState(300);
   const [targetTime, setTargetTime] = useState(() => Date.now() + 300000);
-  const [theme] = useState<'light' | 'dark' | 'system'>(() => (localStorage.getItem('theme') as any) || 'system');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => (localStorage.getItem('theme') as any) || 'system');
   const [activeTab, setActiveTab] = useState<'Argentina' | 'Venezuela' | 'Latam' | 'Conversor'>('Argentina');
 
   const handleRefresh = async () => {
@@ -497,6 +511,7 @@ export default function App() {
                 <div className={`mt-4 flex items-center gap-2 ${open ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800/50' : 'bg-amber-50 dark:bg-amber-900/30 border-amber-100 dark:border-amber-800/50'} border px-3 py-1.5 rounded-full w-fit`}>
                   <div className={`w-2 h-2 rounded-full ${open ? 'bg-emerald-500' : 'bg-amber-500'} animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]`}></div>
                   <span className={`text-[10px] uppercase font-black ${open ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'} tracking-widest flex items-center gap-1`}>
+                    {open ? <CheckCircle2 className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
                     {open ? 'Mercados Operando OK' : 'Mercados Cerrados'}
                   </span>
                 </div>
@@ -505,17 +520,50 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-4">
+            {/* Theme Toggle */}
             <div className="flex bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-100 dark:border-slate-700 p-1">
-                <button 
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className={`p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all ${isRefreshing ? 'animate-spin' : 'hover:rotate-180'}`}
-                >
-                  <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'text-blue-400' : 'text-blue-500'}`} />
-                </button>
+              <button 
+                onClick={() => setTheme('light')}
+                className={`p-2 rounded-full transition-all ${theme === 'light' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                title="Claro"
+              >
+                <Sun className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setTheme('system')}
+                className={`p-2 rounded-full transition-all ${theme === 'system' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                title="Sistema"
+              >
+                <Monitor className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setTheme('dark')}
+                className={`p-2 rounded-full transition-all ${theme === 'dark' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                title="Oscuro"
+              >
+                <Moon className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-4 px-6 py-3 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-100 dark:border-slate-700">
+              <div className="flex flex-col items-end">
+                <span className="text-[9px] uppercase font-black text-slate-300 dark:text-slate-500 leading-none mb-1 tracking-tighter">
+                  {data ? 'Última Sincronización' : isRefreshing ? 'Sincronizando...' : 'Desconectado'}
+                </span>
+                <span className="text-sm font-black text-slate-600 dark:text-white">
+                  {formattedLastSyncTime}
+                </span>
               </div>
-              
-            <div className="px-2">
+              <button 
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className={`p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all ${isRefreshing ? 'animate-spin' : 'hover:rotate-180'}`}
+              >
+                <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'text-blue-400' : 'text-blue-500'}`} />
+              </button>
+            </div>
+
+            <div className="px-2 hidden sm:block">
               <div className="flex justify-between items-center mb-1">
                 <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Próxima Sincronización</span>
                 <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">{formatTimeLeft()}</span>
