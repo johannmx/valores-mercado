@@ -561,17 +561,16 @@ export default function App() {
                 </button>
               </div>
               
-              <div className="px-2">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Próxima Sincronización</span>
-                  <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">{formatTimeLeft()}</span>
-                </div>
-                <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 transition-all duration-1000 ease-linear rounded-full"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
+            <div className="px-2">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Próxima Sincronización</span>
+                <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">{formatTimeLeft()}</span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-blue-500 transition-all duration-1000 ease-linear rounded-full"
+                  style={{ width: `${progress}%` }}
+                />
               </div>
             </div>
           </div>
@@ -702,7 +701,7 @@ export default function App() {
                   {/* Otros Dólares Card */}
                   <div className="flex-1 bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col">
                     <h3 className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
-                      Otros Dólares AR
+                      <Globe className="w-4 h-4 text-slate-300 dark:text-slate-500" /> Otros Dólares AR
                     </h3>
                     <div className="grid grid-cols-1 gap-4">
                       <div className={`flex justify-between items-center p-5 rounded-2xl transition-all duration-500 group ${
