@@ -139,13 +139,13 @@ describe('App component', () => {
       expect(screen.queryByText(/Sincronizando Mercados/i)).not.toBeInTheDocument();
     });
 
-    expect(screen.getByText('Mercado Argentina')).toBeInTheDocument();
+    expect(screen.getByText('Dólar Oficial')).toBeInTheDocument();
 
     const venezuelaTab = screen.getByRole('button', { name: /Venezuela/i });
     fireEvent.click(venezuelaTab);
 
     await waitFor(() => {
-      expect(screen.getByText('Mercado Venezuela')).toBeInTheDocument();
+      expect(screen.getByText('VES Paralelo')).toBeInTheDocument();
     });
 
     // Check for VES text but not strict formatting
