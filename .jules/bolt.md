@@ -25,12 +25,3 @@
 1. Memoized the header last sync time string using `useMemo` so it only parses and formats the Date when the synchronization timestamp changes (every 5 minutes, representing a 99.6% reduction in header formatting calls).
 2. Introduced global `Map`-based caches (`timeCache`, `dateTimeCache`) for Recharts formatters to reuse formatted string values instead of creating fresh `Date` objects and parsing ICU formats on every redraw.
 3. Wrapped `RegionChart` in `React.memo` with a custom props comparison function, completely eliminating all chart re-renders and downsampling calculations during timer ticks.
-
-## 2026-07-13 - [CRITICAL] Eliminación de Latencia de Red Concurrente en /api/rates
-**Performance Bottleneck:** El endpoint `/api/rates` realizaba hasta 15 solicitudes HTTP concurrentes a APIs externas en cada fallo de caché de 60 segundos. Esto introducía una latencia de cliente-servidor masiva (de 1s a más de 5s dependiendo del rendimiento de la red externa), consumía ancho de banda excesivo y arriesgaba bloqueos por límite de tasa (rate limiting).
-**Learning:** Para conjuntos de datos con actualizaciones en intervalos predecibles (como cotizaciones cada 5 minutos), el servidor debe desacoplar completamente la recuperación externa del hilo de peticiones de los clientes. El servidor debe servir el estado consolidado directamente desde memoria física.
-**Optimization:** 
-1. Se consolidaron todas las llamadas HTTP y cálculos de tasas en la función modular `fetchFreshMarketData()`.
-2. Se introdujo una variable en memoria `latestMarketData` para almacenar el estado del mercado más reciente.
-3. Se actualizó el worker de fondo (`saveCurrentToHistory`) para invocar `fetchFreshMarketData()` y actualizar el estado de memoria en cada intervalo de 5 minutos, y realizar una carga inicial durante el arranque del servidor (`initializeHistory`).
-4. Se modificó `/api/rates` para retornar instantáneamente la cotización guardada en memoria (`latestMarketData`) en menos de 1ms, eliminando por completo la latencia de red saliente en la llamada del cliente.
