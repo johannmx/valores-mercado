@@ -139,13 +139,13 @@ describe('App component', () => {
       expect(screen.queryByText(/Sincronizando Mercados/i)).not.toBeInTheDocument();
     });
 
-    expect(screen.getByText('Mercado Argentina')).toBeInTheDocument();
+    expect(screen.getByText('Dólar Oficial')).toBeInTheDocument();
 
     const venezuelaTab = screen.getByRole('button', { name: /Venezuela/i });
     fireEvent.click(venezuelaTab);
 
     await waitFor(() => {
-      expect(screen.getByText('Mercado Venezuela')).toBeInTheDocument();
+      expect(screen.getByText('Dólar Paralelo')).toBeInTheDocument();
     });
 
     // Check for VES text but not strict formatting
@@ -159,11 +159,23 @@ describe('App component', () => {
       expect(screen.getByText('Peso Uruguayo')).toBeInTheDocument();
     });
 
-    const calcTab = screen.getByRole('button', { name: /Calculadora/i });
+    const calcTab = screen.getByRole('button', { name: /Conversor/i });
     fireEvent.click(calcTab);
 
     await waitFor(() => {
       expect(screen.getByText('Conversor Rápido')).toBeInTheDocument();
+      expect(screen.getByText('Euro Oficial AR')).toBeInTheDocument();
+      expect(screen.getByText('Euro Oficial VE')).toBeInTheDocument();
+    });
+
+    const selectButton = screen.getByText('USD - Dólar USA');
+    fireEvent.click(selectButton);
+
+    const arsOption = screen.getByText('ARS - Peso Argentino');
+    fireEvent.click(arsOption);
+
+    await waitFor(() => {
+      expect(screen.getByText('ARS - Peso Argentino')).toBeInTheDocument();
     });
   });
 });
