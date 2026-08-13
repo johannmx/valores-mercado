@@ -39,8 +39,14 @@ export let inMemoryHistory: HistoryItem[] = [];
 server.register(helmet, {
     contentSecurityPolicy: {
         directives: {
-            defaultSrc: ["'none'"],
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://umami.johatech.ar"],
+            connectSrc: ["'self'", "https://umami.johatech.ar"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:"],
+            fontSrc: ["'self'", "data:"],
             frameAncestors: ["'none'"],
+            objectSrc: ["'none'"],
         },
     },
     referrerPolicy: { policy: 'no-referrer-when-downgrade' },
@@ -285,170 +291,63 @@ const initializeHistory = async () => {
     }
 };
 
-export let latestMarketData: MarketData | null = null;
-
-/**
- * Realiza las llamadas concurrentes a todas las APIs externas de cotización,
- * procesa las tasas de cambio, calcula los porcentajes de variación contra las últimas 24h
- * y actualiza tanto el caché en memoria como el de corta duración.
- */
-export const fetchFreshMarketData = async (): Promise<MarketData> => {
-    const apiStatus: MarketData['api_status'] & { api_health?: string } = {
-        dolar_api_ar: false,
-        dolar_api_ve: false,
-        dolar_api_latam: false,
-        binance_api: false,
-        wallbit_api: false,
-        api_health: 'unknown'
-    };
-
-    const requests = [
-        axios.get(DOLAR_API_ARS_URL).then(r => { apiStatus.dolar_api_ar = true; return r; }).catch(e => { return {data: []}; }),
-        axios.get(DOLAR_API_VES_URL).then(r => { apiStatus.dolar_api_ve = true; return r; }).catch(e => { return {data: {}}; }),
-        axios.get(DOLAR_API_VES_OFFICIAL_URL).catch(e => { return {data: {}}; }),
-        axios.get(DOLAR_API_UYU_URL).catch(e => ({ data: {} })),
-        axios.get(DOLAR_API_CLP_URL).catch(e => ({ data: {} })),
-        axios.get(DOLAR_API_BRL_URL).catch(e => ({ data: {} })),
-        axios.get(DOLAR_API_EURO_URL).catch(e => ({ data: {} })),
-        axios.get(DOLAR_API_UYU_AR_URL).catch(e => ({ data: {} })),
-        axios.get(DOLAR_API_CLP_AR_URL).catch(e => ({ data: {} })),
-        axios.get(DOLAR_API_BRL_AR_URL).catch(e => ({ data: {} })),
-        axios.get(DOLAR_API_VES_EURO_OFFICIAL_URL).catch(e => ({ data: {} })),
-        axios.get(DOLAR_API_VES_EURO_PARALELO_URL).catch(e => ({ data: {} })),
-        axios.get(BINANCE_API_URL).then(r => { apiStatus.binance_api = true; return r; }).catch(e => { return {data: {price: "0"}}; }),
-        process.env.WALLBIT_API_KEY
-            ? axios.get(WALLBIT_RATES_URL, { headers: { 'X-API-Key': process.env.WALLBIT_API_KEY } }).then(r => { apiStatus.wallbit_api = true; return r; }).catch(e => ({ data: { data: { rate: 0 } } }))
-            : Promise.resolve({ data: { data: { rate: 0 } } }),
-        axios.get(DOLAR_API_STATUS_URL).then(r => { apiStatus.api_health = r.data.estado || 'ok'; return r; }).catch(e => { return {data: {estado: 'error'}}; })
-    ];
-
-    const [arsRes, vesRes, vesOficialRes, uyuRes, clpRes, brlRes, eurRes, uyuArRes, clpArRes, brlArRes, vesEurOficialRes, vesEurParaleloRes, btcRes, wallbitRes, statusRes] = await Promise.all(requests) as any[];
-
-    const history = inMemoryHistory;
-    
-    const arsData = arsRes.data;
-    const vesData = vesRes.data;
-    const vesOficialData = vesOficialRes.data;
-    const uyuData = uyuRes.data;
-    const clpData = clpRes.data;
-    const brlData = brlRes.data;
-    const eurData = eurRes.data;
-    const uyuArData = uyuArRes.data;
-    const clpArData = clpArRes.data;
-    const brlArData = brlArRes.data;
-    const vesEurOficialData = vesEurOficialRes.data;
-    const vesEurParaleloData = vesEurParaleloRes.data;
-    const btcData = btcRes.data;
-    const wallbitData = wallbitRes.data;
-
-    apiStatus.dolar_api_latam = uyuRes.status === 200 && clpRes.status === 200 && brlRes.status === 200;
-
-    const targetTimeString = new Date(Date.now() - (24 * 60 * 60 * 1000)).toISOString();
-    const last24h = history.length > 0 ? (history.find(h => h.timestamp >= targetTimeString) || history[0]) : null;
-
-    const uyuChange = calculateChange(uyuData?.venta || 0, last24h?.uyu_venta || uyuData?.compra || 0);
-    const clpChange = clpData?.ultimoCierre ? calculateChange(clpData?.venta || 0, clpData.ultimoCierre) : calculateChange(clpData?.venta || 0, last24h?.clp_venta || clpData?.compra || 0);
-    const brlChange = brlData?.fechoAnterior ? calculateChange(brlData?.venda || 0, brlData.fechoAnterior) : calculateChange(brlData?.venda || 0, last24h?.brl_venta || brlData?.compra || 0);
-    const eurChange = calculateChange(eurData?.venta || 0, last24h?.eur_venta || eurData?.compra || 0);
-    const uyuArChange = calculateChange(uyuArData?.venta || 0, last24h?.uyu_ar || uyuArData?.compra || 0);
-    const clpArChange = calculateChange(clpArData?.venta || 0, last24h?.clp_ar || clpArData?.compra || 0);
-    const brlArChange = calculateChange(brlArData?.venta || 0, last24h?.brl_ar || brlArData?.compra || 0);
-
-    const usd_oficial_venta = getVentaByCasa(arsData, 'oficial');
-    const usd_blue_venta = getVentaByCasa(arsData, 'blue');
-    const usd_mep_venta = getVentaByCasa(arsData, 'bolsa');
-    const usd_ccl_venta = getVentaByCasa(arsData, 'contadoconliqui');
-    const usd_cripto_venta = getVentaByCasa(arsData, 'cripto');
-    const usd_tarjeta_venta = getVentaByCasa(arsData, 'tarjeta');
-
-    const ves_oficial_venta = vesOficialData?.promedio || vesOficialData?.venta || 0;
-    const ves_paralelo_venta = vesData?.promedio || vesData?.venta || 0;
-    const ves_eur_oficial_venta = vesEurOficialData?.promedio || vesEurOficialData?.venta || 0;
-    const ves_eur_paralelo_venta = vesEurParaleloData?.promedio || vesEurParaleloData?.venta || 0;
-
-    const usd_wallbit_venta = wallbitData?.data?.rate || 0;
-
-    const marketData: MarketData = {
-        timestamp: new Date().toISOString(),
-        usd_oficial: usd_oficial_venta,
-        usd_blue: usd_blue_venta,
-        usd_mep: usd_mep_venta,
-        usd_ccl: usd_ccl_venta,
-        usd_cripto: usd_cripto_venta,
-        usd_tarjeta: usd_tarjeta_venta,
-        ves_oficial: ves_oficial_venta,
-        ves_paralelo: ves_paralelo_venta,
-        ves_compra: ves_oficial_venta,
-        uyu_venta: uyuData?.venta || 0,
-        uyu_compra: uyuData?.compra || 0,
-        clp_venta: clpData?.venta || 0,
-        clp_compra: clpData?.compra || 0,
-        brl_venta: brlData?.venda || 0,
-        brl_compra: brlData?.compra || 0,
-        eur_venta: eurData?.venta || 0,
-        eur_compra: eurData?.compra || 0,
-        uyu_ar: uyuArData?.venta || 0,
-        clp_ar: clpArData?.venta || 0,
-        brl_ar: brlArData?.venta || 0,
-        ves_eur_oficial: ves_eur_oficial_venta,
-        ves_eur_paralelo: ves_eur_paralelo_venta,
-        btc_usd: btcData?.price ? parseFloat(btcData.price) : 0,
-        usd_wallbit: usd_wallbit_venta,
-        changes: {
-            usd_oficial_percent: calculateChange(usd_oficial_venta, last24h?.usd_oficial || 0),
-            usd_blue_percent: calculateChange(usd_blue_venta, last24h?.usd_blue || 0),
-            ves_oficial_percent: calculateChange(ves_oficial_venta, last24h?.ves_oficial || 0),
-            ves_paralelo_percent: calculateChange(ves_paralelo_venta, last24h?.ves_paralelo || 0),
-            ves_eur_oficial_percent: calculateChange(ves_eur_oficial_venta, last24h?.ves_eur_oficial || 0),
-            ves_eur_paralelo_percent: calculateChange(ves_eur_paralelo_venta, last24h?.ves_eur_paralelo || 0),
-            uyu_percent: uyuChange,
-            clp_percent: clpChange,
-            brl_percent: brlChange,
-            eur_percent: eurChange,
-            uyu_ar_percent: uyuArChange,
-            clp_ar_percent: clpArChange,
-            brl_ar_percent: brlArChange,
-            otros_dolares_percents: {
-                mep: calculateChange(usd_mep_venta, last24h?.usd_mep || 0),
-                ccl: calculateChange(usd_ccl_venta, last24h?.usd_ccl || 0),
-                tarjeta: calculateChange(usd_tarjeta_venta, last24h?.usd_tarjeta || 0),
-                wallbit: calculateChange(usd_wallbit_venta, last24h?.usd_wallbit || 0)
-            },
-            bitcoin_percent: calculateChange(btcData?.price ? parseFloat(btcData.price) : 0, last24h?.btc_usd || 0)
-        },
-        api_status: apiStatus
-    };
-
-    latestMarketData = marketData;
-    rateCache.set('market_data', marketData);
-    return marketData;
-};
-
 const saveCurrentToHistory = async () => {
     try {
-        const marketData = await fetchFreshMarketData();
+        const [arsRes, vesRes, vesOficialRes, uyuRes, clpRes, brlRes, eurRes, uyuArRes, clpArRes, brlArRes, vesEurOficialRes, vesEurParaleloRes, btcRes, wallbitRes] = await Promise.all([
+            axios.get(DOLAR_API_ARS_URL).catch(e => ({ data: [] })),
+            axios.get(DOLAR_API_VES_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_VES_OFFICIAL_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_UYU_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_CLP_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_BRL_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_EURO_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_UYU_AR_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_CLP_AR_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_BRL_AR_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_VES_EURO_OFFICIAL_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_VES_EURO_PARALELO_URL).catch(e => ({ data: {} })),
+            axios.get(BINANCE_API_URL).catch(e => ({ data: { price: "0" } })),
+            process.env.WALLBIT_API_KEY
+                ? axios.get(WALLBIT_RATES_URL, { headers: { 'X-API-Key': process.env.WALLBIT_API_KEY } }).catch(e => ({ data: { data: { rate: 0 } } }))
+                : Promise.resolve({ data: { data: { rate: 0 } } })
+        ]);
+
+        const arsData = arsRes.data as any[];
+        const vesData = vesRes.data as any;
+        const vesOficialData = vesOficialRes.data as any;
+        const uyuData = uyuRes.data as any;
+        const clpData = clpRes.data as any;
+        const brlData = brlRes.data as any;
+        const eurData = eurRes.data as any;
+        const uyuArData = uyuArRes.data as any;
+        const clpArData = clpArRes.data as any;
+        const brlArData = brlArRes.data as any;
+        const vesEurOficialData = vesEurOficialRes.data as any;
+        const vesEurParaleloData = vesEurParaleloRes.data as any;
+        const btcData = btcRes.data as any;
+        const wallbitData = wallbitRes.data as any;
 
         const newItem: HistoryItem = {
-            timestamp: marketData.timestamp,
-            usd_oficial: marketData.usd_oficial,
-            usd_blue: marketData.usd_blue,
-            usd_mep: marketData.usd_mep,
-            usd_ccl: marketData.usd_ccl,
-            usd_cripto: marketData.usd_cripto,
-            usd_tarjeta: marketData.usd_tarjeta,
-            ves_oficial: marketData.ves_oficial,
-            ves_paralelo: marketData.ves_paralelo,
-            ves_eur_oficial: marketData.ves_eur_oficial,
-            ves_eur_paralelo: marketData.ves_eur_paralelo,
-            uyu_venta: marketData.uyu_venta,
-            clp_venta: marketData.clp_venta,
-            brl_venta: marketData.brl_venta,
-            eur_venta: marketData.eur_venta,
-            uyu_ar: marketData.uyu_ar,
-            clp_ar: marketData.clp_ar,
-            brl_ar: marketData.brl_ar,
-            btc_usd: marketData.btc_usd,
-            usd_wallbit: marketData.usd_wallbit
+            timestamp: new Date().toISOString(),
+            usd_oficial: getVentaByCasa(arsData, 'oficial'),
+            usd_blue: getVentaByCasa(arsData, 'blue'),
+            usd_mep: getVentaByCasa(arsData, 'bolsa'),
+            usd_ccl: getVentaByCasa(arsData, 'contadoconliqui'),
+            usd_cripto: getVentaByCasa(arsData, 'cripto'),
+            usd_tarjeta: getVentaByCasa(arsData, 'tarjeta'),
+            ves_oficial: vesOficialData?.promedio || vesOficialData?.venta || 0,
+            ves_paralelo: vesData?.promedio || vesData?.venta || 0,
+            uyu_venta: uyuData?.venta || 0,
+            clp_venta: clpData?.venta || 0,
+            brl_venta: brlData?.venda || 0,
+            eur_venta: eurData?.venta || 0,
+            uyu_ar: uyuArData?.venta || 0,
+            clp_ar: clpArData?.venta || 0,
+            brl_ar: brlArData?.venta || 0,
+            ves_eur_oficial: vesEurOficialData?.promedio || vesEurOficialData?.venta || 0,
+            ves_eur_paralelo: vesEurParaleloData?.promedio || vesEurParaleloData?.venta || 0,
+            btc_usd: btcData?.price ? parseFloat(btcData.price) : 0,
+            usd_wallbit: wallbitData?.data?.rate || 0
         };
         
         inMemoryHistory.push(newItem);
@@ -466,10 +365,6 @@ const saveCurrentToHistory = async () => {
 };
 
 await initializeHistory();
-if (process.env.NODE_ENV !== 'test') {
-    // Fetch immediately on startup to populate in-memory cache and prevent cold-start latency for the first request
-    await saveCurrentToHistory();
-}
 setInterval(saveCurrentToHistory, 300000); // 5 minutes
 
 server.get('/api/rates', {
@@ -480,14 +375,142 @@ server.get('/api/rates', {
         }
     }
 }, async (request: FastifyRequest, reply: FastifyReply) => {
-    // Serve from cache or the background-fetched in-memory object to avoid making 15 HTTP requests concurrently
-    const cachedData = rateCache.get<MarketData>('market_data') || latestMarketData;
+    // Check Cache first
+    const cachedData = rateCache.get('market_data');
     if (cachedData) {
         return reply.send(cachedData);
     }
 
+    const apiStatus: MarketData['api_status'] & { api_health?: string } = {
+        dolar_api_ar: false,
+        dolar_api_ve: false,
+        dolar_api_latam: false,
+        binance_api: false,
+        wallbit_api: false,
+        api_health: 'unknown'
+    };
+
     try {
-        const marketData = await fetchFreshMarketData();
+        const requests = [
+            axios.get(DOLAR_API_ARS_URL).then(r => { apiStatus.dolar_api_ar = true; return r; }).catch(e => { return {data: []}; }),
+            axios.get(DOLAR_API_VES_URL).then(r => { apiStatus.dolar_api_ve = true; return r; }).catch(e => { return {data: {}}; }),
+            axios.get(DOLAR_API_VES_OFFICIAL_URL).catch(e => { return {data: {}}; }),
+            axios.get(DOLAR_API_UYU_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_CLP_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_BRL_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_EURO_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_UYU_AR_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_CLP_AR_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_BRL_AR_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_VES_EURO_OFFICIAL_URL).catch(e => ({ data: {} })),
+            axios.get(DOLAR_API_VES_EURO_PARALELO_URL).catch(e => ({ data: {} })),
+            axios.get(BINANCE_API_URL).then(r => { apiStatus.binance_api = true; return r; }).catch(e => { return {data: {price: "0"}}; }),
+            process.env.WALLBIT_API_KEY
+                ? axios.get(WALLBIT_RATES_URL, { headers: { 'X-API-Key': process.env.WALLBIT_API_KEY } }).then(r => { apiStatus.wallbit_api = true; return r; }).catch(e => ({ data: { data: { rate: 0 } } }))
+                : Promise.resolve({ data: { data: { rate: 0 } } }),
+            axios.get(DOLAR_API_STATUS_URL).then(r => { apiStatus.api_health = r.data?.estado || 'error'; return r; }).catch(e => { apiStatus.api_health = 'error'; return {data: {estado: 'error'}}; })
+        ];
+
+        const [arsRes, vesRes, vesOficialRes, uyuRes, clpRes, brlRes, eurRes, uyuArRes, clpArRes, brlArRes, vesEurOficialRes, vesEurParaleloRes, btcRes, wallbitRes, statusRes] = await Promise.all(requests) as any[];
+
+        const history = inMemoryHistory;
+        
+        const arsData = arsRes.data;
+        const vesData = vesRes.data;
+        const vesOficialData = vesOficialRes.data;
+        const uyuData = uyuRes.data;
+        const clpData = clpRes.data;
+        const brlData = brlRes.data;
+        const eurData = eurRes.data;
+        const uyuArData = uyuArRes.data;
+        const clpArData = clpArRes.data;
+        const brlArData = brlArRes.data;
+        const vesEurOficialData = vesEurOficialRes.data;
+        const vesEurParaleloData = vesEurParaleloRes.data;
+        const btcData = btcRes.data;
+        const wallbitData = wallbitRes.data;
+
+        apiStatus.dolar_api_latam = uyuRes.status === 200 && clpRes.status === 200 && brlRes.status === 200;
+
+        const targetTimeString = new Date(Date.now() - (24 * 60 * 60 * 1000)).toISOString();
+        const last24h = history.length > 0 ? (history.find(h => h.timestamp >= targetTimeString) || history[0]) : null;
+
+        const uyuChange = calculateChange(uyuData?.venta || 0, last24h?.uyu_venta || uyuData?.compra || 0);
+        const clpChange = clpData?.ultimoCierre ? calculateChange(clpData?.venta || 0, clpData?.ultimoCierre) : calculateChange(clpData?.venta || 0, last24h?.clp_venta || clpData?.compra || 0);
+        const brlChange = brlData?.fechoAnterior ? calculateChange(brlData?.venda || 0, brlData?.fechoAnterior) : calculateChange(brlData?.venda || 0, last24h?.brl_venta || brlData?.compra || 0);
+        const eurChange = calculateChange(eurData?.venta || 0, last24h?.eur_venta || eurData?.compra || 0);
+        const uyuArChange = calculateChange(uyuArData?.venta || 0, last24h?.uyu_ar || uyuArData?.compra || 0);
+        const clpArChange = calculateChange(clpArData?.venta || 0, last24h?.clp_ar || clpArData?.compra || 0);
+        const brlArChange = calculateChange(brlArData?.venta || 0, last24h?.brl_ar || brlArData?.compra || 0);
+
+        const usd_oficial_venta = getVentaByCasa(arsData, 'oficial');
+        const usd_blue_venta = getVentaByCasa(arsData, 'blue');
+        const usd_mep_venta = getVentaByCasa(arsData, 'bolsa');
+        const usd_ccl_venta = getVentaByCasa(arsData, 'contadoconliqui');
+        const usd_cripto_venta = getVentaByCasa(arsData, 'cripto');
+        const usd_tarjeta_venta = getVentaByCasa(arsData, 'tarjeta');
+
+        const ves_oficial_venta = vesOficialData?.promedio || vesOficialData?.venta || 0;
+        const ves_paralelo_venta = vesData?.promedio || vesData?.venta || 0;
+        const ves_eur_oficial_venta = vesEurOficialData?.promedio || vesEurOficialData?.venta || 0;
+        const ves_eur_paralelo_venta = vesEurParaleloData?.promedio || vesEurParaleloData?.venta || 0;
+
+        const usd_wallbit_venta = wallbitData?.data?.rate || 0;
+
+        const marketData: MarketData = {
+            timestamp: new Date().toISOString(),
+            usd_oficial: usd_oficial_venta,
+            usd_blue: usd_blue_venta,
+            usd_mep: usd_mep_venta,
+            usd_ccl: usd_ccl_venta,
+            usd_cripto: usd_cripto_venta,
+            usd_tarjeta: usd_tarjeta_venta,
+            ves_oficial: ves_oficial_venta,
+            ves_paralelo: ves_paralelo_venta,
+            ves_compra: ves_oficial_venta,
+            uyu_venta: uyuData?.venta || 0,
+            uyu_compra: uyuData?.compra || 0,
+            clp_venta: clpData?.venta || 0,
+            clp_compra: clpData?.compra || 0,
+            brl_venta: brlData?.venda || 0,
+            brl_compra: brlData?.compra || 0,
+            eur_venta: eurData?.venta || 0,
+            eur_compra: eurData?.compra || 0,
+            uyu_ar: uyuArData?.venta || 0,
+            clp_ar: clpArData?.venta || 0,
+            brl_ar: brlArData?.venta || 0,
+            ves_eur_oficial: ves_eur_oficial_venta,
+            ves_eur_paralelo: ves_eur_paralelo_venta,
+            btc_usd: btcData?.price ? parseFloat(btcData.price) : 0,
+            usd_wallbit: usd_wallbit_venta,
+            changes: {
+                usd_oficial_percent: calculateChange(usd_oficial_venta, last24h?.usd_oficial || 0),
+                usd_blue_percent: calculateChange(usd_blue_venta, last24h?.usd_blue || 0),
+                ves_oficial_percent: calculateChange(ves_oficial_venta, last24h?.ves_oficial || 0),
+                ves_paralelo_percent: calculateChange(ves_paralelo_venta, last24h?.ves_paralelo || 0),
+                ves_eur_oficial_percent: calculateChange(ves_eur_oficial_venta, last24h?.ves_eur_oficial || 0),
+                ves_eur_paralelo_percent: calculateChange(ves_eur_paralelo_venta, last24h?.ves_eur_paralelo || 0),
+                uyu_percent: uyuChange,
+                clp_percent: clpChange,
+                brl_percent: brlChange,
+                eur_percent: eurChange,
+                uyu_ar_percent: uyuArChange,
+                clp_ar_percent: clpArChange,
+                brl_ar_percent: brlArChange,
+                otros_dolares_percents: {
+                    mep: calculateChange(usd_mep_venta, last24h?.usd_mep || 0),
+                    ccl: calculateChange(usd_ccl_venta, last24h?.usd_ccl || 0),
+                    tarjeta: calculateChange(usd_tarjeta_venta, last24h?.usd_tarjeta || 0),
+                    wallbit: calculateChange(usd_wallbit_venta, last24h?.usd_wallbit || 0)
+                },
+                bitcoin_percent: calculateChange(btcData?.price ? parseFloat(btcData.price) : 0, last24h?.btc_usd || 0)
+            },
+            api_status: apiStatus
+        };
+
+        // Guardar en caché antes de devolver
+        rateCache.set('market_data', marketData);
+
         return reply.send(marketData);
     } catch (error) {
         server.log.error('API Error:', error);
