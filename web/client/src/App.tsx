@@ -66,9 +66,10 @@ interface StatCardProps {
   color: string;
   change?: number;
   pulseType?: 'up' | 'down';
+  subtitle?: string;
 }
 
-const StatCard = ({ title, value, icon: Icon, color, change, pulseType }: StatCardProps) => {
+const StatCard = ({ title, value, icon: Icon, color, change, pulseType, subtitle }: StatCardProps) => {
   const isPositive = change !== undefined && change > 0;
   const isNeutral = change === 0;
   const displayValue = value || '---';
@@ -88,6 +89,7 @@ const StatCard = ({ title, value, icon: Icon, color, change, pulseType }: StatCa
         </div>
         <div className="flex flex-col items-end gap-1">
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-tight">{title}</span>
+          {subtitle && <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">{subtitle}</span>}
           {change !== undefined && (
             <div className="flex flex-col items-end gap-1 mt-1">
               <span className={`flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -503,9 +505,10 @@ export default function App() {
   const [progress, setProgress] = useState(0);
   const [timeLeft, setTimeLeft] = useState(300);
   const [targetTime, setTargetTime] = useState(() => Date.now() + 300000);
-  const [theme] = useState<'light' | 'dark' | 'system'>(() => (localStorage.getItem('theme') as any) || 'system');
+  const [theme] = useState<'light' | 'dark' | 'system'>(
+    () => (localStorage.getItem('theme') as 'light' | 'dark' | 'system') || 'system'
+  );
   const [activeTab, setActiveTab] = useState<'Argentina' | 'Venezuela' | 'Latam' | 'Conversor'>('Argentina');
-
   const handleRefresh = async () => {
     await fetchData();
     setTargetTime(Date.now() + 300000);
@@ -699,6 +702,7 @@ export default function App() {
                     <StatCard 
                       title="Dólar Oficial" 
                       value={`$${formatNumber(data?.usd_oficial)}`} 
+                      subtitle="Valor del Dólar Oficial"
                       icon={ShieldCheck} 
                       color="bg-slate-600"
                       change={data?.changes?.usd_oficial_percent}
@@ -868,6 +872,7 @@ export default function App() {
                     <StatCard 
                       title="Dólar Oficial" 
                       value={`${formatNumber(data?.ves_oficial)} VES`} 
+                      subtitle="Tasa Oficial BCV"
                       icon={ShieldCheck} 
                       color="bg-blue-500"
                       change={data?.changes?.ves_oficial_percent}
@@ -891,6 +896,7 @@ export default function App() {
                     <StatCard 
                       title="Dólar Paralelo" 
                       value={`${formatNumber(data?.ves_paralelo)} VES`} 
+                      subtitle="Promedio Dólar Paralelo"
                       icon={DollarSign} 
                       color="bg-yellow-500"
                       change={data?.changes?.ves_paralelo_percent}

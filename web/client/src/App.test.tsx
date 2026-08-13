@@ -148,7 +148,6 @@ describe('App component', () => {
       expect(screen.getByText('Dólar Paralelo')).toBeInTheDocument();
     });
 
-    // Check for VES text but not strict formatting
     expect(screen.getByText(/35,00/)).toBeInTheDocument();
     expect(screen.getAllByText(/VES/).length).toBeGreaterThan(0);
 
@@ -179,3 +178,4 @@ describe('App component', () => {
     });
   });
 });
+
