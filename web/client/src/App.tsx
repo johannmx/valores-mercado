@@ -10,12 +10,7 @@ import {
   ArrowDownRight,
   Globe,
   ShieldCheck,
-  Monitor,
-  CheckCircle2,
-  Sun,
-  Moon,
   ChevronDown,
-  AlertTriangle,
   Github,
   Euro,
   X,
@@ -28,8 +23,7 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer,
-  Legend
+  ResponsiveContainer
 } from 'recharts';
 import { isMarketOpen, formatNumber, downsampleData } from './utils/market';
 import { useMarketData } from './hooks/useMarketData';
@@ -44,26 +38,6 @@ declare global {
       VITE_API_URL?: string;
     };
   }
-}
-
-
-
-interface ResultCardItem {
-  label: string;
-  value: string | number;
-  highlight?: boolean;
-  prefix?: string;
-  suffix?: string;
-}
-
-interface ResultCardProps {
-  title: string;
-  items: ResultCardItem[];
-  icon: React.ElementType;
-  color: {
-    bg: string;
-    text: string;
-  };
 }
 
 interface RegionChartProps {
@@ -85,24 +59,17 @@ interface RegionChartProps {
   hideHeader?: boolean;
 }
 
-
-
-
 interface StatCardProps {
   title: string;
   value: string | number;
   icon: React.ElementType;
   color: string;
-  subtitle?: string;
-  buy?: string | number;
-  sell?: string | number;
   change?: number;
-  badge?: string;
-  spread?: number | string;
   pulseType?: 'up' | 'down';
+  subtitle?: string;
 }
 
-const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change, badge, spread, pulseType }: StatCardProps) => {
+const StatCard = ({ title, value, icon: Icon, color, change, pulseType, subtitle }: StatCardProps) => {
   const isPositive = change !== undefined && change > 0;
   const isNeutral = change === 0;
   const displayValue = value || '---';
@@ -122,6 +89,7 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
         </div>
         <div className="flex flex-col items-end gap-1">
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-tight">{title}</span>
+          {subtitle && <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">{subtitle}</span>}
           {change !== undefined && (
             <div className="flex flex-col items-end gap-1 mt-1">
               <span className={`flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -131,81 +99,200 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, buy, sell, change
                 {isNeutral ? <TrendingUp className="w-3 h-3 text-slate-400" /> : isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                 {Math.abs(change).toFixed(2)}%
               </span>
-              {spread !== undefined && (
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Spread: {spread}%</span>
-              )}
             </div>
           )}
         </div>
       </div>
       <div className="space-y-1">
-        <h3 className="text-4xl font-black text-slate-800 dark:text-white tracking-tight leading-none">{displayValue}</h3>
-        {subtitle && <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter">{subtitle}</p>}
-        {(buy !== undefined || sell !== undefined || badge) && (
-          <div className="flex justify-between items-end mt-4 pt-4 border-t border-slate-50 dark:border-slate-700/50 text-[10px] font-bold uppercase">
-            <div className="flex gap-4">
-              {buy !== undefined && (
-                <div className="flex flex-col">
-                  <span className="text-slate-300 dark:text-slate-500 mb-0.5">Compra</span>
-                  <span className="text-slate-600 dark:text-slate-300">$ {buy || '-'}</span>
-                </div>
-              )}
-              {sell !== undefined && (
-                <div className="flex flex-col">
-                  <span className="text-slate-300 dark:text-slate-500 mb-0.5">Venta</span>
-                  <span className="text-slate-600 dark:text-slate-300">$ {sell || '-'}</span>
-                </div>
-              )}
-            </div>
-            {badge && (
-              <span className="text-[9px] font-black uppercase tracking-widest bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full mb-0.5">
-                {badge}
-              </span>
-            )}
-          </div>
-        )}
+        <h3 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight leading-none">{displayValue}</h3>
       </div>
     </div>
   );
 };
 
-const ResultCard = ({ title, items, icon: Icon, color }: ResultCardProps) => (
-  <div className="bg-white dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-700/50 shadow-sm flex flex-col h-full hover:shadow-md transition-all duration-300">
-    <div className="flex items-center gap-2 mb-6">
-      <div className={`p-2 rounded-lg ${color.bg}`}>
-        <Icon className={`w-4 h-4 ${color.text}`} />
-      </div>
-      <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">{title}</h3>
-    </div>
-    <div className="space-y-4 flex-1">
-      {items.map((item: ResultCardItem) => (
-        <div key={item.label} className="flex justify-between items-center group">
-          <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tight group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">{item.label}</span>
-          <div className="flex flex-col items-end">
-            <span className={`text-lg font-black ${item.highlight ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-white'}`}>
-              {item.prefix && <span className="mr-1">{item.prefix}</span>}
-              {item.value}
-              {item.suffix && <span className="ml-1 text-[10px] opacity-60">{item.suffix}</span>}
-            </span>
-          </div>
+const timeCache = new Map<string, string>();
+const dateTimeCache = new Map<string, string>();
+
+const formatTime = (str: string) => {
+  let cached = timeCache.get(str);
+  if (!cached) {
+    cached = new Date(str).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    timeCache.set(str, cached);
+  }
+  return cached;
+};
+
+const formatDateTime = (str: string) => {
+  let cached = dateTimeCache.get(str);
+  if (!cached) {
+    cached = new Date(str).toLocaleString('es-AR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    dateTimeCache.set(str, cached);
+  }
+  return cached;
+};
+
+const CustomTooltip = memo(({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const formattedLabel = formatDateTime(label);
+
+    return (
+      <div className="bg-slate-900/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-xl border border-slate-800 text-xs">
+        <p className="text-slate-400 mb-2 font-bold flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+          {formattedLabel}
+        </p>
+        <div className="space-y-1.5">
+          {payload.map((entry: any, index: number) => {
+            if (entry.value === undefined || entry.value === null) return null;
+            return (
+              <div key={`item-${index}`} className="flex items-center justify-between gap-4 font-bold">
+                <span style={{ color: entry.color }} className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></span>
+                  {entry.name}:
+                </span>
+                <span className="font-mono text-sm">${entry.value.toLocaleString('de-DE')}</span>
+              </div>
+            );
+          })}
         </div>
-      ))}
+      </div>
+    );
+  }
+  return null;
+});
+
+const RegionChart = memo(({ title, data, buyKey, sellKey, dataKey, color, icon: Icon, singleLine, onExpand, subtitle, hideHeader }: RegionChartProps) => {
+  const chartData = useMemo(() => downsampleData(data, 350), [data]);
+
+  return (
+    <div className="bg-white dark:bg-slate-800/80 p-6 rounded-3xl border border-slate-100 dark:border-slate-700/50 shadow-sm transition-all duration-300 flex flex-col justify-between h-full hover:shadow-md">
+      {!hideHeader && (
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-700/50 ${color.text}`}>
+              <Icon className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-black text-slate-800 dark:text-white uppercase tracking-tight text-sm">{title}</h3>
+              {subtitle && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{subtitle}</p>}
+            </div>
+          </div>
+          {onExpand && (
+            <button 
+              onClick={onExpand}
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+              title="Ver gráfico completo"
+            >
+              <Maximize className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="h-44 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+            <defs>
+              {singleLine ? (
+                <linearGradient id={`grad-${title}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={color.hex || '#3b82f6'} stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor={color.hex || '#3b82f6'} stopOpacity={0}/>
+                </linearGradient>
+              ) : (
+                <>
+                  <linearGradient id={`grad-buy-${title}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={color.buyHex || '#10b981'} stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor={color.buyHex || '#10b981'} stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id={`grad-sell-${title}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={color.sellHex || '#ef4444'} stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor={color.sellHex || '#ef4444'} stopOpacity={0}/>
+                  </linearGradient>
+                </>
+              )}
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.1} />
+            <XAxis 
+              dataKey="timestamp" 
+              tickFormatter={formatTime}
+              stroke="#94a3b8" 
+              fontSize={10} 
+              tickLine={false}
+              axisLine={false}
+              dy={5}
+            />
+            <YAxis 
+              stroke="#94a3b8" 
+              fontSize={10} 
+              tickLine={false}
+              axisLine={false}
+              domain={['auto', 'auto']}
+              tickFormatter={(val) => `$${val}`}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            
+            {singleLine ? (
+              <Area 
+                type="monotone" 
+                dataKey={dataKey || 'value'} 
+                name="Cotización"
+                stroke={color.hex || '#3b82f6'} 
+                strokeWidth={2}
+                fillOpacity={1} 
+                fill={`url(#grad-${title})`} 
+              />
+            ) : (
+              <>
+                <Area 
+                  type="monotone" 
+                  dataKey={buyKey || 'buy'} 
+                  name="Compra"
+                  stroke={color.buyHex || '#10b981'} 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill={`url(#grad-buy-${title})`} 
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey={sellKey || 'sell'} 
+                  name="Venta"
+                  stroke={color.sellHex || '#ef4444'} 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill={`url(#grad-sell-${title})`} 
+                />
+              </>
+            )}
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
     </div>
-  </div>
-);
+  );
+}, (prevProps, nextProps) => {
+  return prevProps.data === nextProps.data &&
+         prevProps.title === nextProps.title &&
+         prevProps.singleLine === nextProps.singleLine &&
+         prevProps.subtitle === nextProps.subtitle &&
+         prevProps.hideHeader === nextProps.hideHeader;
+});
 
 const Converter = ({ data }: { data: MarketData | null }) => {
   const [amount, setAmount] = useState<number>(1);
-  const [from, setFrom] = useState<'USD' | 'ARS_BLUE' | 'ARS_OFFICIAL' | 'CRYPTO' | 'WALLBIT' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL' | 'EUR'>('USD');
+  const [from, setFrom] = useState<'USD' | 'ARS' | 'VES' | 'EUR_AR' | 'EUR_VE' | 'UYU' | 'CLP' | 'BRL'>('USD');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const OPTIONS = [
     { value: 'USD', label: 'USD - Dólar USA' },
-    { value: 'ARS_OFFICIAL', label: 'ARS - Dólar Oficial' },
-    { value: 'CRYPTO', label: 'ARS - Dólar Crypto' },
-    { value: 'WALLBIT', label: 'ARS - Dólar Wallbit' },
-    { value: 'VES', label: 'VES - Bolívar Paralelo' },
-    { value: 'VES_OFFICIAL', label: 'VES - Bolívar Oficial' },
+    { value: 'ARS', label: 'ARS - Peso Argentino' },
+    { value: 'VES', label: 'VES - Bolívar Venezolano' },
+    { value: 'EUR_AR', label: 'EUR - Euro Oficial AR' },
+    { value: 'EUR_VE', label: 'EUR - Euro Oficial VE' },
     { value: 'UYU', label: 'UYU - Peso Uruguayo' },
     { value: 'CLP', label: 'CLP - Peso Chileno' },
     { value: 'BRL', label: 'BRL - Real Brasileño' }
@@ -215,378 +302,213 @@ const Converter = ({ data }: { data: MarketData | null }) => {
 
   const rates: Record<string, number> = {
     USD: 1,
-    ARS_BLUE: data.usd_blue,
-    ARS_OFFICIAL: data.usd_oficial,
-    CRYPTO: data.usd_cripto,
-    WALLBIT: data.usd_wallbit,
-    VES: data.ves_paralelo,
-    VES_OFFICIAL: data.ves_oficial,
-    UYU: data.uyu_venta,
-    CLP: data.clp_venta,
-    BRL: data.brl_venta,
-    EUR: data.eur_venta
+    ARS_BLUE: data.usd_blue || 1,
+    ARS_OFFICIAL: data.usd_oficial || 1,
+    CRYPTO: data.usd_cripto || 1,
+    WALLBIT: data.usd_wallbit || 1,
+    EUR_AR: (data.eur_venta && data.usd_oficial) ? (data.eur_venta / data.usd_oficial) : 1,
+    VES: data.ves_paralelo || 1,
+    VES_OFFICIAL: data.ves_oficial || 1,
+    EUR_VE: (data.ves_eur_oficial && data.ves_oficial) ? (data.ves_eur_oficial / data.ves_oficial) : 1,
+    EUR_VE_PARALELO: (data.ves_eur_paralelo && data.ves_paralelo) ? (data.ves_eur_paralelo / data.ves_paralelo) : 1,
+    UYU: data.uyu_venta || 1,
+    CLP: data.clp_venta || 1,
+    BRL: data.brl_venta || 1,
+    EUR: data.eur_venta || 1
   };
 
-  const convert = (to: 'USD' | 'ARS_BLUE' | 'ARS_OFFICIAL' | 'CRYPTO' | 'WALLBIT' | 'VES' | 'VES_OFFICIAL' | 'UYU' | 'CLP' | 'BRL' | 'EUR') => {
-    const usdAmount = amount / rates[from];
-    const result = usdAmount * rates[to];
-    
-    if (to === 'ARS_BLUE' || to === 'ARS_OFFICIAL' || to === 'CRYPTO' || to === 'WALLBIT' || to === 'VES' || to === 'VES_OFFICIAL') {
-      return result.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const getUsdAmount = () => {
+    if (from === 'USD') return amount;
+    if (from === 'ARS') return amount / (rates['CRYPTO'] || 1);
+    if (from === 'VES') return amount / (rates['VES'] || 1);
+    if (from === 'EUR_AR') {
+      // 1 EUR = (eur_venta / usd_oficial) USD => amount EUR / rate = amount in USD
+      return amount * (rates['EUR_AR'] || 1);
+    }
+    if (from === 'EUR_VE') {
+      return amount * (rates['EUR_VE'] || 1);
+    }
+    const rate = rates[from] || 1;
+    return amount / rate;
+  };
+
+  const convertUsdTo = (toKey: string) => {
+    const usdAmount = getUsdAmount();
+    let result = 0;
+    if (toKey === 'EUR_AR') {
+      // Amount in EUR_AR = (usdAmount * usd_oficial) / eur_venta
+      const eurRate = rates['EUR_AR'] || 1;
+      result = usdAmount / eurRate;
+    } else if (toKey === 'EUR_VE') {
+      const eurRate = rates['EUR_VE'] || 1;
+      result = usdAmount / eurRate;
+    } else if (toKey === 'EUR_VE_PARALELO') {
+      const eurRate = rates['EUR_VE_PARALELO'] || 1;
+      result = usdAmount / eurRate;
+    } else {
+      const targetRate = rates[toKey] || 1;
+      result = usdAmount * targetRate;
     }
     return result.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-
   return (
-    <div className="space-y-8">
-      {/* Input Header Card */}
-      <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700">
-        <div className="flex items-center gap-2 mb-6">
-          <ArrowRightLeft className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-          <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Conversor Rápido</h2>
+    <div className="space-y-8 bg-white dark:bg-slate-800 p-8 rounded-3xl border border-slate-100 dark:border-slate-700/50">
+      <div className="flex items-center gap-3">
+        <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-2xl text-blue-600 dark:text-blue-400">
+          <ArrowRightLeft className="w-6 h-6" />
         </div>
-        
-        <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-transparent dark:border-slate-700">
-          <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Monto a convertir</label>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input 
-              type="number" 
-              value={amount.toString()} 
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val.length > 15) return; // Security: Prevent excessive input length (DoS mitigation)
-                if (val === '') {
-                  setAmount(0);
-                } else {
-                  const noLeadingZeros = val.replace(/^0+(?=\d)/, '');
-                  setAmount(Number(noLeadingZeros));
-                }
-              }}
-              className="flex-1 min-w-0 px-6 py-3 border-0 bg-white dark:bg-slate-800 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all font-black text-2xl text-slate-800 dark:text-white"
-              placeholder="0.00"
-            />
-            <div className="relative flex-shrink-0 min-w-[220px]">
-              <button
-                type="button"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full h-full flex items-center justify-between px-6 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-white rounded-2xl font-black outline-none cursor-pointer transition-all shadow-sm text-sm"
-              >
-                <span>{OPTIONS.find(o => o.value === from)?.label || 'Seleccionar moneda'}</span>
-                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {isDropdownOpen && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-10" 
-                    onClick={() => setIsDropdownOpen(false)} 
-                  />
-                  <div className="absolute z-20 w-full mt-2 py-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl max-h-[280px] overflow-y-auto overflow-x-hidden animate-in slide-in-from-top-2 fade-in duration-200">
-                    {OPTIONS.map(option => (
-                      <div
-                        key={option.value}
-                        onClick={() => {
-                          setFrom(option.value as typeof from);
-                          setIsDropdownOpen(false);
-                          if (window.umami) {
-                            window.umami.track('Calculadora - Conversion', { moneda: option.value });
-                          }
-                        }}
-                        className={`px-6 py-3 cursor-pointer text-sm font-black transition-colors flex items-center justify-between group ${from === option.value ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white'}`}
-                      >
-                        {option.label}
-                        {from === option.value && <CheckCircle2 className="w-4 h-4" />}
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
+        <div>
+          <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Conversor Rápido</h2>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Calcula el valor en otras monedas</p>
+        </div>
+      </div>
+      
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl">
+          <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Monto</label>
+          <input 
+            type="number" 
+            value={amount} 
+            onChange={(e) => setAmount(Number(e.target.value))}
+            className="w-full px-4 py-3 bg-white dark:bg-slate-800 rounded-xl border-none text-2xl font-black text-slate-800 dark:text-white"
+          />
+        </div>
+        <div className="relative">
+          <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Moneda base</label>
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-between font-black text-slate-800 dark:text-white"
+          >
+            {OPTIONS.find(o => o.value === from)?.label}
+            <ChevronDown className="w-5 h-5 text-slate-400" />
+          </button>
+          {isDropdownOpen && (
+            <div className="absolute z-10 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl py-2">
+              {OPTIONS.map(opt => (
+                <button key={opt.value} onClick={() => { setFrom(opt.value as any); setIsDropdownOpen(false); }} className="block w-full text-left px-6 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-sm">
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-6 pt-6 border-t border-slate-100 dark:border-slate-700/50">
+        {/* Argentina Results Box */}
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-sky-500" />
+            <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Argentina</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-100 dark:border-slate-600/50">
+              <p className="text-[9px] font-black text-slate-400 uppercase">Dólar Blue</p>
+              <p className="font-black text-slate-800 dark:text-white">${convertUsdTo('ARS_BLUE')}</p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-100 dark:border-slate-600/50">
+              <p className="text-[9px] font-black text-slate-400 uppercase">Dólar Oficial</p>
+              <p className="font-black text-slate-800 dark:text-white">${convertUsdTo('ARS_OFFICIAL')}</p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-100 dark:border-slate-600/50">
+              <p className="text-[9px] font-black text-slate-400 uppercase">Dólar Cripto</p>
+              <p className="font-black text-slate-800 dark:text-white">${convertUsdTo('CRYPTO')}</p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-100 dark:border-slate-600/50">
+              <p className="text-[9px] font-black text-indigo-500 dark:text-indigo-400 uppercase">Euro Oficial AR</p>
+              <p className="font-black text-slate-800 dark:text-white">€{convertUsdTo('EUR_AR')}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Venezuela Results Box */}
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-yellow-500" />
+            <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Venezuela</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-100 dark:border-slate-600/50">
+              <p className="text-[9px] font-black text-slate-400 uppercase">Dólar Paralelo</p>
+              <p className="font-black text-slate-800 dark:text-white">{convertUsdTo('VES')} VES</p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-100 dark:border-slate-600/50">
+              <p className="text-[9px] font-black text-slate-400 uppercase">Dólar Oficial</p>
+              <p className="font-black text-slate-800 dark:text-white">{convertUsdTo('VES_OFFICIAL')} VES</p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-100 dark:border-slate-600/50">
+              <p className="text-[9px] font-black text-blue-500 dark:text-blue-400 uppercase">Euro Oficial VE</p>
+              <p className="font-black text-slate-800 dark:text-white">€{convertUsdTo('EUR_VE')}</p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-100 dark:border-slate-600/50">
+              <p className="text-[9px] font-black text-yellow-600 dark:text-yellow-400 uppercase">Euro Paralelo VE</p>
+              <p className="font-black text-slate-800 dark:text-white">€{convertUsdTo('EUR_VE_PARALELO')}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Global / Latam Results Box */}
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+            <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Internacional & Latam</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-100 dark:border-slate-600/50">
+              <p className="text-[9px] font-black text-slate-400 uppercase">USD</p>
+              <p className="font-black text-slate-800 dark:text-white">${convertUsdTo('USD')}</p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-100 dark:border-slate-600/50">
+              <p className="text-[9px] font-black text-slate-400 uppercase">BRL (Real)</p>
+              <p className="font-black text-slate-800 dark:text-white">R${convertUsdTo('BRL')}</p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-100 dark:border-slate-600/50">
+              <p className="text-[9px] font-black text-slate-400 uppercase">UYU (Peso Uy)</p>
+              <p className="font-black text-slate-800 dark:text-white">${convertUsdTo('UYU')}</p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-100 dark:border-slate-600/50">
+              <p className="text-[9px] font-black text-slate-400 uppercase">CLP (Peso Cl)</p>
+              <p className="font-black text-slate-800 dark:text-white">${convertUsdTo('CLP')}</p>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Results Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Global/Base */}
-        {from !== 'USD' && (
-          <ResultCard 
-            title="Global" 
-            icon={Globe} 
-            color={{bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400'}}
-            items={[
-              { label: 'Dólar USA', value: convert('USD'), prefix: '$', highlight: true }
-            ]}
-          />
-        )}
-
-        {/* Argentina */}
-        <ResultCard 
-          title="Argentina" 
-          icon={ShieldCheck} 
-          color={{bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400'}}
-          items={[
-            ...(from !== 'ARS_OFFICIAL' ? [{ label: 'ARS (Oficial)', value: convert('ARS_OFFICIAL'), prefix: '$' }] : []),
-            ...(from !== 'CRYPTO' ? [{ label: 'ARS (Crypto)', value: convert('CRYPTO'), prefix: '$' }] : []),
-            ...(from !== 'WALLBIT' ? [{ label: 'ARS (Wallbit)', value: convert('WALLBIT'), prefix: '$' }] : [])
-          ]}
-        />
-
-        {/* Venezuela */}
-        <ResultCard 
-          title="Venezuela" 
-          icon={TrendingUp} 
-          color={{bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400'}}
-          items={[
-            ...(from !== 'VES' ? [{ label: 'VES (Paralelo)', value: convert('VES'), suffix: 'VES' }] : []),
-            ...(from !== 'VES_OFFICIAL' ? [{ label: 'VES (Oficial)', value: convert('VES_OFFICIAL'), suffix: 'VES' }] : [])
-          ]}
-        />
-
-        {/* LATAM */}
-        <ResultCard 
-          title="LATAM" 
-          icon={Globe} 
-          color={{bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400'}}
-          items={[
-            ...(from !== 'UYU' ? [{ label: 'UYU (Peso)', value: convert('UYU'), prefix: '$' }] : []),
-            ...(from !== 'BRL' ? [{ label: 'BRL (Real)', value: convert('BRL'), prefix: '$' }] : []),
-            ...(from !== 'CLP' ? [{ label: 'CLP (Peso)', value: convert('CLP'), prefix: '$' }] : [])
-          ]}
-        />
-      </div>
     </div>
   );
 };
-
-
-
-const timeCache = new Map<string, string>();
-const dateTimeCache = new Map<string, string>();
-
-const formatTime = (str: string) => {
-  let cached = timeCache.get(str);
-  if (!cached) {
-    try {
-      cached = new Date(str).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      timeCache.set(str, cached);
-    } catch {
-      cached = '';
-    }
-  }
-  return cached;
-};
-
-const formatDateTime = (label: unknown) => {
-  if (!label) return '';
-  const str = String(label);
-  let cached = dateTimeCache.get(str);
-  if (!cached) {
-    try {
-      cached = new Date(str).toLocaleString();
-      dateTimeCache.set(str, cached);
-    } catch {
-      cached = str;
-    }
-  }
-  return cached;
-};
-
-const RegionChart = memo(({ title, data, buyKey, sellKey, dataKey, color, icon: Icon, singleLine, onExpand, subtitle = "Tendencia 24h", hideHeader }: RegionChartProps) => (
-  <div className={`bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full min-h-[440px] ${hideHeader ? 'p-0 border-none shadow-none bg-transparent dark:bg-transparent' : 'p-6'}`}>
-    {!hideHeader && (
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter flex items-center gap-2">
-          <Icon className={`w-6 h-6 ${color.text}`} />
-          {title}
-        </h2>
-        <div className="flex items-center gap-3">
-          <div className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-widest">{subtitle}</div>
-          {onExpand && (
-            <button 
-              onClick={onExpand}
-              className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors group"
-              title="Ver Historial"
-            >
-              <Maximize className="w-4 h-4 group-hover:scale-110 transition-transform" />
-            </button>
-          )}
-        </div>
-      </div>
-    )}
-    
-    <div className="flex-1 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={downsampleData(data, 350)}>
-          <defs>
-            {singleLine ? (
-              <linearGradient id={`color-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={color.hex} stopOpacity={0.2}/>
-                <stop offset="95%" stopColor={color.hex} stopOpacity={0}/>
-              </linearGradient>
-            ) : (
-              <>
-                <linearGradient id={`color-buy-${buyKey}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={color.buyHex} stopOpacity={0.2}/>
-                  <stop offset="95%" stopColor={color.buyHex} stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id={`color-sell-${sellKey}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={color.sellHex} stopOpacity={0.2}/>
-                  <stop offset="95%" stopColor={color.sellHex} stopOpacity={0}/>
-                </linearGradient>
-              </>
-            )}
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-          <XAxis 
-            dataKey="timestamp" 
-            axisLine={false} 
-            tickLine={false} 
-            tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'bold'}}
-            dy={10}
-            tickFormatter={formatTime}
-          />
-          <YAxis domain={['auto', 'auto']} hide />
-          <Tooltip 
-            contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'}}
-            itemStyle={{fontWeight: '900', textTransform: 'uppercase', fontSize: '10px'}}
-            labelStyle={{fontWeight: '900', marginBottom: '8px', color: '#64748b'}}
-            labelFormatter={formatDateTime}
-            formatter={(value) => [
-              formatNumber(value as number),
-              "VALOR"
-            ] as [string, string]}
-          />
-          {!singleLine && <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase'}} />}
-          
-          {singleLine ? (
-            <Area 
-              name="Valor"
-              type="monotone" 
-              dataKey={dataKey || 'value'} 
-              stroke={color.hex} 
-              strokeWidth={4}
-              fillOpacity={1} 
-              fill={`url(#color-${dataKey || 'value'})`}
-              isAnimationActive={false}
-            />
-          ) : (
-            <>
-              <Area 
-                type="monotone" 
-                dataKey="usd_blue" 
-                stroke="#3b82f6" 
-                strokeWidth={4}
-                fillOpacity={1} 
-                fill="url(#colorUsd)" 
-                name="Dólar Blue"
-                isAnimationActive={false}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="usd_oficial" 
-                stroke="#64748b" 
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                fillOpacity={0}
-                name="Dólar Oficial"
-                isAnimationActive={false}
-              />
-            </>
-          )}
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
-    <div className="mt-6 pt-4 border-t border-slate-50 dark:border-slate-700/50 text-[9px] text-slate-300 dark:text-slate-500 font-black uppercase tracking-widest text-center">
-      {singleLine ? 'Evolución del valor de mercado' : 'Evolución tasas de compra y venta'}
-    </div>
-  </div>
-), (prevProps, nextProps) => {
-  return prevProps.title === nextProps.title &&
-         prevProps.data === nextProps.data &&
-         prevProps.buyKey === nextProps.buyKey &&
-         prevProps.sellKey === nextProps.sellKey &&
-         prevProps.dataKey === nextProps.dataKey &&
-         prevProps.color?.hex === nextProps.color?.hex &&
-         prevProps.color?.text === nextProps.color?.text &&
-         prevProps.color?.buyHex === nextProps.color?.buyHex &&
-         prevProps.color?.sellHex === nextProps.color?.sellHex &&
-         prevProps.icon === nextProps.icon &&
-         prevProps.singleLine === nextProps.singleLine &&
-         prevProps.subtitle === nextProps.subtitle &&
-         prevProps.hideHeader === nextProps.hideHeader;
-});
 
 const ToastNotification = ({ note, onDismiss }: { note: AppNotification, onDismiss: (id: number, key: string) => void }) => {
   const [isClosing, setIsClosing] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
 
   const handleClose = useCallback(() => {
     setIsClosing(true);
-    setTimeout(() => {
-      onDismiss(note.id, note.key);
-    }, 400); // Allow time for exit animation
+    setTimeout(() => onDismiss(note.id, note.key), 400);
   }, [note.id, note.key, onDismiss]);
 
-  useEffect(() => {
-    if (isHovered) return;
-    
-    // Automatically dismiss after 8 seconds of no hovering
-    const timer = setTimeout(() => {
-      handleClose();
-    }, 8000);
-
-    return () => clearTimeout(timer);
-  }, [isHovered, handleClose]);
-
   return (
-    <div 
-      onMouseEnter={() => setIsHovered(true)} 
-      onMouseLeave={() => setIsHovered(false)}
-      className={`pointer-events-auto flex items-center gap-3 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 max-w-sm group transition-all duration-500 transform
-        ${isClosing ? 'opacity-0 translate-x-12 scale-95 duration-300' : 'opacity-100 translate-x-0 scale-100 animate-in slide-in-from-right-8 fade-in'}`}
-    >
-      <div className={`p-2 rounded-full flex-shrink-0 ${note.type === 'up' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400'}`}>
+    <div className={`pointer-events-auto flex items-center gap-3 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 max-w-sm transition-all duration-500 transform ${isClosing ? 'opacity-0 translate-x-12' : 'opacity-100'}`}>
+      <div className={`p-2 rounded-full flex-shrink-0 ${note.type === 'up' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
         {note.type === 'up' ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
       </div>
       <div className="flex-1 min-w-0 pr-2">
-        <p className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-tighter truncate">{note.message}</p>
-        <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Hace un momento</p>
+        <p className="text-xs font-black text-slate-800 dark:text-white uppercase truncate">{note.message}</p>
       </div>
-      <button 
-        onClick={handleClose}
-        className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
-        aria-label="Cerrar notificación"
-      >
-        <X className="w-3.5 h-3.5" />
-      </button>
+      <button onClick={handleClose} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
     </div>
   );
 };
 
-function App() {
+export default function App() {
   const { data, history, loading, error, isRefreshing, fetchData, notifications, changedKeys, dismissNotification } = useMarketData();
 
-  // Performance Optimization: Memoize the locale-formatted last synchronization time.
-  // This avoids invoking `toLocaleTimeString` and constructing `Date` objects on every
-  // timer tick (which re-renders `App` every second).
-  const formattedLastSyncTime = useMemo(() => {
-    if (!data?.timestamp) return '--:--';
-    try {
-      return new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return '--:--';
-    }
-  }, [data?.timestamp]);
-
   const [progress, setProgress] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(300);
   const [targetTime, setTargetTime] = useState(() => Date.now() + 300000);
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(
+  const [theme] = useState<'light' | 'dark' | 'system'>(
     () => (localStorage.getItem('theme') as 'light' | 'dark' | 'system') || 'system'
   );
-  const [activeTab, setActiveTab] = useState<'Argentina' | 'Venezuela' | 'Calculadora' | 'Latam'>('Argentina');
+  const [activeTab, setActiveTab] = useState<'Argentina' | 'Venezuela' | 'Latam' | 'Conversor'>('Argentina');
   const handleRefresh = async () => {
     await fetchData();
     setTargetTime(Date.now() + 300000);
@@ -596,98 +518,55 @@ function App() {
 
   const [modalChart, setModalChart] = useState<{ title: string; dataKey: string; color: { hex?: string; text: string; buyHex?: string; sellHex?: string }; icon: React.ElementType; singleLine?: boolean; } | null>(null);
 
-  
-  
-  
   useEffect(() => {
     const root = window.document.documentElement;
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     
     const applyTheme = () => {
       root.classList.remove('light', 'dark');
-      
-      let activeTheme = theme;
-      if (theme === 'system') {
-        activeTheme = mediaQuery.matches ? 'dark' : 'light';
-      }
-      
+      let activeTheme = theme === 'system' ? (mediaQuery.matches ? 'dark' : 'light') : theme;
       root.classList.add(activeTheme);
       localStorage.setItem('theme', theme);
-
-      // Update theme-color meta tag for iOS Safari
-      let metaThemeColor = document.querySelector('meta[name="theme-color"]');
-      if (!metaThemeColor) {
-        metaThemeColor = document.createElement('meta');
-        metaThemeColor.setAttribute('name', 'theme-color');
-        document.head.appendChild(metaThemeColor);
+      
+      let meta = document.querySelector('meta[name="theme-color"]');
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('name', 'theme-color');
+        document.head.appendChild(meta);
       }
-      metaThemeColor.setAttribute('content', activeTheme === 'dark' ? '#0f172a' : '#f8fafc');
+      meta.setAttribute('content', activeTheme === 'dark' ? '#0f172a' : '#f8fafc');
     };
 
     applyTheme();
 
-    // Listen for changes when in system mode
-    const handleSystemChange = () => {
-      if (theme === 'system') applyTheme();
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && theme === 'system') {
-        applyTheme();
-      }
-    };
-
+    const handleSystemChange = () => { if (theme === 'system') applyTheme(); };
     mediaQuery.addEventListener('change', handleSystemChange);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      mediaQuery.removeEventListener('change', handleSystemChange);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+    return () => mediaQuery.removeEventListener('change', handleSystemChange);
   }, [theme]);
 
-  // Timer effect
   useEffect(() => {
     if (loading) return;
-
     const tick = () => {
-      const remainingSeconds = Math.max(0, Math.floor((targetTime - Date.now()) / 1000));
-      if (remainingSeconds <= 0) {
-        // Solo actualizamos de fondo si la pestaña está activa, 
-        // de otra forma los toast y animaciones suceden sin que el usuario los vea
-        if (document.visibilityState === 'visible') {
-          handleRefresh();
-        } else {
-          setTimeLeft(0); // Dejamos listo para que cargue en el momento que vuelvan
-        }
+      const remaining = Math.max(0, Math.floor((targetTime - Date.now()) / 1000));
+      if (remaining <= 0) {
+        if (document.visibilityState === 'visible') handleRefresh();
+        else setTimeLeft(0);
       } else {
-        setTimeLeft(remainingSeconds);
+        setTimeLeft(remaining);
       }
     };
-
     const timer = setInterval(tick, 1000);
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        tick();
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+    return () => clearInterval(timer);
   }, [loading, targetTime]);
 
-  // Update progress bar
   useEffect(() => {
     setProgress(((300 - timeLeft) / 300) * 100);
   }, [timeLeft]);
 
+  const formatTimeLeft = () => `${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, '0')}`;
+
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
       <div className="flex flex-col items-center gap-4">
         <RefreshCw className="w-10 h-10 text-blue-600 animate-spin" />
         <p className="text-slate-500 font-black tracking-widest uppercase text-xs">Sincronizando Mercados...</p>
@@ -695,16 +574,9 @@ function App() {
     </div>
   );
 
-  const formatTimeLeft = () => {
-    const mins = Math.floor(timeLeft / 60);
-    const secs = timeLeft % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300 py-10 px-4 sm:px-6 lg:px-8 font-sans text-slate-900 pb-10 lg:pb-48 overflow-x-hidden w-full">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-10 px-4 sm:px-6 lg:px-8 font-sans text-slate-900 pb-24 overflow-x-hidden w-full">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
           <div>
             <div className="flex items-center gap-3">
@@ -717,14 +589,12 @@ function App() {
             </div>
             <p className="mt-2 text-slate-400 dark:text-slate-500 font-bold uppercase text-[10px] tracking-widest">Dólar al día: De Buenos Aires a Caracas</p>
             
-            {/* Modern Status Badge */}
             {(() => {
               const open = isMarketOpen();
               return (
                 <div className={`mt-4 flex items-center gap-2 ${open ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800/50' : 'bg-amber-50 dark:bg-amber-900/30 border-amber-100 dark:border-amber-800/50'} border px-3 py-1.5 rounded-full w-fit`}>
-                  <div className={`w-2 h-2 rounded-full ${open ? 'bg-emerald-500' : 'bg-amber-500'} animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite] ${open ? 'shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'shadow-[0_0_8px_rgba(245,158,11,0.5)]'}`}></div>
+                  <div className={`w-2 h-2 rounded-full ${open ? 'bg-emerald-500' : 'bg-amber-500'} animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]`}></div>
                   <span className={`text-[10px] uppercase font-black ${open ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'} tracking-widest flex items-center gap-1`}>
-                    {open ? <CheckCircle2 className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
                     {open ? 'Mercados Operando OK' : 'Mercados Cerrados'}
                   </span>
                 </div>
@@ -733,41 +603,7 @@ function App() {
           </div>
           
           <div className="flex items-center gap-4">
-            {/* Theme Toggle */}
             <div className="flex bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-100 dark:border-slate-700 p-1">
-              <button 
-                onClick={() => setTheme('light')}
-                className={`p-2 rounded-full transition-all ${theme === 'light' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                title="Claro"
-              >
-                <Sun className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={() => setTheme('system')}
-                className={`p-2 rounded-full transition-all ${theme === 'system' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                title="Sistema"
-              >
-                <Monitor className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={() => setTheme('dark')}
-                className={`p-2 rounded-full transition-all ${theme === 'dark' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                title="Oscuro"
-              >
-                <Moon className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-4 px-6 py-3 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-100 dark:border-slate-700">
-                <div className="flex flex-col items-end">
-                  <span className="text-[9px] uppercase font-black text-slate-300 dark:text-slate-500 leading-none mb-1 tracking-tighter">
-                    {data ? 'Última Sincronización' : isRefreshing ? 'Sincronizando...' : 'Desconectado'}
-                  </span>
-                  <span className="text-sm font-black text-slate-600 dark:text-white">
-                    {formattedLastSyncTime}
-                  </span>
-                </div>
                 <button 
                   onClick={handleRefresh}
                   disabled={isRefreshing}
@@ -777,17 +613,16 @@ function App() {
                 </button>
               </div>
               
-              <div className="px-2">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Próxima Sincronización</span>
-                  <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">{formatTimeLeft()}</span>
-                </div>
-                <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 transition-all duration-1000 ease-linear rounded-full"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
+            <div className="px-2">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Próxima Sincronización</span>
+                <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">{formatTimeLeft()}</span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-blue-500 transition-all duration-1000 ease-linear rounded-full"
+                  style={{ width: `${progress}%` }}
+                />
               </div>
             </div>
           </div>
@@ -836,15 +671,15 @@ function App() {
             LATAM
           </button>
           <button 
-            onClick={() => setActiveTab('Calculadora')}
-            data-umami-event="Tab - Calculadora"
+            onClick={() => setActiveTab('Conversor')}
+            data-umami-event="Tab - Conversor"
             className={`flex-1 px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${
-              activeTab === 'Calculadora' 
+              activeTab === 'Conversor' 
                 ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' 
                 : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
-            Calculadora
+            Conversor
           </button>
         </div>
 
@@ -870,8 +705,6 @@ function App() {
                       subtitle="Valor del Dólar Oficial"
                       icon={ShieldCheck} 
                       color="bg-slate-600"
-                      buy={formatNumber(data?.usd_oficial ? data.usd_oficial - 20 : 0)}
-                      sell={formatNumber(data?.usd_oficial)}
                       change={data?.changes?.usd_oficial_percent}
                       pulseType={changedKeys['usd_oficial']}
                     />
@@ -895,10 +728,7 @@ function App() {
                       value={`$${formatNumber(data?.usd_cripto)}`} 
                       icon={Bitcoin} 
                       color="bg-purple-600"
-                      buy={formatNumber(data?.usd_cripto ? data.usd_cripto - 10 : 0)}
-                      sell={formatNumber(data?.usd_cripto)}
                       change={data?.changes?.bitcoin_percent}
-                      badge="24/7"
                       pulseType={changedKeys['usd_cripto']}
                     />
                     <div className="h-[440px]">
@@ -1130,11 +960,8 @@ function App() {
                 <StatCard 
                   title="Peso Uruguayo" 
                   value={`${formatNumber(data?.uyu_venta)}`} 
-                  subtitle="Valor del Dólar Oficial"
                   icon={Globe} 
                   color="bg-sky-600"
-                  buy={formatNumber(data?.uyu_compra)}
-                  sell={formatNumber(data?.uyu_venta)}
                   change={data?.changes?.uyu_percent}
                 />
                 <div className="h-[440px]">
@@ -1158,11 +985,8 @@ function App() {
                 <StatCard 
                   title="Peso Chileno" 
                   value={`${formatNumber(data?.clp_venta)}`} 
-                  subtitle="Valor del Dólar Oficial"
                   icon={Globe} 
                   color="bg-red-600"
-                  buy={formatNumber(data?.clp_compra)}
-                  sell={formatNumber(data?.clp_venta)}
                   change={data?.changes?.clp_percent}
                 />
                 <div className="h-[440px]">
@@ -1186,11 +1010,8 @@ function App() {
                 <StatCard 
                    title="Real Brasileño" 
                   value={`${formatNumber(data?.brl_venta)}`} 
-                  subtitle="Valor del Dólar Oficial"
                   icon={Globe} 
                   color="bg-emerald-600"
-                  buy={formatNumber(data?.brl_compra)}
-                  sell={formatNumber(data?.brl_venta)}
                   change={data?.changes?.brl_percent}
                 />
                 <div className="h-[440px]">
@@ -1208,7 +1029,7 @@ function App() {
           )}
 
           {/* Calculadora Section */}
-          {activeTab === 'Calculadora' && (
+          {activeTab === 'Conversor' && (
             <div className="space-y-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
               <div className="flex items-center gap-3 px-1">
                 <div className="w-1.5 h-6 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.3)]" />
@@ -1331,5 +1152,3 @@ function App() {
     </div>
   );
 }
-
-export default App;

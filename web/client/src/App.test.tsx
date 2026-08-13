@@ -158,21 +158,24 @@ describe('App component', () => {
       expect(screen.getByText('Peso Uruguayo')).toBeInTheDocument();
     });
 
-    const calcTab = screen.getByRole('button', { name: /Calculadora/i });
+    const calcTab = screen.getByRole('button', { name: /Conversor/i });
     fireEvent.click(calcTab);
 
     await waitFor(() => {
       expect(screen.getByText('Conversor Rápido')).toBeInTheDocument();
+      expect(screen.getByText('Euro Oficial AR')).toBeInTheDocument();
+      expect(screen.getByText('Euro Oficial VE')).toBeInTheDocument();
     });
 
     const selectButton = screen.getByText('USD - Dólar USA');
     fireEvent.click(selectButton);
 
-    const arsOption = screen.getByText('ARS - Dólar Oficial');
+    const arsOption = screen.getByText('ARS - Peso Argentino');
     fireEvent.click(arsOption);
 
     await waitFor(() => {
-      expect(screen.getByText('ARS - Dólar Oficial')).toBeInTheDocument();
+      expect(screen.getByText('ARS - Peso Argentino')).toBeInTheDocument();
     });
   });
 });
+
