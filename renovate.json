@@ -13,10 +13,29 @@
       "automerge": true
     },
     {
-      "description": "Group all development dependencies",
+      "description": "Group minor and patch development dependencies",
       "matchPackageNames": ["*"],
       "matchDepTypes": ["devDependencies"],
-      "groupName": "Development Dependencies"
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "Development Dependencies (non-major)"
+    },
+    {
+      "description": "Keep TypeScript major updates separate to avoid peer dependency conflicts",
+      "matchPackageNames": ["typescript"],
+      "matchUpdateTypes": ["major"],
+      "groupName": null
+    },
+    {
+      "description": "Keep Tailwind CSS major updates separate due to breaking configuration changes",
+      "matchPackageNames": ["tailwindcss", "@tailwindcss/*"],
+      "matchUpdateTypes": ["major"],
+      "groupName": null
+    },
+    {
+      "description": "Keep ESLint major updates separate",
+      "matchPackageNames": ["eslint", "@eslint/*", "typescript-eslint", "eslint-plugin-*"],
+      "matchUpdateTypes": ["major"],
+      "groupName": null
     }
   ],
   "timezone": "America/Argentina/Buenos_Aires"
