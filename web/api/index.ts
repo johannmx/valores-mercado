@@ -129,6 +129,93 @@ const DOLAR_API_STATUS_URL = 'https://dolarapi.com/v1/estado';
 const BINANCE_API_URL = 'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT';
 const WALLBIT_RATES_URL = 'https://api.wallbit.io/api/public/v1/rates?source_currency=ARS&dest_currency=USD';
 
+interface WallbitState {
+    lastRate: number;
+    lastFetched: number;
+    cooldownUntil: number;
+}
+
+let wallbitState: WallbitState = {
+    lastRate: 0,
+    lastFetched: 0,
+    cooldownUntil: 0
+};
+
+const WALLBIT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const WALLBIT_DEFAULT_COOLDOWN_MS = 60 * 1000; // 1 minute on 429 if no retry-after header
+
+export const fetchWallbitRate = async (): Promise<{ rate: number; success: boolean }> => {
+    const apiKey = process.env.WALLBIT_API_KEY;
+    if (!apiKey) {
+        return { rate: 0, success: false };
+    }
+
+    const now = Date.now();
+
+    // If we have a fresh cached rate, return it immediately without hitting API
+    if (wallbitState.lastRate > 0 && (now - wallbitState.lastFetched) < WALLBIT_CACHE_TTL_MS) {
+        return { rate: wallbitState.lastRate, success: true };
+    }
+
+    // If currently in cooldown due to a previous 429 rate limit
+    if (now < wallbitState.cooldownUntil) {
+        return { rate: wallbitState.lastRate, success: false };
+    }
+
+    try {
+        const response = await axios.get(WALLBIT_RATES_URL, {
+            headers: {
+                'X-API-Key': apiKey,
+                'User-Agent': 'ValoresMercado/1.0 (+https://github.com/johannmx/valores-mercado)',
+                'Accept': 'application/json'
+            },
+            timeout: 8000
+        });
+
+        const rate = response.data?.data?.rate || 0;
+        if (typeof rate === 'number' && rate > 0) {
+            wallbitState.lastRate = rate;
+            wallbitState.lastFetched = now;
+            return { rate, success: true };
+        }
+
+        return { rate: wallbitState.lastRate || 0, success: false };
+    } catch (error: any) {
+        const status = error?.response?.status;
+        if (status === 429) {
+            const retryAfterHeader = error?.response?.headers?.['retry-after'];
+            let waitMs = WALLBIT_DEFAULT_COOLDOWN_MS;
+            if (retryAfterHeader) {
+                const parsed = parseInt(retryAfterHeader, 10);
+                if (!isNaN(parsed) && parsed > 0) {
+                    waitMs = parsed * 1000;
+                }
+            } else if (error?.response?.data?.retry_after) {
+                const parsed = parseInt(error.response.data.retry_after, 10);
+                if (!isNaN(parsed) && parsed > 0) {
+                    waitMs = parsed * 1000;
+                }
+            }
+            wallbitState.cooldownUntil = now + waitMs;
+            console.warn(`[Wallbit API] Rate limited (429). Cooldown activated for ${Math.round(waitMs / 1000)}s.`);
+        } else {
+            console.warn(`[Wallbit API] Fetch error: ${error?.message || 'Unknown error'}`);
+        }
+
+        // Return fallback last known rate if available
+        return { rate: wallbitState.lastRate || 0, success: false };
+    }
+};
+
+export const resetWallbitState = (initialRate = 0) => {
+    wallbitState = {
+        lastRate: initialRate,
+        lastFetched: 0,
+        cooldownUntil: 0
+    };
+};
+
+
 interface MarketData {
     timestamp: string;
     usd_oficial: number;
@@ -307,9 +394,7 @@ const saveCurrentToHistory = async () => {
             axios.get(DOLAR_API_VES_EURO_OFFICIAL_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_VES_EURO_PARALELO_URL).catch(e => ({ data: {} })),
             axios.get(BINANCE_API_URL).catch(e => ({ data: { price: "0" } })),
-            process.env.WALLBIT_API_KEY
-                ? axios.get(WALLBIT_RATES_URL, { headers: { 'X-API-Key': process.env.WALLBIT_API_KEY } }).catch(e => ({ data: { data: { rate: 0 } } }))
-                : Promise.resolve({ data: { data: { rate: 0 } } })
+            fetchWallbitRate()
         ]);
 
         const arsData = arsRes.data as any[];
@@ -325,7 +410,7 @@ const saveCurrentToHistory = async () => {
         const vesEurOficialData = vesEurOficialRes.data as any;
         const vesEurParaleloData = vesEurParaleloRes.data as any;
         const btcData = btcRes.data as any;
-        const wallbitData = wallbitRes.data as any;
+        const wallbitRate = wallbitRes.rate || 0;
 
         const newItem: HistoryItem = {
             timestamp: new Date().toISOString(),
@@ -347,7 +432,7 @@ const saveCurrentToHistory = async () => {
             ves_eur_oficial: vesEurOficialData?.promedio || vesEurOficialData?.venta || 0,
             ves_eur_paralelo: vesEurParaleloData?.promedio || vesEurParaleloData?.venta || 0,
             btc_usd: btcData?.price ? parseFloat(btcData.price) : 0,
-            usd_wallbit: wallbitData?.data?.rate || 0
+            usd_wallbit: wallbitRate
         };
         
         inMemoryHistory.push(newItem);
@@ -405,9 +490,7 @@ server.get('/api/rates', {
             axios.get(DOLAR_API_VES_EURO_OFFICIAL_URL).catch(e => ({ data: {} })),
             axios.get(DOLAR_API_VES_EURO_PARALELO_URL).catch(e => ({ data: {} })),
             axios.get(BINANCE_API_URL).then(r => { apiStatus.binance_api = true; return r; }).catch(e => { return {data: {price: "0"}}; }),
-            process.env.WALLBIT_API_KEY
-                ? axios.get(WALLBIT_RATES_URL, { headers: { 'X-API-Key': process.env.WALLBIT_API_KEY } }).then(r => { apiStatus.wallbit_api = true; return r; }).catch(e => ({ data: { data: { rate: 0 } } }))
-                : Promise.resolve({ data: { data: { rate: 0 } } }),
+            fetchWallbitRate().then(r => { if (r.success || (r.rate > 0 && process.env.WALLBIT_API_KEY)) apiStatus.wallbit_api = true; return r; }),
             axios.get(DOLAR_API_STATUS_URL).then(r => { apiStatus.api_health = r.data?.estado || 'error'; return r; }).catch(e => { apiStatus.api_health = 'error'; return {data: {estado: 'error'}}; })
         ];
 
@@ -428,7 +511,7 @@ server.get('/api/rates', {
         const vesEurOficialData = vesEurOficialRes.data;
         const vesEurParaleloData = vesEurParaleloRes.data;
         const btcData = btcRes.data;
-        const wallbitData = wallbitRes.data;
+        const wallbitRate = wallbitRes.rate || 0;
 
         apiStatus.dolar_api_latam = uyuRes.status === 200 && clpRes.status === 200 && brlRes.status === 200;
 
@@ -455,7 +538,7 @@ server.get('/api/rates', {
         const ves_eur_oficial_venta = vesEurOficialData?.promedio || vesEurOficialData?.venta || 0;
         const ves_eur_paralelo_venta = vesEurParaleloData?.promedio || vesEurParaleloData?.venta || 0;
 
-        const usd_wallbit_venta = wallbitData?.data?.rate || 0;
+        const usd_wallbit_venta = wallbitRate;
 
         const marketData: MarketData = {
             timestamp: new Date().toISOString(),
@@ -479,8 +562,8 @@ server.get('/api/rates', {
             uyu_ar: uyuArData?.venta || 0,
             clp_ar: clpArData?.venta || 0,
             brl_ar: brlArData?.venta || 0,
-            ves_eur_oficial: ves_eur_oficial_venta,
-            ves_eur_paralelo: ves_eur_paralelo_venta,
+            ves_eur_oficial: vesEurOficialData?.promedio || vesEurOficialData?.venta || 0,
+            ves_eur_paralelo: vesEurParaleloData?.promedio || vesEurParaleloData?.venta || 0,
             btc_usd: btcData?.price ? parseFloat(btcData.price) : 0,
             usd_wallbit: usd_wallbit_venta,
             changes: {
