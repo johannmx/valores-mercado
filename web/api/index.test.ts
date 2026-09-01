@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { generateMockHistory, HistoryItem, inMemoryHistory, getVentaByCasa } from './index';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import axios from 'axios';
+import { generateMockHistory, HistoryItem, inMemoryHistory, getVentaByCasa, fetchWallbitRate, resetWallbitState } from './index';
 
 describe('generateMockHistory', () => {
     it('should generate an array of 25 history items', () => {
@@ -115,5 +116,68 @@ describe('getVentaByCasa', () => {
             { casa: 'blue', venta: 130 }
         ];
         expect(getVentaByCasa(mockData, 'blue')).toBe(130);
+    });
+});
+
+describe('fetchWallbitRate', () => {
+    const originalEnv = process.env.WALLBIT_API_KEY;
+
+    beforeEach(() => {
+        resetWallbitState();
+        vi.restoreAllMocks();
+        process.env.WALLBIT_API_KEY = 'test_key';
+    });
+
+    afterEach(() => {
+        process.env.WALLBIT_API_KEY = originalEnv;
+        vi.restoreAllMocks();
+    });
+
+    it('should return 0 and success=false when WALLBIT_API_KEY is not set', async () => {
+        delete process.env.WALLBIT_API_KEY;
+        const res = await fetchWallbitRate();
+        expect(res).toEqual({ rate: 0, success: false });
+    });
+
+    it('should fetch rate successfully, send custom headers and cache the result', async () => {
+        const axiosSpy = vi.spyOn(axios, 'get').mockResolvedValueOnce({
+            data: { data: { rate: 1350.5 } }
+        });
+
+        const firstCall = await fetchWallbitRate();
+        expect(firstCall).toEqual({ rate: 1350.5, success: true });
+        expect(axiosSpy).toHaveBeenCalledTimes(1);
+
+        const callHeaders = axiosSpy.mock.calls[0][1]?.headers as Record<string, string>;
+        expect(callHeaders['X-API-Key']).toBe('test_key');
+        expect(callHeaders['User-Agent']).toContain('ValoresMercado');
+        expect(callHeaders['Accept']).toBe('application/json');
+
+        // Subsequent call within TTL should return cached value without hitting axios
+        const secondCall = await fetchWallbitRate();
+        expect(secondCall).toEqual({ rate: 1350.5, success: true });
+        expect(axiosSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle 429 rate limiting, activate cooldown and return fallback rate', async () => {
+        resetWallbitState(1340.0); // pre-populate with known rate
+
+        const rateLimitError = {
+            response: {
+                status: 429,
+                headers: { 'retry-after': '30' },
+                data: { error: 'Too Many Requests', retry_after: 30 }
+            }
+        };
+        const axiosSpy = vi.spyOn(axios, 'get').mockRejectedValue(rateLimitError);
+
+        const result = await fetchWallbitRate();
+        expect(result).toEqual({ rate: 1340.0, success: false });
+        expect(axiosSpy).toHaveBeenCalledTimes(1);
+
+        // While in cooldown, it shouldn't call axios again
+        const nextResult = await fetchWallbitRate();
+        expect(nextResult).toEqual({ rate: 1340.0, success: false });
+        expect(axiosSpy).toHaveBeenCalledTimes(1);
     });
 });
